@@ -4,12 +4,14 @@
   "description": "Vivliostyle pub compile service",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "storage": "node cloud-storage.js"
   },
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
+    "@google-cloud/storage": "^4.7.0",
     "express": "^4.16.4",
-    "nodegit": "^0.26.5"
+    "node-uuid": "^1.4.8"
   }
 }
