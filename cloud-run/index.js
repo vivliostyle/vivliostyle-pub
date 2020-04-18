@@ -1,16 +1,35 @@
 const express = require('express');
 const fs = require('fs');
 const Git = require('nodegit');
-const app = express();
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
+const uploadFile = require('./cloud-storage');
+
+const app = express();
+const allowCrossDomain = function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, access_token'
+  )
+
+  // intercept OPTIONS method
+  if ('OPTIONS' === req.method) {
+    res.send(200)
+  } else {
+    next()
+  }
+}
+app.use(allowCrossDomain)
 
 const REPO_NAME = 'vivliostyle-user-group-vol2';
 
-async function compileFromGit(owner, repo, callback) {
+async function compileFromGit(owner, repo) {
   try {
     console.log(`>> git clone https://github.com/${owner}/${repo}`)
     // Clone a given repository into the `./tmp` folder.
+    const currentDir = process.cwd();
     const repoDir = `/tmp/${owner}/${repo}`;
     await Git.Clone(`https://github.com/${owner}/${repo}`, repoDir);
 
@@ -30,10 +49,9 @@ async function compileFromGit(owner, repo, callback) {
 
     console.log(`stdout: ${stdout}`);
 
-    const outputFile = `/tmp/${owner}/${repo}.pdf`;
-    if (fs.existsSync(outputFile)) {
-      callback(outputFile);
-    }
+    process.chdir(currentDir);
+
+    return `/tmp/${owner}/${repo}.pdf`;
   } catch (error) {
     console.log(error);
   }
@@ -60,9 +78,9 @@ app.get('/', async (req, res) => {
 
 app.get('/pdf/:owner/:repo', async (req, res) => {
   try {
-    compileFromGit(req.params.owner, req.params.repo, (outputFile) => {
-      sendPdfFile(res, outputFile, `${REPO_NAME}.pdf`);
-    });
+    const outputFile = await compileFromGit(req.params.owner, req.params.repo)
+    url = await uploadFile(req.params.repo, outputFile);
+    res.send(url);
   } catch (error) {
     console.log(error);
   }
