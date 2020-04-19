@@ -139,6 +139,13 @@
     lodash.camelcase "^4.3.0"
     protobufjs "^6.8.6"
 
+"@octokit/webhooks@^7.2.0":
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/@octokit/webhooks/-/webhooks-7.2.0.tgz#8faf0ba5198a87692f87a7826d789c5331adae75"
+  integrity sha512-HDE3AY8VhAsxCK1096BH4FiLybN3M4zkqPG/dFuk+43x7I6zsAZ3Z/XM4jQ/GjCVQFzymrlcjDsnCC2fv2fF7Q==
+  dependencies:
+    debug "^4.0.0"
+
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@protobufjs/aspromise/-/aspromise-1.1.2.tgz#9b8b0cc663d669a7d8f6f5d0893a14d348f30fbf"
@@ -451,7 +458,7 @@ debug@2.6.9:
   dependencies:
     ms "2.0.0"
 
-debug@4, debug@^4.1.1:
+debug@4, debug@^4.0.0, debug@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.1.1.tgz#3b72260255109c6b589cee050f1d516139664791"
   integrity sha512-pYAIzeRo8J6KPEaJ0VWOh5Pzkbw/RetuzehGM7QRRX5he4fPHx2rdKMB256ehJCkX+XRQm16eZLqLNS8RSZXZw==
@@ -691,7 +698,7 @@ firebase-admin@^8.10.0:
     "@google-cloud/firestore" "^3.0.0"
     "@google-cloud/storage" "^4.1.2"
 
-firebase-functions-test@^0.2.0:
+firebase-functions-test@^0.2.1:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/firebase-functions-test/-/firebase-functions-test-0.2.1.tgz#cdc23b6c7203d2c80cd79a273493f60fbd9b913b"
   integrity sha512-+ZaNrDoRVy0ar4NGtrYbqVTsnitL3/Ud5yC7ElZUkX3956j+AzPCcrsCfa+5GJnpnVODXkMKpw9AySFJ/12nvA==
@@ -1649,7 +1656,7 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@^3.2.2:
+typescript@^3.8.3:
   version "3.8.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.8.3.tgz#409eb8544ea0335711205869ec458ab109ee1061"
   integrity sha512-MYlEfn5VrLNsgudQTVJeNaQFUAI7DkhnOjdpAp4T+ku1TfQClewlbSuTVHiA+8skNBgaf02TL/kLOvig4y3G8w==
