@@ -2,9 +2,9 @@
 const {Storage} = require('@google-cloud/storage');
 const uuid = require('node-uuid');
 
-const storage = new Storage({projectId: 'neko-3a840', keyFilename: 'key.json'});
+const storage = new Storage();
 
-const bucketName = 'vivliostyle-pub-0001';
+const bucketName = 'vivliostyle-pub-build-pdf';
 
 async function uploadFile(name, path) {
   const filename = `${name}-${uuid.v4()}.pdf`
@@ -16,5 +16,7 @@ async function uploadFile(name, path) {
     destination: filename
   });
 
-  return `https://storage.cloud.google.com/vivliostyle-pub-0002/${filename}?hl=ja`
+  return `https://storage.cloud.google.com/${bucketName}/${filename}?hl=ja`
 }
+
+module.exports = uploadFile
