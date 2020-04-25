@@ -10,9 +10,8 @@ c.f. https://cloud.google.com/run/docs/quickstarts/build-and-deploy#containerizi
 
 ## Deploy
 
-    $ gcloud builds submit --timeout 900 --tag gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf 
+    $ gcloud run deploy --timeout 900 --memory 1Gi --image gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf
 
-Make sure to be configured memory size to 1GB.
 
 ## Build pdf
 
