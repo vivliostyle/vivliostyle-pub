@@ -7,21 +7,29 @@ if (!admin.apps.length) {
 }
 const firestore = admin.firestore();
 
-const secret = `223fb84f23fcbb28a67d8b200ff6713915a927fb`;
+const getEnv = (service: string, key: string) =>
+  process.env.FIREBASE_CONFIG
+    ? functions.config()[service.toLowerCase().replace(/[^a-z0-9]/g, '')][
+        key.toLowerCase().replace(/[^a-z0-9]/g, '')
+      ]
+    : process.env[`${service}_${key}`];
 
 const webhooks = new WebhooksApi({
-  secret: secret,
+  secret: getEnv('GITHUB_APP', 'WEBHOOK_SECRET'),
 });
 
-webhooks.on('installation', (event) => {
+webhooks.on('installation', async (event) => {
   const { action, installation } = event.payload;
   if (action === 'created' || action === 'new_permissions_accepted') {
-    firestore
+    await firestore
       .collection('installations')
       .doc(`${installation.id}`)
       .set(installation);
   } else if (action === 'deleted') {
-    firestore.collection('installations').doc(`${installation.id}`).delete();
+    await firestore
+      .collection('installations')
+      .doc(`${installation.id}`)
+      .delete();
   }
 });
 
