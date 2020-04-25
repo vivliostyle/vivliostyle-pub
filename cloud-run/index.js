@@ -1,9 +1,9 @@
 const express = require('express');
 const fs = require('fs');
-const Git = require('nodegit');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const uploadFile = require('./cloud-storage');
+const gitClone = require('./git-clone');
 
 const app = express();
 const allowCrossDomain = function(req, res, next) {
@@ -31,7 +31,7 @@ async function compileFromGit(owner, repo) {
     // Clone a given repository into the `./tmp` folder.
     const currentDir = process.cwd();
     const repoDir = `/tmp/${owner}/${repo}`;
-    await Git.Clone(`https://github.com/${owner}/${repo}`, repoDir);
+    await gitClone(owner, repo, repoDir);
 
     process.chdir(repoDir);
 
