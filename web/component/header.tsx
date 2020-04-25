@@ -27,6 +27,13 @@ const useAuthorizedUser = () => {
 
 const HeaderUserInfo: React.FC = () => {
   const { user, isPending } = useAuthorizedUser();
+  useEffect(() => {
+    if (user) {
+      console.log(user.providerData);
+
+      user.getIdTokenResult().then((data) => console.log(data));
+    }
+  }, [user]);
   if (isPending) {
     return null;
   }
