@@ -7,7 +7,8 @@
   "license": "MIT",
   "workspaces": [
     "frontend",
-    "server"
+    "server",
+    "web"
   ],
   "devDependencies": {
     "lerna": "^3.20.2"
