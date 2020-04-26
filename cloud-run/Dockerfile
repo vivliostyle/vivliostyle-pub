@@ -43,5 +43,10 @@ RUN npm install --only=production
 # Copy local code to the container image.
 COPY . .
 
+ARG APP_ID
+ENV APP_ID=$APP_ID
+ARG GITHUB_APPS_PRIVATEKEY
+ENV GITHUB_APPS_PRIVATEKEY=$GITHUB_APPS_PRIVATEKEY
+
 # Run the web service on container startup.
 CMD [ "npm", "start" ]
