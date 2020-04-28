@@ -2,7 +2,7 @@ const Git = require('nodegit');
 
 const { App } = require("@octokit/app");
 const { request } = require("@octokit/request");
-const app = new App({ id: process.env.APP_ID, privateKey: process.env.GITHUB_APPS_PRIVATEKEY });
+const app = new App({ id: process.env.GH_APPS_ID, privateKey: process.env.GH_APPS_PRIVATEKEY });
 
 async function gitClone(owner, repo, repoDir) {
   
