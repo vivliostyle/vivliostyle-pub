@@ -1,10 +1,10 @@
 name: Delivery Containers
 
-on: 
-  push:
-    branches:
-      - master
-# on: push
+# on: 
+#   push:
+#     branches:
+#       - master
+on: push
 
 env:
   IMAGE: asia.gcr.io/${{ secrets.GCP_PROJECT_ID }}/vivliostyle-pub-build-pdf:${{ github.sha }}
