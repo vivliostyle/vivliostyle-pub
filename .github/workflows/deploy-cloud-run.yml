@@ -44,7 +44,7 @@ jobs:
             gcloud run deploy vivliostyle-pub-build-pdf \
               --image $IMAGE \
               --project ${{ secrets.GCP_PROJECT_ID }} \
-              --region ${{ GCP_REGION }} \
+              --region $GCP_REGION \
               --platform managed \
               --timeout 900 \
               --memory 1Gi \
