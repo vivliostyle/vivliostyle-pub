@@ -1,10 +1,9 @@
 name: Delivery Containers
 
-# on: 
-#   push:
-#     branches:
-#       - master
-on: push
+on: 
+  push:
+    branches:
+      - master
 
 env:
   GCP_REGION: asia-northeast1
