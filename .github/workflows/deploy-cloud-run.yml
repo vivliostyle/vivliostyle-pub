@@ -1,0 +1,51 @@
+name: Delivery Containers
+
+# on: 
+#   push:
+#     branches:
+#       - master
+on: push
+
+env:
+  GCP_REGION: asia-northeast1
+  IMAGE: asia.gcr.io/${{ secrets.GCP_PROJECT_ID }}/vivliostyle-pub-build-pdf:${{ github.sha }}
+
+jobs:
+  delivery:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: GCP Authenticate
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: '285.0.0'
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure docker to use the gcloud cli
+        run: gcloud auth configure-docker --quiet
+
+      - name: Build a docker image
+        run: |
+            docker build cloud-run \
+              -t $IMAGE \
+              --build-arg GH_APPS_PRIVATEKEY="${{ secrets.GH_APPS_PRIVATEKEY }}" \
+              --build-arg GH_APPS_ID="${{ secrets.GH_APPS_ID }}"
+
+      - name: Push the docker image
+        run: docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+            gcloud run deploy vivliostyle-pub-build-pdf \
+              --image $IMAGE \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --region $GCP_REGION \
+              --platform managed \
+              --timeout 900 \
+              --memory 1Gi \
+              --quiet
