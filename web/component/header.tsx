@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthorizedUser } from '../middlewares/useAuthorizedUser';
 import firebase from '../services/firebase';
 import * as UI from './ui';
 
@@ -9,20 +10,6 @@ const signIn = async () => {
 
 const signOut = async () => {
   await firebase.auth().signOut();
-};
-
-const useAuthorizedUser = () => {
-  const [isPending, setPending] = useState(true);
-  const [user, setUser] = useState<firebase.User | null>(null);
-
-  useEffect(() => {
-    return firebase.auth().onAuthStateChanged((user) => {
-      setPending(false);
-      setUser(user);
-    });
-  }, []);
-
-  return { user, isPending };
 };
 
 const HeaderUserInfo: React.FC = () => {

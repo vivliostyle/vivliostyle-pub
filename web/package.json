@@ -17,6 +17,7 @@
     "@chakra-ui/core": "^0.7.0",
     "@emotion/core": "^10.0.28",
     "@emotion/styled": "^10.0.27",
+    "@monaco-editor/react": "^3.3.0",
     "@octokit/app": "^4.2.0",
     "@octokit/rest": "^17.4.0",
     "dotenv": "^8.2.0",
