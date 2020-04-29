@@ -1,8 +1,8 @@
 import React from 'react';
-import { Header } from '../component/Header';
-import { InstallGithubAppsButton } from '../component/InstallGithubAppsButton';
-import { MarkdownEditor } from '../component/MarkdownEditor';
-import * as UI from '../component/ui';
+import { Header } from '../components/Header';
+import { InstallGithubAppsButton } from '../components/InstallGithubAppsButton';
+import { MarkdownEditor } from '../components/MarkdownEditor';
+import * as UI from '../components/ui';
 import { useAuthorizedUser } from '../middlewares/useAuthorizedUser';
 
 export default () => {
