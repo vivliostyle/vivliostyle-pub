@@ -115,3 +115,5 @@ temp/
 
 *.pem
 service-account*.json
+.runtimeconfig.json
+/functions/emulator_data
