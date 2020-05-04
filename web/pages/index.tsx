@@ -1,4 +1,5 @@
 import React from 'react';
+import { GithubReposList } from '../components/GithubReposList';
 import { Header } from '../components/Header';
 import { InstallGithubAppsButton } from '../components/InstallGithubAppsButton';
 import { MarkdownEditor } from '../components/MarkdownEditor';
@@ -10,9 +11,16 @@ export default () => {
   return (
     <UI.Box>
       <Header />
-      <UI.Container mt={6}>
-        <InstallGithubAppsButton />
-      </UI.Container>
+      {user && (
+        <>
+          <UI.Container mt={6}>
+            <InstallGithubAppsButton />
+          </UI.Container>
+          <UI.Container mt={6}>
+            <GithubReposList {...{ user }} />
+          </UI.Container>
+        </>
+      )}
       {user ? (
         <MarkdownEditor />
       ) : (
