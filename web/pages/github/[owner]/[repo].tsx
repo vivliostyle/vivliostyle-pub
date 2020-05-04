@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/router';
 import fetch from 'isomorphic-unfetch';
+import { CommitSessionButton } from '../../../components/CommitSessionButton';
 import { Header } from '../../../components/Header';
 import { MarkdownEditor } from '../../../components/MarkdownEditor';
 import * as UI from '../../../components/ui';
@@ -21,6 +22,7 @@ const useEditorSession = ({
     session,
     setSession,
   ] = useState<firebase.firestore.DocumentReference | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -46,10 +48,11 @@ const useEditorSession = ({
         .collection('sessions')
         .doc(id);
       setSession(session);
+      setSessionId(id);
     })();
   }, [owner, repo, user]);
 
-  return { session };
+  return { session, sessionId };
 };
 
 export default () => {
@@ -68,7 +71,7 @@ export default () => {
   );
 
   const { owner, repo } = router.query;
-  const { session } = useEditorSession({
+  const { session, sessionId } = useEditorSession({
     user,
     owner: Array.isArray(owner) ? owner[0] : owner,
     repo: Array.isArray(repo) ? repo[0] : repo,
@@ -79,14 +82,13 @@ export default () => {
     }
     return session.onSnapshot((doc) => {
       const data = doc.data();
-      console.log(doc.metadata.hasPendingWrites ? 'Local' : 'Server', data);
-      if (!data?.text || doc.metadata.hasPendingWrites) {
+      if (!data?.text || data.text === text || doc.metadata.hasPendingWrites) {
         return;
       }
       setText(data.text);
       setStatus('clean');
     });
-  }, [session]);
+  }, [session, text]);
 
   const onModified = useCallback(() => {
     setStatus('modified');
@@ -97,12 +99,21 @@ export default () => {
         return;
       }
       setText(updatedText);
-      session.update({ text: updatedText }).then(() => {
-        setStatus('saved');
-      });
+      session
+        .update({
+          userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          text: updatedText,
+        })
+        .then(() => {
+          setStatus('saved');
+        });
     },
     [text, session]
   );
+  const onDidSaved = useCallback(() => {
+    setStatus('clean');
+  }, []);
+
   return (
     <UI.Box>
       <Header />
@@ -114,6 +125,12 @@ export default () => {
       >
         <UI.Flex w="100%" px={8} justify="flex-start" align="center">
           {status === 'saved' && <UI.Text>Document updated</UI.Text>}
+          {user && sessionId && (
+            <CommitSessionButton
+              {...{ user, sessionId, onDidSaved }}
+              disabled={status !== 'saved'}
+            />
+          )}
         </UI.Flex>
       </UI.Flex>
       {!isPending && status !== 'init' ? (

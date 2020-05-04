@@ -57,6 +57,26 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     return res.status(405).send(null);
   }
 
+  // Get index.md from repo
+  const token = await githubApp.getInstallationAccessToken({
+    installationId: id,
+  });
+  const octokit = new Octokit({
+    auth: `token ${token}`,
+  });
+  let content = '';
+  try {
+    const { data } = await octokit.repos.getContents({
+      owner,
+      repo,
+      path: 'index.md',
+    });
+    if (!Array.isArray(data) && data.type === 'file' && data.content) {
+      content = Buffer.from(data.content, 'base64').toString('utf8');
+    }
+  } catch (error) {}
+
+  // create session
   const sessionDoc = await firebaseAdmin
     .firestore()
     .collection('users')
@@ -64,7 +84,9 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     .collection('sessions')
     .add({
       userUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
-      text: 'Initial document',
+      text: content,
+      owner,
+      repo,
     });
   res.send({ id: sessionDoc.id });
 };

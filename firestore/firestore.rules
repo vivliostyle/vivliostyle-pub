@@ -5,7 +5,12 @@ service cloud.firestore {
       allow read: if authenticated(userId);
 
       match /sessions/{sessionId} {
-        allow read, update: if authenticated(userId);
+        allow read: if authenticated(userId);
+        allow update: if authenticated(userId)
+          && request.resource.data.text is string
+          && request.resource.data.userUpdatedAt == request.time
+          && request.resource.data.owner == resource.data.owner
+          && request.resource.data.repo == resource.data.repo;
       }
     }
 
