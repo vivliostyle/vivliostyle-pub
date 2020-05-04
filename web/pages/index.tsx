@@ -2,7 +2,6 @@ import React from 'react';
 import { GithubReposList } from '../components/GithubReposList';
 import { Header } from '../components/Header';
 import { InstallGithubAppsButton } from '../components/InstallGithubAppsButton';
-import { MarkdownEditor } from '../components/MarkdownEditor';
 import * as UI from '../components/ui';
 import { useAuthorizedUser } from '../middlewares/useAuthorizedUser';
 
@@ -11,7 +10,8 @@ export default () => {
   return (
     <UI.Box>
       <Header />
-      {user && (
+
+      {user ? (
         <>
           <UI.Container mt={6}>
             <InstallGithubAppsButton />
@@ -20,16 +20,13 @@ export default () => {
             <GithubReposList {...{ user }} />
           </UI.Container>
         </>
-      )}
-      {user ? (
-        <MarkdownEditor />
+      ) : isPending ? (
+        <UI.Container mt={6}>
+          <UI.Text>Loading</UI.Text>
+        </UI.Container>
       ) : (
         <UI.Container mt={6}>
-          {isPending ? (
-            <UI.Text>Loading</UI.Text>
-          ) : (
-            <UI.Text>Start writing by login.</UI.Text>
-          )}
+          <UI.Text>Start writing by login.</UI.Text>
         </UI.Container>
       )}
     </UI.Box>
