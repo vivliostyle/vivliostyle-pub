@@ -4,7 +4,14 @@ import githubApp from '../../../services/githubApp';
 import firebaseAdmin from '../../../services/firebaseAdmin';
 import { decrypt } from '../../../utils/encryption';
 
-const requestSession: NextApiHandler<string | null> = async (req, res) => {
+export interface GithubRequestSessionApiResponse {
+  id: string;
+}
+
+const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = async (
+  req,
+  res
+) => {
   const { owner, repo } = req.body;
   if (req.method !== 'POST' || !owner || !repo) {
     return res.status(400).send(null);
@@ -59,7 +66,7 @@ const requestSession: NextApiHandler<string | null> = async (req, res) => {
       userUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
       text: 'Initial document',
     });
-  res.send(sessionDoc.id);
+  res.send({ id: sessionDoc.id });
 };
 
 export default requestSession;
