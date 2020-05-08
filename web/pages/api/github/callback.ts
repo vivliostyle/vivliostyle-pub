@@ -2,6 +2,7 @@ import { NextApiHandler } from 'next';
 import fetch from 'isomorphic-unfetch';
 import { Octokit } from '@octokit/rest';
 import firebaseAdmin from '../../../services/firebaseAdmin';
+import { encrypt } from '../../../utils/encryption';
 
 const installation: NextApiHandler = async (req, res) => {
   const installationId = +req.query['installation_id'];
@@ -36,14 +37,17 @@ const installation: NextApiHandler = async (req, res) => {
   });
   const emails = await octokit.users.listEmails();
   const primaryEmail = emails.data.find((entry) => entry.primary)?.email;
-  if (!primaryEmail) {
+  if (!githubAccessToken || !primaryEmail) {
     return res.status(500);
   }
+  const encrypted = encrypt(githubAccessToken);
   try {
     const user = await firebaseAdmin.auth().getUserByEmail(primaryEmail);
     await firebaseAdmin.auth().setCustomUserClaims(user.uid, {
-      githubAccessToken,
+      githubAccessToken: encrypted,
     });
+    // Revoke token to renew user claims
+    await firebaseAdmin.auth().revokeRefreshTokens(user.uid);
   } catch (e) {}
   res.writeHead(302, { Location: '/' });
   return res.end();

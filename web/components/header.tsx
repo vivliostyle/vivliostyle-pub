@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { useAuthorizedUser } from '../middlewares/useAuthorizedUser';
 import firebase from '../services/firebase';
 import * as UI from './ui';
@@ -48,7 +49,11 @@ const HeaderUserInfo: React.FC = () => {
 export const Header: React.FC = () => (
   <UI.Flex w="100%" h={16} backgroundColor="gray.200">
     <UI.Container w="100%" justify="space-between" align="center">
-      <UI.Heading size="sm">Vivliostyle Pub</UI.Heading>
+      <Link href="/">
+        <a>
+          <UI.Heading size="sm">Vivliostyle Pub</UI.Heading>
+        </a>
+      </Link>
       <UI.Flex align="center">
         <HeaderUserInfo />
       </UI.Flex>
