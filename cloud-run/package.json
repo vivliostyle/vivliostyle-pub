@@ -16,5 +16,8 @@
     "express": "^4.16.4",
     "node-uuid": "^1.4.8",
     "nodegit": "^0.26.5"
+  },
+  "devDependencies": {
+    "@google-cloud/pubsub": "^1.7.2"
   }
 }
