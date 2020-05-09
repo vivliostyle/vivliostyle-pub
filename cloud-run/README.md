@@ -18,6 +18,7 @@ and
 ### Pub/Sub
 
     $ gcloud beta emulators pubsub start
+    $ node scripts/createTopic.js test
     $ node scripts/publishMessage.js test takanakahiko/viola-project
 
 ## Upload image to the Container Registry
