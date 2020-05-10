@@ -13,14 +13,14 @@
     "@emotion/styled": "^10.0.27",
     "@monaco-editor/react": "^3.3.0",
     "@octokit/app": "^4.2.0",
-    "@octokit/rest": "^17.4.0",
+    "@octokit/rest": "^17.8.0",
     "@vivliostyle/viewer": "^2.0.0",
     "dotenv": "^8.2.0",
     "emotion-theming": "^10.0.27",
-    "firebase": "^7.14.1",
-    "firebase-admin": "^8.10.0",
+    "firebase": "^7.14.3",
+    "firebase-admin": "^8.12.1",
     "isomorphic-unfetch": "^3.0.0",
-    "next": "^9.3.4",
+    "next": "^9.3.6",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "rehype-stringify": "^7.0.0",
@@ -31,7 +31,7 @@
     "unified": "^9.0.0"
   },
   "devDependencies": {
-    "@types/node": "^13.11.1",
+    "@types/node": "^13.13.5",
     "@types/react": "^16.9.34"
   },
   "main": "index.js",
