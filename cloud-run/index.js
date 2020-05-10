@@ -61,11 +61,9 @@ async function compileFromGit(owner, repo) {
 app.post('/', async (req, res) => {
   try {
     const pubSubMessage = req.body.message;
-    console.log(req.body);
-    console.log(Buffer.from(pubSubMessage.data, 'base64').toString());
     const [ owner, repo ] = Buffer.from(pubSubMessage.data, 'base64').toString().trim().split('/');
     const outputFile = await compileFromGit(owner, repo)
-    url = await uploadFile(repo, outputFile);
+    const url = await uploadFile(repo, outputFile);
     console.log(url);
     res.status(204).send();
   } catch (error) {
