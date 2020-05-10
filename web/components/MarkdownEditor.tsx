@@ -51,6 +51,7 @@ export const MarkdownEditor = ({
       value={value}
       options={{
         minimap: {enabled: false},
+        wordWrap: 'on',
       }}
       editorDidMount={editorDidMount}
     />
