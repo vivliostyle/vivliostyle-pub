@@ -2,7 +2,7 @@ import {useRef, useEffect} from 'react';
 
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL ||
-  'http://localhost:9990/viewer/index.html';
+  'http://localhost:9990/viewer/index.html/#x=/vpubfs/index.html';
 
 export function Viewer() {
   const iframeRef = useRef<HTMLIFrameElement>();

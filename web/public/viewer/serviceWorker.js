@@ -1,10 +1,11 @@
-window.onmessage = function (e: {data: {id: any}}) {
+const CACHE_NAME = 'vpubfs';
+
+window.onmessage = function (e) {
   const id = e.data.id;
 
   try {
-    const name = 'checkallowed';
     self.caches
-      .open(name)
+      .open(CACHE_NAME)
       .then(function (cache) {
         self.caches.delete(name);
         window.parent.postMessage({id: id, result: 'allowed'}, '*');

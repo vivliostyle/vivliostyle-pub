@@ -122,7 +122,7 @@ export default () => {
       // Preview
       const processor = unified().use(markdown).use(remark2rehype).use(html);
       const result = processor.processSync(updatedText);
-      console.log(updatedText);
+      console.log(updatedText, result);
       caches.open('vpubfs').then((cache) => {
         cache.put('/vpubfs/index.md', new Response(updatedText));
         cache.put(
