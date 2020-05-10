@@ -9,7 +9,13 @@ import * as UI from '../../../components/ui';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
 import firebase from '../../../services/firebase';
 import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
-import {Viewer} from '../../../components/VivliostyleViewer';
+
+// Viewer
+import {Viewer} from '../../../components/Renderer/Viewer';
+import unified from 'unified';
+import markdown from 'remark-parse';
+import remark2rehype from 'remark-rehype';
+import html from 'rehype-stringify';
 
 const useEditorSession = ({
   owner,
@@ -97,6 +103,7 @@ export default () => {
   const onModified = useCallback(() => {
     setStatus('modified');
   }, []);
+
   const onUpdate = useCallback(
     (updatedText) => {
       if (!session || updatedText === text) {
@@ -111,9 +118,24 @@ export default () => {
         .then(() => {
           setStatus('saved');
         });
+
+      // Preview
+      const processor = unified().use(markdown).use(remark2rehype).use(html);
+      const result = processor.processSync(updatedText);
+      console.log(updatedText);
+      caches.open('vpubfs').then((cache) => {
+        cache.put('/vpubfs/index.md', new Response(updatedText));
+        cache.put(
+          '/vpubfs/index.html',
+          new Response(String(result), {
+            headers: {'content-type': 'text/html'},
+          }),
+        );
+      });
     },
     [text, session],
   );
+
   const onDidSaved = useCallback(() => {
     setStatus('clean');
   }, []);
