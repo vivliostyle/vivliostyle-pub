@@ -1,21 +1,16 @@
 import React, {useEffect, useCallback, useState} from 'react';
-import styled from '@emotion/styled';
 import {useRouter} from 'next/router';
 import fetch from 'isomorphic-unfetch';
-import {CommitSessionButton} from '../../../components/CommitSessionButton';
-import {Header} from '../../../components/Header';
-import {MarkdownEditor} from '../../../components/MarkdownEditor';
-import * as UI from '../../../components/ui';
-import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
+
 import firebase from '../../../services/firebase';
+import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
 import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
 
-// Viewer
+import * as UI from '../../../components/ui';
+import {Header} from '../../../components/Header';
+import {MarkdownEditor} from '../../../components/MarkdownEditor';
 import {Viewer} from '../../../components/Renderer/Viewer';
-import unified from 'unified';
-import markdown from 'remark-parse';
-import remark2rehype from 'remark-rehype';
-import html from 'rehype-stringify';
+import {CommitSessionButton} from '../../../components/CommitSessionButton';
 
 const useEditorSession = ({
   owner,
@@ -118,20 +113,6 @@ export default () => {
         .then(() => {
           setStatus('saved');
         });
-
-      // Preview
-      const processor = unified().use(markdown).use(remark2rehype).use(html);
-      const result = processor.processSync(updatedText);
-      console.log(updatedText, result);
-      caches.open('vpubfs').then((cache) => {
-        cache.put('/vpubfs/index.md', new Response(updatedText));
-        cache.put(
-          '/vpubfs/index.html',
-          new Response(String(result), {
-            headers: {'content-type': 'text/html'},
-          }),
-        );
-      });
     },
     [text, session],
   );
@@ -162,7 +143,7 @@ export default () => {
       {!isPending && status !== 'init' ? (
         <UI.Flex>
           <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Viewer />
+          <Viewer body={text} />
         </UI.Flex>
       ) : (
         <UI.Container mt={6}>

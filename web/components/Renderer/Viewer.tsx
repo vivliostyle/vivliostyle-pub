@@ -1,16 +1,35 @@
-import {useRef, useEffect} from 'react';
+import {useRef, useEffect, useState} from 'react';
+import unified from 'unified';
+import markdown from 'remark-parse';
+import remark2rehype from 'remark-rehype';
+import html from 'rehype-stringify';
 
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL ||
-  'http://localhost:9990/viewer/index.html/#x=/vpubfs/index.html';
+  '/viewer/index.html#x=/vpubfs/index.html';
 
-export function Viewer() {
+export const Viewer: React.FC<{body: string}> = ({body}) => {
   const iframeRef = useRef<HTMLIFrameElement>();
 
   useEffect(() => {
+    const processor = unified().use(markdown).use(remark2rehype).use(html);
+    const result = String(processor.processSync(body));
+    console.log(result);
+    caches.open('vpubfs').then((cache) => {
+      cache.put(
+        '/vpubfs/index.html',
+        new Response(result, {
+          headers: {'content-type': 'text/html'},
+        }),
+      );
+      reload();
+    });
+  }, [body]);
+
+  function reload() {
     const iframe = iframeRef.current;
-    console.log(iframe.contentWindow);
-  });
+    iframe.contentWindow.location.reload(true);
+  }
 
   return (
     <iframe
@@ -19,4 +38,4 @@ export function Viewer() {
       width="1000"
     ></iframe>
   );
-}
+};
