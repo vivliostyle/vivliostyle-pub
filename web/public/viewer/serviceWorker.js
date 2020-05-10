@@ -1,25 +1,24 @@
 const CACHE_NAME = 'vpubfs';
 
-window.onmessage = function (e) {
-  const id = e.data.id;
+// self.addEventListener('install', function (event) {});
 
-  try {
-    self.caches
-      .open(CACHE_NAME)
-      .then(function (cache) {
-        self.caches.delete(name);
-        window.parent.postMessage({id: id, result: 'allowed'}, '*');
-      })
-      .catch(function (e) {
-        window.parent.postMessage(
-          {id: id, result: 'denied', name: e.name, message: e.message},
-          '*',
-        );
-      });
-  } catch (e) {
-    window.parent.postMessage(
-      {id: id, result: 'unexpecteddenied', name: e.name, message: e.message},
-      '*',
-    );
-  }
-};
+self.addEventListener('fetch', function (event) {
+  event.respondWith(
+    caches.match(event.request).then(function (response) {
+      // caches.match() is always resolved
+      if (response !== undefined) {
+        return response;
+      } else {
+        return fetch(event.request).then(function (response) {
+          // Response can be used only once:
+          // we have to make a clone to the response and put the first copy to the cache, then return the last copy to the client.
+          let responseClone = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        });
+      }
+    }),
+  );
+});
