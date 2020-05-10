@@ -1,13 +1,15 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import { useRouter } from 'next/router';
+import React, {useEffect, useCallback, useState} from 'react';
+import styled from '@emotion/styled';
+import {useRouter} from 'next/router';
 import fetch from 'isomorphic-unfetch';
-import { CommitSessionButton } from '../../../components/CommitSessionButton';
-import { Header } from '../../../components/Header';
-import { MarkdownEditor } from '../../../components/MarkdownEditor';
+import {CommitSessionButton} from '../../../components/CommitSessionButton';
+import {Header} from '../../../components/Header';
+import {MarkdownEditor} from '../../../components/MarkdownEditor';
 import * as UI from '../../../components/ui';
-import { useAuthorizedUser } from '../../../middlewares/useAuthorizedUser';
+import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
 import firebase from '../../../services/firebase';
-import { GithubRequestSessionApiResponse } from '../../api/github/requestSession';
+import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
+import {Viewer} from '../../../components/VivliostyleViewer';
 
 const useEditorSession = ({
   owner,
@@ -30,16 +32,16 @@ const useEditorSession = ({
     }
     (async () => {
       const idToken = await user.getIdToken();
-      const { id }: GithubRequestSessionApiResponse = await fetch(
+      const {id}: GithubRequestSessionApiResponse = await fetch(
         '/api/github/requestSession',
         {
           method: 'POST',
-          body: JSON.stringify({ owner, repo }),
+          body: JSON.stringify({owner, repo}),
           headers: {
             'content-type': 'application/json',
             'x-id-token': idToken,
           },
-        }
+        },
       ).then((r) => r.json());
       const session = await firebase
         .firestore()
@@ -52,12 +54,13 @@ const useEditorSession = ({
     })();
   }, [owner, repo, user]);
 
-  return { session, sessionId };
+  return {session, sessionId};
 };
 
 export default () => {
-  const { user, isPending } = useAuthorizedUser();
+  const {user, isPending} = useAuthorizedUser();
   const router = useRouter();
+
   // check login
   useEffect(() => {
     if (!user && !isPending) {
@@ -67,15 +70,16 @@ export default () => {
 
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
-    'init'
+    'init',
   );
 
-  const { owner, repo } = router.query;
-  const { session, sessionId } = useEditorSession({
+  const {owner, repo} = router.query;
+  const {session, sessionId} = useEditorSession({
     user,
     owner: Array.isArray(owner) ? owner[0] : owner,
     repo: Array.isArray(repo) ? repo[0] : repo,
   });
+
   useEffect(() => {
     if (!session) {
       return;
@@ -108,7 +112,7 @@ export default () => {
           setStatus('saved');
         });
     },
-    [text, session]
+    [text, session],
   );
   const onDidSaved = useCallback(() => {
     setStatus('clean');
@@ -127,14 +131,17 @@ export default () => {
           {status === 'saved' && <UI.Text>Document updated</UI.Text>}
           {user && sessionId && (
             <CommitSessionButton
-              {...{ user, sessionId, onDidSaved }}
+              {...{user, sessionId, onDidSaved}}
               disabled={status !== 'saved'}
             />
           )}
         </UI.Flex>
       </UI.Flex>
       {!isPending && status !== 'init' ? (
-        <MarkdownEditor value={text} {...{ onModified, onUpdate }} />
+        <UI.Flex>
+          <MarkdownEditor value={text} {...{onModified, onUpdate}} />
+          <Viewer />
+        </UI.Flex>
       ) : (
         <UI.Container mt={6}>
           <UI.Text>Loading</UI.Text>

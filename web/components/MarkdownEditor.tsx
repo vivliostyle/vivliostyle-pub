@@ -1,5 +1,18 @@
-import React, { useCallback, useState, useEffect } from 'react';
-import Editor, { EditorDidMount } from '@monaco-editor/react';
+import React, {useCallback, useState, useEffect} from 'react';
+import Editor, {EditorDidMount} from '@monaco-editor/react';
+
+function useDefferedEffect(
+  fn: () => void,
+  args: React.DependencyList,
+  duration: number,
+) {
+  useEffect(() => {
+    const timer = setTimeout(() => fn(), duration);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, args);
+}
 
 export const MarkdownEditor = ({
   value = '',
@@ -11,14 +24,15 @@ export const MarkdownEditor = ({
   onUpdate?: (value: string) => void;
 }) => {
   const [currentValue, setCurrentValue] = useState(() => value);
-  useEffect(() => {
-    const id = setTimeout(() => {
+
+  useDefferedEffect(
+    () => {
       onUpdate(currentValue);
-    }, 3000);
-    return () => {
-      clearTimeout(id);
-    };
-  }, [currentValue]);
+    },
+    [currentValue],
+    3000,
+  );
+
   const editorDidMount: EditorDidMount = useCallback(
     (getEditorValue, monaco) => {
       monaco.onDidChangeModelContent(() => {
@@ -27,7 +41,7 @@ export const MarkdownEditor = ({
         onModified(value);
       });
     },
-    []
+    [],
   );
 
   return (
@@ -36,7 +50,7 @@ export const MarkdownEditor = ({
       language="markdown"
       value={value}
       options={{
-        minimap: { enabled: false },
+        minimap: {enabled: false},
       }}
       editorDidMount={editorDidMount}
     />

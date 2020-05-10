@@ -2583,6 +2583,11 @@
   resolved "https://registry.yarnpkg.com/@use-it/event-listener/-/event-listener-0.1.3.tgz#a9920b2819d211cf55e68e830997546eec6886d3"
   integrity sha512-UCHkLOVU+xj3/1R8jXz8GzDTowkzfIDPESOBlVC2ndgwUSBEqiFdwCoUEs2lcGhJOOiEdmWxF+T23C5+60eEew==
 
+"@vivliostyle/viewer@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.0.0.tgz#88fc1d0fb41e2fa18977ea5dd618ea5ebba71dbd"
+  integrity sha512-ksqpzLvmdcHhsn8iI80NqsreSRgnjUdVFP8zzQVDP1IHeL8D+T9MJTCHE6sZ6zg2N2p2O7A3tyq46JRorhmsqA==
+
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/@webassemblyjs/ast/-/ast-1.9.0.tgz#bd850604b4042459a5a41cd7d338cbed695ed964"

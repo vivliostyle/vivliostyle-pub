@@ -1,18 +1,12 @@
 {
   "name": "@vivliostyle-pub/web",
   "version": "0.0.0",
-  "private": true,
-  "description": "",
-  "main": "index.js",
   "scripts": {
-    "dev": "next -p 9990",
     "build": "next build",
+    "dev": "next -p 9990",
     "start": "next start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@chakra-ui/core": "^0.7.0",
     "@emotion/core": "^10.0.28",
@@ -20,6 +14,7 @@
     "@monaco-editor/react": "^3.3.0",
     "@octokit/app": "^4.2.0",
     "@octokit/rest": "^17.4.0",
+    "@vivliostyle/viewer": "^2.0.0",
     "dotenv": "^8.2.0",
     "emotion-theming": "^10.0.27",
     "firebase": "^7.14.1",
@@ -35,6 +30,8 @@
     "@types/node": "^13.11.1",
     "@types/react": "^16.9.34"
   },
+  "main": "index.js",
+  "license": "ISC",
   "browserslist": {
     "production": [
       ">0.2%",
@@ -46,5 +43,7 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "keywords": [],
+  "private": true
 }
