@@ -36,7 +36,7 @@ function stringifyMarkdown(
     .use(markdown, {commonmark: true})
     .use(rubyParser)
     .use(remark2rehype, {
-      allowDangerousHTML: true,
+      allowDangerousHtml: true,
       handlers: {ruby: rubyHandler},
     })
     .use(raw)
@@ -74,8 +74,6 @@ export const Previewer: React.FC<ViewerProps> = ({
 
   useEffect(() => {
     const htmlString = stringifyMarkdown(body, {stylesheet});
-
-    console.log(htmlString);
 
     updateCache('index.html', htmlString).then(() => {
       reload();

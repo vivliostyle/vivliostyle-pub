@@ -1,5 +1,6 @@
-import React, {useEffect, useCallback, useState} from 'react';
+import React, {useEffect, useCallback, useState, useRef} from 'react';
 import {useRouter} from 'next/router';
+import {useToast} from '@chakra-ui/core';
 
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
@@ -25,17 +26,54 @@ const themes = [
   },
 ];
 
+function useBuildStatus(
+  buildID: string | null,
+  onBuildFinished?: (artifactURL: string) => void,
+) {
+  const toast = useToast();
+
+  useEffect(() => {
+    if (!buildID) {
+      return;
+    }
+    const unscribe = firebase
+      .firestore()
+      .collection('builds')
+      .doc(buildID)
+      .onSnapshot(function (doc) {
+        console.log('Current data: ', doc.data());
+        toast({
+          title: 'Build succeeded',
+          description: 'Your PDF has been created.',
+          status: 'success',
+          duration: 9000,
+          isClosable: true,
+        });
+        toast({
+          duration: 9000,
+          isClosable: true,
+          render: () => (
+            <UI.Box>
+              <UI.Link href={doc.data()!.url} isExternal>
+                View
+              </UI.Link>
+            </UI.Box>
+          ),
+        });
+        if (onBuildFinished) {
+          onBuildFinished(doc.data()!.url);
+        }
+      });
+
+    return () => {
+      unscribe();
+    };
+  }, [buildID]);
+}
+
 export default () => {
   const {user, isPending} = useAuthorizedUser();
   const router = useRouter();
-  const [text, setText] = useState('');
-  const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
-    'init',
-  );
-  const [themeURL, setThemeURL] = useState<string>('');
-  const setWarnDialog = useWarnBeforeLeaving();
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
   const repoStr = Array.isArray(repo) ? repo[0] : repo;
@@ -43,6 +81,18 @@ export default () => {
     user,
     owner: ownerStr!,
     repo: repoStr!,
+  });
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
+    'init',
+  );
+  const [themeURL, setThemeURL] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [buildID, setBuildID] = useState<string | null>(null);
+  const toast = useToast();
+  const setWarnDialog = useWarnBeforeLeaving();
+  useBuildStatus(buildID, () => {
+    setIsProcessing(false);
   });
 
   // check login
@@ -97,11 +147,30 @@ export default () => {
 
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);
+
     const buildPDF = firebase.functions().httpsCallable('buildPDF');
-    buildPDF({owner, repo}).then(function (result) {
-      const buildID = result.data.buildID;
-      setIsProcessing(false);
-    });
+    buildPDF({owner, repo})
+      .then((result) => {
+        console.log(result);
+        const buildID = result.data.buildID;
+        setBuildID(buildID);
+        toast({
+          title: 'Build started',
+          description: 'Your build has been started',
+          status: 'success',
+          duration: 5000,
+          isClosable: false,
+        });
+      })
+      .catch((err) => {
+        toast({
+          title: err.message,
+          description: err.details,
+          status: 'error',
+          duration: 9000,
+          isClosable: true,
+        });
+      });
   }
 
   function onThemeSelected(themeURL: string) {
@@ -127,29 +196,29 @@ export default () => {
           )}
           <UI.Flex align="center">
             {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
-          <UI.Menu>
-            <UI.MenuButton as={UI.Button}>
-              <UI.Icon name="chevron-down" /> Actions
-            </UI.MenuButton>
-            <UI.MenuList>
-              <UI.MenuGroup title="Theme">
-                {themes.map((theme) => (
-                  <UI.MenuItem
-                    key={theme.name}
-                    onClick={() => onThemeSelected(theme.css)}
-                  >
-                    {theme.name}
-                  </UI.MenuItem>
-                ))}
-              </UI.MenuGroup>
-              <UI.MenuDivider />
-              <UI.MenuGroup title="Export">
+            <UI.Menu>
+              <UI.MenuButton as={UI.Button}>
+                <UI.Icon name="chevron-down" /> Actions
+              </UI.MenuButton>
+              <UI.MenuList>
+                <UI.MenuGroup title="Theme">
+                  {themes.map((theme) => (
+                    <UI.MenuItem
+                      key={theme.name}
+                      onClick={() => onThemeSelected(theme.css)}
+                    >
+                      {theme.name}
+                    </UI.MenuItem>
+                  ))}
+                </UI.MenuGroup>
+                <UI.MenuDivider />
+                <UI.MenuGroup title="Export">
                   <UI.MenuItem onClick={onBuildPDFButtonClicked}>
                     PDF
                   </UI.MenuItem>
-              </UI.MenuGroup>
-            </UI.MenuList>
-          </UI.Menu>
+                </UI.MenuGroup>
+              </UI.MenuList>
+            </UI.Menu>
           </UI.Flex>
         </UI.Flex>
       </UI.Flex>

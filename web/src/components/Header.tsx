@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import Link from 'next/link';
-import { useAuthorizedUser } from '../middlewares/useAuthorizedUser';
+import {useAuthorizedUser} from '../middlewares/useAuthorizedUser';
 import firebase from '../services/firebase';
 import * as UI from './ui';
 
@@ -14,7 +14,7 @@ const signOut = async () => {
 };
 
 const HeaderUserInfo: React.FC = () => {
-  const { user, isPending } = useAuthorizedUser();
+  const {user, isPending} = useAuthorizedUser();
   useEffect(() => {
     if (user) {
       console.log(user.providerData);

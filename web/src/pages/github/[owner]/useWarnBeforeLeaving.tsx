@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react';
 export function useWarnBeforeLeaving() {
   const [isDirty, setIsDirty] = useState<boolean>(false);
   useEffect(() => {
-    function dialog(e) {
+    function dialog(e: BeforeUnloadEvent) {
       if (!isDirty) {
         return undefined;
       }
