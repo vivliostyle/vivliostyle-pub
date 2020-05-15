@@ -16,6 +16,7 @@ const DEFAULT_TEMPLATE_HTML = `
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=s, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="{{stylesheet}}" />
 </head>
 <body role="doc-chapter">
 {{body}}
@@ -23,7 +24,7 @@ const DEFAULT_TEMPLATE_HTML = `
 </html>`;
 
 function buildViewerURL(
-  filename: string = 'index.html',
+  filename: string,
   {style}: {style?: string} = {},
 ): string {
   let url =
@@ -34,10 +35,16 @@ function buildViewerURL(
   return url;
 }
 
-function stringifyMarkdown(markdownString: string): string {
+function stringifyMarkdown(
+  markdownString: string,
+  {stylesheet = ''}: {stylesheet?: string} = {},
+): string {
   const processor = unified().use(markdown).use(remark2rehype).use(html);
   const generated = String(processor.processSync(markdownString));
-  const htmlString = DEFAULT_TEMPLATE_HTML.replace('{{body}}', generated);
+  const htmlString = DEFAULT_TEMPLATE_HTML.replace(
+    '{{body}}',
+    generated,
+  ).replace('{{stylesheet}}', stylesheet);
   return htmlString;
 }
 
@@ -53,12 +60,22 @@ function updateCache(cachePath: string, content: any) {
   );
 }
 
-export const Viewer: React.FC<{body: string}> = ({body}) => {
+interface ViewerProps {
+  body: string;
+  basename?: string;
+  stylesheet?: string;
+}
+
+export const Viewer: React.FC<ViewerProps> = ({
+  body,
+  basename = 'index.html',
+  stylesheet = 'https://vivliostyle.github.io/vivliostyle_doc/samples/gon/style.css',
+}) => {
   const iframeRef = useRef<HTMLIFrameElement>();
-  const viewerURL = useMemo(() => buildViewerURL(), []);
+  const viewerURL = useMemo(() => buildViewerURL(basename), []);
 
   useEffect(() => {
-    const htmlString = stringifyMarkdown(body);
+    const htmlString = stringifyMarkdown(body, {stylesheet});
 
     updateCache('index.html', htmlString).then(() => {
       reload();
