@@ -10,15 +10,6 @@ import {Header} from '../../../components/Header';
 import {MarkdownEditor} from '../../../components/MarkdownEditor';
 import {Previewer} from '../../../components/MarkdownPreviewer';
 import {CommitSessionButton} from '../../../components/CommitSessionButton';
-import {
-  Button,
-  Menu,
-  MenuList,
-  MenuButton,
-  MenuGroup,
-  MenuItem,
-  MenuDivider,
-} from '../../../components/ui';
 
 const themes = [
   {
@@ -124,27 +115,27 @@ export default () => {
               disabled={status !== 'saved'}
             />
           )}
-          <Menu>
-            <MenuButton as={Button}>
+          <UI.Menu>
+            <UI.MenuButton as={UI.Button}>
               <UI.Icon name="chevron-down" /> Actions
-            </MenuButton>
-            <MenuList>
-              <MenuGroup title="Theme">
+            </UI.MenuButton>
+            <UI.MenuList>
+              <UI.MenuGroup title="Theme">
                 {themes.map((theme) => (
-                  <MenuItem
+                  <UI.MenuItem
                     key={theme.name}
                     onClick={() => onThemeSelected(theme.css)}
                   >
                     {theme.name}
-                  </MenuItem>
+                  </UI.MenuItem>
                 ))}
-              </MenuGroup>
-              <MenuDivider />
-              <MenuGroup title="Export">
-                <MenuItem onClick={onBuildPDFButtonClicked}>PDF</MenuItem>
-              </MenuGroup>
-            </MenuList>
-          </Menu>
+              </UI.MenuGroup>
+              <UI.MenuDivider />
+              <UI.MenuGroup title="Export">
+                <UI.MenuItem onClick={onBuildPDFButtonClicked}>PDF</UI.MenuItem>
+              </UI.MenuGroup>
+            </UI.MenuList>
+          </UI.Menu>
         </UI.Flex>
       </UI.Flex>
       {!isPending && status !== 'init' ? (
