@@ -79,7 +79,7 @@ export const Previewer: React.FC<ViewerProps> = ({
     updateCache('index.html', htmlString).then(() => {
       reload();
     });
-  }, [body]);
+  }, [body, basename, stylesheet]);
 
   function reload() {
     const iframe = iframeRef.current;
