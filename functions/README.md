@@ -14,5 +14,5 @@ $ firebase emulators:start --only pubsub
 $ PUBSUB_EMULATOR_HOST=localhost:8085 node ../cloud-run/scripts/createTopic.js buildPdf hoge
 
 $ yarn start
-firebase > buildStart({repository: "takanakahiko/viola-project"})
+firebase > buildPDF({owner: "takanakahiko", repo: "viola-project"})
 ```
