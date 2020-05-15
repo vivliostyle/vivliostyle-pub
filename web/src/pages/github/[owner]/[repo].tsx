@@ -3,7 +3,7 @@ import {useRouter} from 'next/router';
 
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
-import {useEditorSession} from './useEditorSession';
+import {useEditorSession} from '../../../middlewares/useEditorSession';
 
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
@@ -43,10 +43,12 @@ export default () => {
   const [themeURL, setThemeURL] = useState<string>('');
 
   const {owner, repo} = router.query;
+  const ownerStr = Array.isArray(owner) ? owner[0] : owner;
+  const repoStr = Array.isArray(repo) ? repo[0] : repo;
   const {session, sessionId} = useEditorSession({
     user,
-    owner: Array.isArray(owner) ? owner[0] : owner,
-    repo: Array.isArray(repo) ? repo[0] : repo,
+    owner: ownerStr!,
+    repo: repoStr!,
   });
 
   // check login
@@ -123,8 +125,8 @@ export default () => {
             />
           )}
           <Menu>
-            <MenuButton as={Button} rightIcon="chevron-down">
-              Actions
+            <MenuButton as={Button}>
+              <UI.Icon name="chevron-down" /> Actions
             </MenuButton>
             <MenuList>
               <MenuGroup title="Theme">

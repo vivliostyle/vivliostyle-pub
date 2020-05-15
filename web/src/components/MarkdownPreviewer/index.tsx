@@ -69,7 +69,7 @@ export const Previewer: React.FC<ViewerProps> = ({
   basename = 'index.html',
   stylesheet = '',
 }) => {
-  const iframeRef = useRef<HTMLIFrameElement>();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const viewerURL = useMemo(() => buildViewerURL(basename), []);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export const Previewer: React.FC<ViewerProps> = ({
 
   function reload() {
     const iframe = iframeRef.current;
-    iframe.contentWindow.location.reload(true);
+    iframe?.contentWindow?.location.reload(true);
   }
 
   return <iframe ref={iframeRef} src={viewerURL} width="1000"></iframe>;

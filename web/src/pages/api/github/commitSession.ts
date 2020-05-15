@@ -1,10 +1,10 @@
-import { NextApiHandler } from 'next';
-import { Octokit } from '@octokit/rest';
+import {NextApiHandler} from 'next';
+import {Octokit} from '@octokit/rest';
 import githubApp from '../../../services/githubApp';
 import firebaseAdmin from '../../../services/firebaseAdmin';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
-  const { sessionId } = req.body;
+  const {sessionId} = req.body;
   if (req.method !== 'PUT' || !sessionId) {
     return res.status(400).send(null);
   }
@@ -31,7 +31,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   if (!sessionSnapshot.exists) {
     return res.status(400).send(null);
   }
-  const { owner, repo, text } = sessionSnapshot.data();
+  const {owner, repo, text} = sessionSnapshot.data()!;
 
   // Save index.md
   const installationId = await (async () => {
@@ -39,7 +39,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
     const octokit = new Octokit({
       auth: `Bearer ${jwt}`,
     });
-    const { data } = await octokit.apps.getRepoInstallation({ owner, repo });
+    const {data} = await octokit.apps.getRepoInstallation({owner, repo});
     return data.id;
   })();
   const token = await githubApp.getInstallationAccessToken({
@@ -50,7 +50,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   });
   const contentSha = await (async () => {
     try {
-      const { data } = await octokit.repos.getContents({
+      const {data} = await octokit.repos.getContents({
         owner,
         repo,
         path: 'index.md',

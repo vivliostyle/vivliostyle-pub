@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import fetch from 'isomorphic-unfetch';
-import firebase from '../../../services/firebase';
-import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
+import firebase from '../services/firebase';
+import {GithubRequestSessionApiResponse} from '../pages/api/github/requestSession';
 
 export function useEditorSession({
   owner,

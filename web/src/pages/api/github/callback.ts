@@ -1,8 +1,8 @@
-import { NextApiHandler } from 'next';
+import {NextApiHandler} from 'next';
 import fetch from 'isomorphic-unfetch';
-import { Octokit } from '@octokit/rest';
+import {Octokit} from '@octokit/rest';
 import firebaseAdmin from '../../../services/firebaseAdmin';
-import { encrypt } from '../../../utils/encryption';
+import {encrypt} from '../../../utils/encryption';
 
 const installation: NextApiHandler = async (req, res) => {
   const installationId = +req.query['installation_id'];
@@ -15,7 +15,7 @@ const installation: NextApiHandler = async (req, res) => {
     return res.end();
   }
   if (setupAction !== 'install' && setupAction !== 'update') {
-    return res.status(400);
+    return res.status(400).send(null);
   }
 
   const response = await fetch('https://github.com/login/oauth/access_token', {
@@ -38,7 +38,7 @@ const installation: NextApiHandler = async (req, res) => {
   const emails = await octokit.users.listEmails();
   const primaryEmail = emails.data.find((entry) => entry.primary)?.email;
   if (!githubAccessToken || !primaryEmail) {
-    return res.status(500);
+    return res.status(500).send(null);
   }
   const encrypted = encrypt(githubAccessToken);
   try {
@@ -49,7 +49,7 @@ const installation: NextApiHandler = async (req, res) => {
     // Revoke token to renew user claims
     await firebaseAdmin.auth().revokeRefreshTokens(user.uid);
   } catch (e) {}
-  res.writeHead(302, { Location: '/' });
+  res.writeHead(302, {Location: '/'});
   return res.end();
 };
 
