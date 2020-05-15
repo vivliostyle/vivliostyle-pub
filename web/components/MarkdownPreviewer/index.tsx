@@ -1,11 +1,12 @@
 import {useRef, useEffect, useMemo} from 'react';
+import path from 'path';
 import unified from 'unified';
 import markdown from 'remark-parse';
 import remark2rehype from 'remark-rehype';
 import raw from 'rehype-raw';
 import doc from 'rehype-document';
 import stringify from 'rehype-stringify';
-import path from 'path';
+
 import {rubyParser, rubyHandler} from './ruby';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
@@ -62,7 +63,7 @@ interface ViewerProps {
   stylesheet?: string;
 }
 
-export const Viewer: React.FC<ViewerProps> = ({
+export const Previewer: React.FC<ViewerProps> = ({
   body,
   basename = 'index.html',
   stylesheet = '',

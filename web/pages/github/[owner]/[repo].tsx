@@ -9,7 +9,7 @@ import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
 import {MarkdownEditor} from '../../../components/MarkdownEditor';
-import {Viewer} from '../../../components/Renderer/Viewer';
+import {Previewer} from '../../../components/MarkdownPreviewer';
 import {CommitSessionButton} from '../../../components/CommitSessionButton';
 
 const useEditorSession = ({
@@ -143,7 +143,7 @@ export default () => {
       {!isPending && status !== 'init' ? (
         <UI.Flex>
           <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Viewer
+          <Previewer
             body={text}
             stylesheet="https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css"
           />
