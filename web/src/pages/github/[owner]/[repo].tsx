@@ -34,6 +34,7 @@ export default () => {
   );
   const [themeURL, setThemeURL] = useState<string>('');
   const setWarnDialog = useWarnBeforeLeaving();
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
@@ -95,7 +96,12 @@ export default () => {
   }, []);
 
   function onBuildPDFButtonClicked() {
-    // TODO: Build PDF
+    setIsProcessing(true);
+    const buildPDF = firebase.functions().httpsCallable('buildPDF');
+    buildPDF({owner, repo}).then(function (result) {
+      const buildID = result.data.buildID;
+      setIsProcessing(false);
+    });
   }
 
   function onThemeSelected(themeURL: string) {
@@ -119,6 +125,8 @@ export default () => {
               disabled={status !== 'saved'}
             />
           )}
+          <UI.Flex align="center">
+            {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
           <UI.Menu>
             <UI.MenuButton as={UI.Button}>
               <UI.Icon name="chevron-down" /> Actions
@@ -136,10 +144,13 @@ export default () => {
               </UI.MenuGroup>
               <UI.MenuDivider />
               <UI.MenuGroup title="Export">
-                <UI.MenuItem onClick={onBuildPDFButtonClicked}>PDF</UI.MenuItem>
+                  <UI.MenuItem onClick={onBuildPDFButtonClicked}>
+                    PDF
+                  </UI.MenuItem>
               </UI.MenuGroup>
             </UI.MenuList>
           </UI.Menu>
+          </UI.Flex>
         </UI.Flex>
       </UI.Flex>
       {!isPending && status !== 'init' ? (
