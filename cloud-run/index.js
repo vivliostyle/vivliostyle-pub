@@ -5,6 +5,13 @@ const exec = util.promisify(require('child_process').exec);
 const uploadFile = require('./cloud-storage');
 const gitClone = require('./git-clone');
 
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const firestore = admin.firestore();
+
 const app = express();
 const allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -23,7 +30,8 @@ const allowCrossDomain = function(req, res, next) {
 }
 app.use(allowCrossDomain)
 
-const REPO_NAME = 'vivliostyle-user-group-vol2';
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 async function compileFromGit(owner, repo) {
   try {
@@ -57,22 +65,21 @@ async function compileFromGit(owner, repo) {
   }
 }
 
-function sendPdfFile(res, pdfFile, filename) {
-  var file = fs.createReadStream(pdfFile);
-  var stat = fs.statSync(pdfFile);
-  res.setHeader('Content-Length', stat.size);
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-  file.pipe(res);
-}
-
-app.get('/', async (req, res) => {
+app.post('/', async (req, res) => {
   try {
-    compileFromGit('youchan', REPO_NAME, (outputFile) => {
-      sendPdfFile(res, outputFile, `${REPO_NAME}.pdf`);
-    });
+    const pubSubMessage = req.body.message;
+    const data = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString())
+    const { owner, repo } = data.repo;
+    const outputFile = await compileFromGit(owner, repo)
+    const url = await uploadFile(repo, outputFile);
+    if(data.id) await firestore.collection('builds').doc(data.id).update({url});
+    console.log('>> Complete build: ' + url);
+    res.status(204).send();
   } catch (error) {
-    console.log(error);
+    console.error(`error: ${error}`);
+    //400や500番台で返すとリトライを繰り返してしまうため、暫定的に204を返しています
+    //res.status(400).send(`Bad Request: ${msg}`);
+    res.status(204).send(`Bad Request: ${error}`);
   }
 });
 

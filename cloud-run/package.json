@@ -14,7 +14,11 @@
     "@octokit/app": "^4.2.0",
     "@octokit/request": "^5.4.2",
     "express": "^4.16.4",
+    "firebase-admin": "^8.12.1",
     "node-uuid": "^1.4.8",
     "nodegit": "^0.26.5"
+  },
+  "devDependencies": {
+    "@google-cloud/pubsub": "^1.7.2"
   }
 }

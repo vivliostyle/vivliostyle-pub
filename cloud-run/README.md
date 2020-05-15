@@ -9,9 +9,17 @@ and
 
 ## Operation check locally
 
+### Up Server
+
     $ docker build --build-arg GITHUB_APPS_PRIVATEKEY=$GITHUB_APPS_PRIVATEKEY --build-arg APP_ID=$APP_ID -t pub .
     $ docker run -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/gcp_cred.json -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred.json -p 8080:8080 pub
     $ curl -m 900 http://localhost:8080/pdf/takanakahiko/viola-project
+
+### Pub/Sub
+
+    $ gcloud beta emulators pubsub start
+    $ node scripts/createTopic.js test
+    $ node scripts/publishMessage.js test "{'owner': takanakahiko', 'repo': 'viola-project'}"
 
 ## Upload image to the Container Registry
 
