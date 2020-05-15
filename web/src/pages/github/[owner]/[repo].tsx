@@ -75,10 +75,12 @@ export default () => {
   );
 
   const {owner, repo} = router.query;
+  const ownerStr = Array.isArray(owner) ? owner[0] : owner;
+  const repoStr = Array.isArray(repo) ? repo[0] : repo;
   const {session, sessionId} = useEditorSession({
     user,
-    owner: Array.isArray(owner) ? owner[0] : owner,
-    repo: Array.isArray(repo) ? repo[0] : repo,
+    owner: ownerStr!,
+    repo: repoStr!,
   });
 
   useEffect(() => {
