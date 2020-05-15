@@ -3,7 +3,7 @@ import {useRouter} from 'next/router';
 
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
-import {useEditorSession} from './useEditorSession';
+import {useEditorSession} from '../../../middlewares/useEditorSession';
 
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
