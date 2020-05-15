@@ -2,14 +2,14 @@ import all from 'mdast-util-to-hast/lib/all';
 import u from 'unist-builder';
 
 // remark
-function locateMention(value: string, fromIndex: number) {
+function locateMention(value, fromIndex) {
   return value.indexOf('{', fromIndex);
 }
 
 tokenizeRuby.notInLink = true;
 tokenizeRuby.locator = locateMention;
 
-function tokenizeRuby(eat, value: string, silent: boolean) {
+function tokenizeRuby(eat, value, silent) {
   const match = /^{(.+?)\|(.+?)}/.exec(value);
 
   if (match) {

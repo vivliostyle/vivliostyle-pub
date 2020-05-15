@@ -7,6 +7,7 @@ export {
   Flex,
   Grid,
   Heading,
+  Icon,
   Image,
   Link,
   Text,

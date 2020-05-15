@@ -125,8 +125,8 @@ export default () => {
             />
           )}
           <Menu>
-            <MenuButton as={Button} rightIcon="chevron-down">
-              Actions
+            <MenuButton as={Button}>
+              <UI.Icon name="chevron-down" /> Actions
             </MenuButton>
             <MenuList>
               <MenuGroup title="Theme">
