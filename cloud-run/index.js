@@ -5,6 +5,13 @@ const exec = util.promisify(require('child_process').exec);
 const uploadFile = require('./cloud-storage');
 const gitClone = require('./git-clone');
 
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const firestore = admin.firestore();
+
 const app = express();
 const allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -61,10 +68,12 @@ async function compileFromGit(owner, repo) {
 app.post('/', async (req, res) => {
   try {
     const pubSubMessage = req.body.message;
-    const [ owner, repo ] = Buffer.from(pubSubMessage.data, 'base64').toString().trim().split('/');
+    const data = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString())
+    const { owner, repo } = data.repo;
     const outputFile = await compileFromGit(owner, repo)
     const url = await uploadFile(repo, outputFile);
-    console.log(url);
+    if(data.id) await firestore.collection('builds').doc(data.id).update({url});
+    console.log('>> Complete build: ' + url);
     res.status(204).send();
   } catch (error) {
     console.error(`error: ${error}`);
