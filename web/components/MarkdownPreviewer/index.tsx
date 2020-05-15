@@ -20,9 +20,10 @@ function buildViewerURL(
   {style}: {style?: string} = {},
 ): string {
   let url =
-    VIVLIOSTYLE_VIEWER_HTML_URL + `#x=${path.join(VPUBFS_ROOT, filename)}`;
+    VIVLIOSTYLE_VIEWER_HTML_URL +
+    `#x=${path.join(VPUBFS_ROOT, filename)}&bookMode=true`;
   if (style) {
-    url += `&bookMode=true&style=${style}`;
+    url += `&style=${style}`;
   }
   return url;
 }
