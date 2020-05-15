@@ -1,11 +1,13 @@
 import {useRef, useEffect, useMemo} from 'react';
+import path from 'path';
 import unified from 'unified';
 import markdown from 'remark-parse';
 import remark2rehype from 'remark-rehype';
 import raw from 'rehype-raw';
 import doc from 'rehype-document';
 import stringify from 'rehype-stringify';
-import path from 'path';
+
+import {rubyParser, rubyHandler} from './ruby';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
@@ -18,9 +20,10 @@ function buildViewerURL(
   {style}: {style?: string} = {},
 ): string {
   let url =
-    VIVLIOSTYLE_VIEWER_HTML_URL + `#x=${path.join(VPUBFS_ROOT, filename)}`;
+    VIVLIOSTYLE_VIEWER_HTML_URL +
+    `#x=${path.join(VPUBFS_ROOT, filename)}&bookMode=true`;
   if (style) {
-    url += `&bookMode=true&style=${style}`;
+    url += `&style=${style}`;
   }
   return url;
 }
@@ -31,7 +34,11 @@ function stringifyMarkdown(
 ): string {
   const processor = unified()
     .use(markdown, {commonmark: true})
-    .use(remark2rehype, {allowDangerousHTML: true})
+    .use(rubyParser)
+    .use(remark2rehype, {
+      allowDangerousHTML: true,
+      handlers: {ruby: rubyHandler},
+    })
     .use(raw)
     .use(doc, {language: 'ja', css: stylesheet})
     .use(stringify);
@@ -57,7 +64,7 @@ interface ViewerProps {
   stylesheet?: string;
 }
 
-export const Viewer: React.FC<ViewerProps> = ({
+export const Previewer: React.FC<ViewerProps> = ({
   body,
   basename = 'index.html',
   stylesheet = '',
@@ -73,7 +80,7 @@ export const Viewer: React.FC<ViewerProps> = ({
     updateCache('index.html', htmlString).then(() => {
       reload();
     });
-  }, [body]);
+  }, [body, basename, stylesheet]);
 
   function reload() {
     const iframe = iframeRef.current;
