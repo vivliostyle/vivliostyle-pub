@@ -4,6 +4,7 @@ import {useRouter} from 'next/router';
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
 import {useEditorSession} from '../../../middlewares/useEditorSession';
+import {useWarnBeforeLeaving} from './useWarnBeforeLeaving';
 
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
@@ -32,6 +33,7 @@ export default () => {
     'init',
   );
   const [themeURL, setThemeURL] = useState<string>('');
+  const setWarnDialog = useWarnBeforeLeaving();
 
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
@@ -66,6 +68,7 @@ export default () => {
 
   const onModified = useCallback(() => {
     setStatus('modified');
+    setWarnDialog(true);
   }, []);
 
   const onUpdate = useCallback(
@@ -88,6 +91,7 @@ export default () => {
 
   const onDidSaved = useCallback(() => {
     setStatus('clean');
+    setWarnDialog(false);
   }, []);
 
   function onBuildPDFButtonClicked() {
