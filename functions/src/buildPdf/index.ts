@@ -13,7 +13,7 @@ const publishMessage = async(topicName:string, data:string) => {
   return messageId;
 }
 
-export const buildStart = functions.https.onCall(async(data, context) => {
-  const id = await publishMessage("test", data.repository)
+export const buildPDF = functions.https.onCall(async(data, context) => {
+  const id = await publishMessage("buildRequest", data.repository)
   return { id };
 })
