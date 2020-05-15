@@ -26,6 +26,15 @@ const themes = [
   },
 ];
 
+interface BuildRecord {
+  url: string | null;
+  repo: {
+    owner: string;
+    repo: string;
+    stylesheet: string;
+  };
+}
+
 function useBuildStatus(
   buildID: string | null,
   onBuildFinished?: (artifactURL: string) => void,
@@ -41,7 +50,9 @@ function useBuildStatus(
       .collection('builds')
       .doc(buildID)
       .onSnapshot(function (doc) {
+        const {url} = doc.data() as BuildRecord;
         console.log('Current data: ', doc.data());
+        if (!url) return;
         toast({
           title: 'Build succeeded',
           description: 'Your PDF has been created.',
@@ -54,14 +65,14 @@ function useBuildStatus(
           isClosable: true,
           render: () => (
             <UI.Box>
-              <UI.Link href={doc.data()!.url} isExternal>
+              <UI.Link href={url} isExternal>
                 View
               </UI.Link>
             </UI.Box>
           ),
         });
         if (onBuildFinished) {
-          onBuildFinished(doc.data()!.url);
+          onBuildFinished(url);
         }
       });
 
@@ -86,7 +97,7 @@ export default () => {
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
     'init',
   );
-  const [themeURL, setThemeURL] = useState<string>('');
+  const [stylesheet, setStylesheet] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
@@ -149,7 +160,7 @@ export default () => {
     setIsProcessing(true);
 
     const buildPDF = firebase.functions().httpsCallable('buildPDF');
-    buildPDF({owner, repo})
+    buildPDF({owner, repo, stylesheet})
       .then((result) => {
         console.log(result);
         const buildID = result.data.buildID;
@@ -174,7 +185,7 @@ export default () => {
   }
 
   function onThemeSelected(themeURL: string) {
-    setThemeURL(themeURL);
+    setStylesheet(themeURL);
   }
 
   return (
@@ -225,7 +236,7 @@ export default () => {
       {!isPending && status !== 'init' ? (
         <UI.Flex>
           <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Previewer body={text} stylesheet={themeURL} />
+          <Previewer body={text} stylesheet={stylesheet} />
         </UI.Flex>
       ) : (
         <UI.Container mt={6}>
