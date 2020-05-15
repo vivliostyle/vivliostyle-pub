@@ -24,5 +24,5 @@ export const buildPDF = functions.https.onCall(async(repoInfo, context) => {
     repo: repoInfo,
     id: ref.id
   });
-  return { buildPDF: ref.id };
+  return { buildID: ref.id };
 })
