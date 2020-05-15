@@ -6,6 +6,7 @@ import raw from 'rehype-raw';
 import doc from 'rehype-document';
 import stringify from 'rehype-stringify';
 import path from 'path';
+import {rubyParser, rubyHandler} from './ruby';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
@@ -31,7 +32,11 @@ function stringifyMarkdown(
 ): string {
   const processor = unified()
     .use(markdown, {commonmark: true})
-    .use(remark2rehype, {allowDangerousHTML: true})
+    .use(rubyParser)
+    .use(remark2rehype, {
+      allowDangerousHTML: true,
+      handlers: {ruby: rubyHandler},
+    })
     .use(raw)
     .use(doc, {language: 'ja', css: stylesheet})
     .use(stringify);
