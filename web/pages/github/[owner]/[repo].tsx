@@ -143,7 +143,10 @@ export default () => {
       {!isPending && status !== 'init' ? (
         <UI.Flex>
           <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Viewer body={text} />
+          <Viewer
+            body={text}
+            stylesheet="https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css"
+          />
         </UI.Flex>
       ) : (
         <UI.Container mt={6}>
