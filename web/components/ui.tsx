@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, FlexProps } from '@chakra-ui/core';
+import {Flex, FlexProps} from '@chakra-ui/core';
 
 export {
   Box,
@@ -10,6 +10,12 @@ export {
   Image,
   Link,
   Text,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuGroup,
+  MenuDivider,
 } from '@chakra-ui/core';
 
 export const Container = (props: FlexProps) => (

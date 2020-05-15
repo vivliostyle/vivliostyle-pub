@@ -11,16 +11,22 @@ import {MarkdownEditor} from '../../../components/MarkdownEditor';
 import {Previewer} from '../../../components/MarkdownPreviewer';
 import {CommitSessionButton} from '../../../components/CommitSessionButton';
 import {
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuGroup,
-  MenuDivider,
-  MenuOptionGroup,
-  MenuItemOption,
   Button,
-} from '@chakra-ui/core';
+  Menu,
+  MenuList,
+  MenuButton,
+  MenuGroup,
+  MenuItem,
+  MenuDivider,
+} from '../../../components/ui';
+
+const themes = [
+  {
+    name: '銀河鉄道の夜',
+    css:
+      'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
+  },
+];
 
 export default () => {
   const {user, isPending} = useAuthorizedUser();
@@ -93,14 +99,6 @@ export default () => {
   function onThemeSelected(themeURL: string) {
     setThemeURL(themeURL);
   }
-
-  const themes = [
-    {
-      name: '銀河鉄道の夜',
-      css:
-        'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
-    },
-  ];
 
   return (
     <UI.Box>
