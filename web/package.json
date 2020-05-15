@@ -20,6 +20,7 @@
     "firebase": "^7.14.3",
     "firebase-admin": "^8.12.1",
     "isomorphic-unfetch": "^3.0.0",
+    "mdast-util-to-hast": "^9.0.1",
     "next": "^9.3.6",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -30,7 +31,8 @@
     "remark-rehype": "^6.0.0",
     "swr": "^0.2.0",
     "typescript": "^3.8.3",
-    "unified": "^9.0.0"
+    "unified": "^9.0.0",
+    "unist-builder": "^2.0.3"
   },
   "devDependencies": {
     "@types/node": "^13.13.5",

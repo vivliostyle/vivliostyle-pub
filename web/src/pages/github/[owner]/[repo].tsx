@@ -1,78 +1,46 @@
 import React, {useEffect, useCallback, useState} from 'react';
 import {useRouter} from 'next/router';
-import fetch from 'isomorphic-unfetch';
 
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
-import {GithubRequestSessionApiResponse} from '../../api/github/requestSession';
+import {useEditorSession} from './useEditorSession';
 
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
 import {MarkdownEditor} from '../../../components/MarkdownEditor';
-import {Viewer} from '../../../components/Renderer/Viewer';
+import {Previewer} from '../../../components/MarkdownPreviewer';
 import {CommitSessionButton} from '../../../components/CommitSessionButton';
+import {
+  Button,
+  Menu,
+  MenuList,
+  MenuButton,
+  MenuGroup,
+  MenuItem,
+  MenuDivider,
+} from '../../../components/ui';
 
-const useEditorSession = ({
-  owner,
-  repo,
-  user,
-}: {
-  owner: string;
-  repo: string;
-  user: firebase.User | null;
-}) => {
-  const [
-    session,
-    setSession,
-  ] = useState<firebase.firestore.DocumentReference | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    (async () => {
-      const idToken = await user.getIdToken();
-      const {id}: GithubRequestSessionApiResponse = await fetch(
-        '/api/github/requestSession',
-        {
-          method: 'POST',
-          body: JSON.stringify({owner, repo}),
-          headers: {
-            'content-type': 'application/json',
-            'x-id-token': idToken,
-          },
-        },
-      ).then((r) => r.json());
-      const session = await firebase
-        .firestore()
-        .collection('users')
-        .doc(user.uid)
-        .collection('sessions')
-        .doc(id);
-      setSession(session);
-      setSessionId(id);
-    })();
-  }, [owner, repo, user]);
-
-  return {session, sessionId};
-};
+const themes = [
+  {
+    name: '銀河鉄道の夜',
+    css:
+      'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
+  },
+  {
+    name: 'Gutenberg',
+    css:
+      'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
+  },
+];
 
 export default () => {
   const {user, isPending} = useAuthorizedUser();
   const router = useRouter();
-
-  // check login
-  useEffect(() => {
-    if (!user && !isPending) {
-      router.replace('/');
-    }
-  }, [user, isPending]);
-
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
     'init',
   );
+  const [themeURL, setThemeURL] = useState<string>('');
 
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
@@ -83,6 +51,14 @@ export default () => {
     repo: repoStr!,
   });
 
+  // check login
+  useEffect(() => {
+    if (!user && !isPending) {
+      router.replace('/');
+    }
+  }, [user, isPending]);
+
+  // set text
   useEffect(() => {
     if (!session) {
       return;
@@ -123,6 +99,14 @@ export default () => {
     setStatus('clean');
   }, []);
 
+  function onBuildPDFButtonClicked() {
+    // TODO: Build PDF
+  }
+
+  function onThemeSelected(themeURL: string) {
+    setThemeURL(themeURL);
+  }
+
   return (
     <UI.Box>
       <Header />
@@ -132,7 +116,7 @@ export default () => {
         borderBottomWidth={1}
         borderBottomColor="gray.300"
       >
-        <UI.Flex w="100%" px={8} justify="flex-start" align="center">
+        <UI.Flex w="100%" px={8} justify="space-between" align="center">
           {status === 'saved' && <UI.Text>Document updated</UI.Text>}
           {user && sessionId && (
             <CommitSessionButton
@@ -140,15 +124,33 @@ export default () => {
               disabled={status !== 'saved'}
             />
           )}
+          <Menu>
+            <MenuButton as={Button} rightIcon="chevron-down">
+              Actions
+            </MenuButton>
+            <MenuList>
+              <MenuGroup title="Theme">
+                {themes.map((theme) => (
+                  <MenuItem
+                    key={theme.name}
+                    onClick={() => onThemeSelected(theme.css)}
+                  >
+                    {theme.name}
+                  </MenuItem>
+                ))}
+              </MenuGroup>
+              <MenuDivider />
+              <MenuGroup title="Export">
+                <MenuItem onClick={onBuildPDFButtonClicked}>PDF</MenuItem>
+              </MenuGroup>
+            </MenuList>
+          </Menu>
         </UI.Flex>
       </UI.Flex>
       {!isPending && status !== 'init' ? (
         <UI.Flex>
           <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Viewer
-            body={text}
-            stylesheet="https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css"
-          />
+          <Previewer body={text} stylesheet={themeURL} />
         </UI.Flex>
       ) : (
         <UI.Container mt={6}>
