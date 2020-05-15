@@ -26,6 +26,11 @@ const themes = [
     css:
       'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
   },
+  {
+    name: 'Gutenberg',
+    css:
+      'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
+  },
 ];
 
 export default () => {
