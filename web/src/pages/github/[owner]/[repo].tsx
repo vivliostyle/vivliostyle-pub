@@ -24,6 +24,11 @@ const themes = [
     css:
       'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
   },
+  {
+    name: 'Viola',
+    css:
+      'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
+  },
 ];
 
 interface BuildRecord {
@@ -55,20 +60,20 @@ function useBuildStatus(
         if (!url) return;
 
         unscribe();
+        // toast({
+        //   title: 'Build succeeded',
+        //   description: 'Your PDF has been created.',
+        //   status: 'success',
+        //   duration: 9000,
+        //   isClosable: true,
+        // });
         toast({
-          title: 'Build succeeded',
-          description: 'Your PDF has been created.',
-          status: 'success',
           duration: 9000,
           isClosable: true,
-        });
-        toast({
-          duration: 9000,
-          isClosable: true,
-          render: () => (
-            <UI.Box>
-              <UI.Link href={url} isExternal>
-                View
+          render: ({onClose}) => (
+            <UI.Box bg="tomato" p={5} color="white">
+              <UI.Link href={url} isExternal onClick={onClose}>
+                View PDF
               </UI.Link>
             </UI.Box>
           ),
