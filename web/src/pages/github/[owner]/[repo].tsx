@@ -53,6 +53,8 @@ function useBuildStatus(
         const {url} = doc.data() as BuildRecord;
         console.log('Current data: ', doc.data());
         if (!url) return;
+
+        unscribe();
         toast({
           title: 'Build succeeded',
           description: 'Your PDF has been created.',
