@@ -5,7 +5,7 @@ import {useToast} from '@chakra-ui/core';
 import firebase from '../../../services/firebase';
 import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
 import {useEditorSession} from '../../../middlewares/useEditorSession';
-import {useWarnBeforeLeaving} from './useWarnBeforeLeaving';
+import {useWarnBeforeLeaving} from '../../../middlewares/useWarnBeforeLeaving';
 
 import * as UI from '../../../components/ui';
 import {Header} from '../../../components/Header';
