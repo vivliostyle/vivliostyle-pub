@@ -4,6 +4,7 @@ const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const uploadFile = require('./cloud-storage');
 const gitClone = require('./git-clone');
+const makeHtmlIfNot = require('./makeHtmlIfNot');
 
 const admin = require('firebase-admin');
 
@@ -33,7 +34,7 @@ app.use(allowCrossDomain)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-async function compileFromGit(owner, repo) {
+async function compileFromGit(owner, repo, stylesheet='') {
   try {
     console.log(`>> git clone https://github.com/${owner}/${repo}`)
     // Clone a given repository into the `./tmp` folder.
@@ -42,6 +43,8 @@ async function compileFromGit(owner, repo) {
     await gitClone(owner, repo, repoDir);
 
     process.chdir(repoDir);
+
+    makeHtmlIfNot({stylesheet});
 
     console.log('>> Start compile');
 
@@ -68,9 +71,9 @@ async function compileFromGit(owner, repo) {
 app.post('/', async (req, res) => {
   try {
     const pubSubMessage = req.body.message;
-    const data = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString())
-    const { owner, repo } = data.repo;
-    const outputFile = await compileFromGit(owner, repo)
+    const data = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString());
+    const { owner, repo, stylesheet } = data.repo;
+    const outputFile = await compileFromGit(owner, repo, stylesheet)
     const url = await uploadFile(repo, outputFile);
     if(data.id) await firestore.collection('builds').doc(data.id).update({url});
     console.log('>> Complete build: ' + url);

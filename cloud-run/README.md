@@ -19,7 +19,7 @@ and
 
     $ gcloud beta emulators pubsub start
     $ node scripts/createTopic.js test
-    $ node scripts/publishMessage.js test "{'owner': takanakahiko', 'repo': 'viola-project'}"
+    $ node scripts/publishMessage.js test '{"owner": "takanakahiko", "repo": "viola-project", "stylesheet": "https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css"}'
 
 ## Upload image to the Container Registry
 

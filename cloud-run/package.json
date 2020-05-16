@@ -15,8 +15,16 @@
     "@octokit/request": "^5.4.2",
     "express": "^4.16.4",
     "firebase-admin": "^8.12.1",
+    "mdast-util-to-hast": "^9.0.1",
     "node-uuid": "^1.4.8",
-    "nodegit": "^0.26.5"
+    "nodegit": "^0.26.5",
+    "rehype-document": "^5.0.0",
+    "rehype-raw": "^4.0.2",
+    "rehype-stringify": "^7.0.0",
+    "remark-parse": "^8.0.2",
+    "remark-rehype": "^6.0.0",
+    "unified": "^9.0.0",
+    "unist-builder": "^2.0.3"
   },
   "devDependencies": {
     "@google-cloud/pubsub": "^1.7.2"
