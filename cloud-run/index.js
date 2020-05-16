@@ -72,7 +72,7 @@ app.post('/', async (req, res) => {
   try {
     const pubSubMessage = req.body.message;
     const data = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString());
-    const { owner, repo, stylesheet } = data;
+    const { owner, repo, stylesheet } = data.repo;
     const outputFile = await compileFromGit(owner, repo, stylesheet)
     const url = await uploadFile(repo, outputFile);
     if(data.id) await firestore.collection('builds').doc(data.id).update({url});
