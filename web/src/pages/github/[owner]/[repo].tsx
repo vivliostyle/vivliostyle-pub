@@ -15,12 +15,12 @@ import {CommitSessionButton} from '../../../components/CommitSessionButton';
 
 const themes = [
   {
-    name: '銀河鉄道の夜',
+    name: '縦書き小説',
     css:
       'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
   },
   {
-    name: 'Gutenberg',
+    name: '横書き欧文',
     css:
       'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
   },
