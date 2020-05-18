@@ -1,15 +1,29 @@
 import all from 'mdast-util-to-hast/lib/all';
 import u from 'unist-builder';
+import {Parent, Point} from 'unist';
+import {Processor} from 'unified';
+import {Tokenizer, Eat} from 'remark-parse';
+import {H} from 'mdast-util-to-hast';
 
 // remark
-function locateMention(value, fromIndex) {
+function locateMention(value: string, fromIndex: number) {
   return value.indexOf('{', fromIndex);
 }
 
 tokenizeRuby.notInLink = true;
 tokenizeRuby.locator = locateMention;
 
-function tokenizeRuby(eat, value, silent) {
+interface TokenizerFunction extends Tokenizer {
+  tokenizeBlock: (value: string) => Node | void;
+  tokenizeInline: (value: string, location: Point) => Node | void;
+}
+
+function tokenizeRuby(
+  this: TokenizerFunction,
+  eat: Eat & {now: () => Point},
+  value: string,
+  silent: boolean,
+) {
   const match = /^{(.+?)\|(.+?)}/.exec(value);
 
   if (match) {
@@ -19,7 +33,7 @@ function tokenizeRuby(eat, value, silent) {
 
     const now = eat.now();
     now.column += 1;
-    now.offset += 1;
+    now.offset! += 1;
 
     return eat(match[0])({
       type: 'ruby',
@@ -30,7 +44,7 @@ function tokenizeRuby(eat, value, silent) {
   }
 }
 
-export function rubyParser() {
+export function rubyParser(this: Processor) {
   if (!this.Parser) {
     return;
   }
@@ -40,16 +54,17 @@ export function rubyParser() {
 }
 
 // rehype
-export function rubyHandler(h, node) {
+export function rubyHandler(h: H, node: Parent & {rubyText: string}) {
   const rtStart =
     node.children.length > 0
-      ? node.children[node.children.length - 1].position.end
-      : node.position.start;
+      ? node.children[node.children.length - 1].position!.end
+      : node.position!.start;
 
   const rtNode = h(
     {
+      type: 'element',
       start: rtStart,
-      end: node.position.end,
+      end: node.position!.end,
     },
     'rt',
     [u('text', node.rubyText)],
