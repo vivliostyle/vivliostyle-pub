@@ -1,14 +1,12 @@
 {
-  "name": "vivliostyle-pub",
-  "version": "1.0.0",
+  "name": "@vivliostyle-pub/cloud-run",
   "description": "Vivliostyle pub compile service",
-  "main": "index.js",
+  "version": "1.0.0",
+  "author": "Vivliostyle Pub Team",
   "scripts": {
     "start": "node index.js",
     "storage": "node cloud-storage.js"
   },
-  "author": "",
-  "license": "Apache-2.0",
   "dependencies": {
     "@google-cloud/storage": "^4.7.0",
     "@octokit/app": "^4.2.0",
@@ -28,5 +26,8 @@
   },
   "devDependencies": {
     "@google-cloud/pubsub": "^1.7.2"
-  }
+  },
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "private": true
 }
