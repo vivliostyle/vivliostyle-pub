@@ -26,3 +26,5 @@ declare module 'rehype-stringify' {
   const plugin: Plugin;
   export default plugin;
 }
+
+declare module 'mdast-util-to-hast/lib/all';

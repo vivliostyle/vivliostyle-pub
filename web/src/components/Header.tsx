@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import Link from 'next/link';
-import {useAuthorizedUser} from '../middlewares/useAuthorizedUser';
-import firebase from '../services/firebase';
+import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
+import firebase from '@services/firebase';
 import * as UI from './ui';
 
 const signIn = async () => {

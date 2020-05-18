@@ -2,16 +2,16 @@ import React, {useEffect, useCallback, useState, useRef} from 'react';
 import {useRouter} from 'next/router';
 import {useToast} from '@chakra-ui/core';
 
-import firebase from '../../../services/firebase';
-import {useAuthorizedUser} from '../../../middlewares/useAuthorizedUser';
-import {useEditorSession} from '../../../middlewares/useEditorSession';
-import {useWarnBeforeLeaving} from '../../../middlewares/useWarnBeforeLeaving';
+import firebase from '@services/firebase';
+import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
+import {useEditorSession} from '@middlewares/useEditorSession';
+import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 
-import * as UI from '../../../components/ui';
-import {Header} from '../../../components/Header';
-import {MarkdownEditor} from '../../../components/MarkdownEditor';
-import {Previewer} from '../../../components/MarkdownPreviewer';
-import {CommitSessionButton} from '../../../components/CommitSessionButton';
+import * as UI from '@components/ui';
+import {Header} from '@components/Header';
+import {MarkdownEditor} from '@components/MarkdownEditor';
+import {Previewer} from '@components/MarkdownPreviewer';
+import {CommitSessionButton} from '@components/CommitSessionButton';
 
 const themes = [
   {

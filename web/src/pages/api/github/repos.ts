@@ -1,14 +1,15 @@
-import { NextApiHandler } from 'next';
-import { Endpoints } from '@octokit/types';
-import { Octokit } from '@octokit/rest';
-import firebaseAdmin from '../../../services/firebaseAdmin';
-import { decrypt } from '../../../utils/encryption';
+import {NextApiHandler} from 'next';
+import {Endpoints} from '@octokit/types';
+import {Octokit} from '@octokit/rest';
+
+import firebaseAdmin from '@services/firebaseAdmin';
+import {decrypt} from '@utils/encryption';
 
 export type GithubReposApiResponse = Endpoints['GET /user/installations/:installation_id/repositories']['response']['data']['repositories'];
 
 const repos: NextApiHandler<GithubReposApiResponse | null> = async (
   req,
-  res
+  res,
 ) => {
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
@@ -32,14 +33,14 @@ const repos: NextApiHandler<GithubReposApiResponse | null> = async (
   });
   const installations = await octokit.apps.listInstallationsForAuthenticatedUser();
   const ret = await Promise.all(
-    installations.data.installations.map(async ({ id }) => {
+    installations.data.installations.map(async ({id}) => {
       const repos = await octokit.apps.listInstallationReposForAuthenticatedUser(
         {
           installation_id: id,
-        }
+        },
       );
       return repos.data.repositories;
-    })
+    }),
   );
   res.send(ret.reduce((acc, v) => [...acc, ...v], []));
 };

@@ -1,8 +1,9 @@
 import {NextApiHandler} from 'next';
 import fetch from 'isomorphic-unfetch';
 import {Octokit} from '@octokit/rest';
-import firebaseAdmin from '../../../services/firebaseAdmin';
-import {encrypt} from '../../../utils/encryption';
+
+import firebaseAdmin from '@services/firebaseAdmin';
+import {encrypt} from '@utils/encryption';
 
 const installation: NextApiHandler = async (req, res) => {
   const installationId = +req.query['installation_id'];
