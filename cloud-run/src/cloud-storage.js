@@ -1,6 +1,6 @@
 // Imports the Google Cloud client library
 const {Storage} = require('@google-cloud/storage');
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 
 const storage = new Storage();
 

@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "author": "Vivliostyle Pub Team",
   "scripts": {
-    "start": "node index.js",
-    "storage": "node cloud-storage.js"
+    "start": "node .",
+    "storage": "node src/cloud-storage.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^4.7.0",
@@ -14,7 +14,6 @@
     "express": "^4.16.4",
     "firebase-admin": "^8.12.1",
     "mdast-util-to-hast": "^9.0.1",
-    "node-uuid": "^1.4.8",
     "nodegit": "^0.26.5",
     "rehype-document": "^5.0.0",
     "rehype-raw": "^4.0.2",
@@ -22,12 +21,13 @@
     "remark-parse": "^8.0.2",
     "remark-rehype": "^6.0.0",
     "unified": "^9.0.0",
-    "unist-builder": "^2.0.3"
+    "unist-builder": "^2.0.3",
+    "uuid": "^8.0.0"
   },
   "devDependencies": {
     "@google-cloud/pubsub": "^1.7.2"
   },
-  "main": "index.js",
+  "main": "src/index.js",
   "license": "Apache-2.0",
   "private": true
 }
