@@ -8,7 +8,5 @@ for line in $(cat ../.env | peco)
 do
   local ev=("${(@s/=/)line}")
   local key=$ev[1]
-  local value=$ev[2]
-  echo "Populating ${key}"
-  echo -n $value | now env add ${key} ${NOW_ENV}
+  now env rm -y ${key} ${NOW_ENV}
 done
