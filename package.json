@@ -13,8 +13,6 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "frontend",
-    "server",
     "web"
   ]
 }
