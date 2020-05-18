@@ -1,6 +1,11 @@
 .vscode
 .envrc
 .env
+*.pem
+service-account*.json
+.runtimeconfig.json
+/functions/emulator_data
+
 
 # Created by https://www.gitignore.io/api/node
 # Edit at https://www.gitignore.io/?templates=node
@@ -112,8 +117,3 @@ tmp/
 temp/
 
 # End of https://www.gitignore.io/api/node
-
-*.pem
-service-account*.json
-.runtimeconfig.json
-/functions/emulator_data

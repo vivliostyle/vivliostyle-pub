@@ -32,17 +32,17 @@ const repos: NextApiHandler<GithubReposApiResponse | null> = async (
     auth: `token ${decrypted}`,
   });
   const installations = await octokit.apps.listInstallationsForAuthenticatedUser();
-  const ret = await Promise.all(
+  const repos = await Promise.all(
     installations.data.installations.map(async ({id}) => {
       const repos = await octokit.apps.listInstallationReposForAuthenticatedUser(
         {
           installation_id: id,
         },
       );
-      return repos.data.repositories;
+      return (repos.data.repositories as unknown) as GithubReposApiResponse;
     }),
   );
-  res.send(ret.reduce((acc, v) => [...acc, ...v], []));
+  res.send(repos.reduce((acc, v) => [...acc, ...v], []));
 };
 
 export default repos;
