@@ -9,6 +9,12 @@ import stringify from 'rehype-stringify';
 
 import {rubyParser, rubyHandler} from './ruby';
 
+interface PreviewerProps {
+  body: string;
+  basename?: string;
+  stylesheet?: string;
+}
+
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
 
@@ -46,25 +52,18 @@ function stringifyMarkdown(
   return generated;
 }
 
-function updateCache(cachePath: string, content: any) {
+async function updateCache(cachePath: string, content: any) {
   const filePath = path.join(VPUBFS_ROOT, cachePath);
-  return caches.open(VPUBFS_CACHE_NAME).then((cache) =>
-    cache.put(
-      filePath,
-      new Response(content, {
-        headers: {'content-type': 'text/html'},
-      }),
-    ),
+  const cache = await caches.open(VPUBFS_CACHE_NAME);
+  return await cache.put(
+    filePath,
+    new Response(content, {
+      headers: {'content-type': 'text/html'},
+    }),
   );
 }
 
-interface ViewerProps {
-  body: string;
-  basename?: string;
-  stylesheet?: string;
-}
-
-export const Previewer: React.FC<ViewerProps> = ({
+export const Previewer: React.FC<PreviewerProps> = ({
   body,
   basename = 'index.html',
   stylesheet = '',
