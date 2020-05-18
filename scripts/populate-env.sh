@@ -4,7 +4,7 @@ NOW_ENV=${1:-production}
 
 echo "Env: ${NOW_ENV}"
 
-for line in $(cat ../.env | peco)
+for line in $(cat .env | peco)
 do
   local ev=("${(@s/=/)line}")
   local key=$ev[1]

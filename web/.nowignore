@@ -1,6 +1,4 @@
-.vercel
 .env
 .envrc
 .next
 *.log
-node_modules

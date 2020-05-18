@@ -1,16 +1,27 @@
 # Vivliostyle Pub
 
-## Components
+## Deploy staging app
 
-### Editor `/editor`
-
+```shell
+now
 ```
+
+## Editor `/web`
+
+```shell
+cd web
 yarn install
 yarn dev
 ```
 
-## Dev
+## Pupulate .env
 
-### Pupulate .env
+### Dev
 
 Pupulating .env variables can be done easily by using [direnv](https://direnv.net/).
+
+### Production
+
+```
+scripts/populate-env.sh production
+```

@@ -1,6 +1,7 @@
 .vscode
 .envrc
 .env
+.vercel
 *.pem
 service-account*.json
 .runtimeconfig.json
