@@ -5,13 +5,13 @@
 and
 
 - Download credentials for GCP and set credentials path to `$GOOGLE_APPLICATION_CREDENTIALS`
-- Set credentials for GitHub Apps to `$GITHUB_APPS_PRIVATEKEY` and `$APP_ID`
+- Set credentials for GitHub Apps to `$GH_APP_PRIVATEKEY` and `$GH_APP_ID`
 
 ## Operation check locally
 
 ### Up Server
 
-    $ docker build --build-arg GITHUB_APPS_PRIVATEKEY=$GITHUB_APPS_PRIVATEKEY --build-arg APP_ID=$APP_ID -t pub .
+    $ docker build --build-arg GH_APP_PRIVATEKEY=$GH_APP_PRIVATEKEY --build-arg GH_APP_ID=$GH_APP_ID -t pub .
     $ docker run -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/gcp_cred.json -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred.json -p 8080:8080 pub
     $ curl -m 900 http://localhost:8080/pdf/takanakahiko/viola-project
 
@@ -30,7 +30,6 @@ c.f. https://cloud.google.com/run/docs/quickstarts/build-and-deploy#containerizi
 ## Deploy
 
     $ gcloud run deploy --timeout 900 --memory 1Gi --image gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf
-
 
 ## Build pdf
 

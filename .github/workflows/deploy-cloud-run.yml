@@ -1,6 +1,6 @@
 name: Delivery Containers
 
-on: 
+on:
   push:
     branches:
       - master
@@ -11,7 +11,6 @@ env:
 
 jobs:
   delivery:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -30,21 +29,21 @@ jobs:
 
       - name: Build a docker image
         run: |
-            docker build cloud-run \
-              -t $IMAGE \
-              --build-arg GH_APPS_PRIVATEKEY="${{ secrets.GH_APPS_PRIVATEKEY }}" \
-              --build-arg GH_APPS_ID="${{ secrets.GH_APPS_ID }}"
+          docker build cloud-run \
+            -t $IMAGE \
+            --build-arg GH_APP_PRIVATEKEY="${{ secrets.GH_APP_PRIVATEKEY }}" \
+            --build-arg GH_APP_ID="${{ secrets.GH_APP_ID }}"
 
       - name: Push the docker image
         run: docker push $IMAGE
 
       - name: Deploy to Cloud Run
         run: |
-            gcloud run deploy vivliostyle-pub-build-pdf \
-              --image $IMAGE \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
-              --region $GCP_REGION \
-              --platform managed \
-              --timeout 900 \
-              --memory 1Gi \
-              --quiet
+          gcloud run deploy vivliostyle-pub-build-pdf \
+            --image $IMAGE \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region $GCP_REGION \
+            --platform managed \
+            --timeout 900 \
+            --memory 1Gi \
+            --quiet
