@@ -1,9 +1,10 @@
 {
   "name": "@vivliostyle-pub/cloud-run",
   "description": "Vivliostyle pub compile service",
-  "version": "1.0.0",
+
   "author": "Vivliostyle Pub Team",
   "scripts": {
+    "build": "tsc src/index.ts --outDir dist",
     "start": "node .",
     "storage": "node src/cloud-storage.js"
   },
@@ -20,12 +21,16 @@
     "rehype-stringify": "^7.0.0",
     "remark-parse": "^8.0.2",
     "remark-rehype": "^6.0.0",
+    "typescript": "^3.9.3",
     "unified": "^9.0.0",
     "unist-builder": "^2.0.3",
     "uuid": "^8.0.0"
   },
   "devDependencies": {
-    "@google-cloud/pubsub": "^1.7.2"
+    "@google-cloud/pubsub": "^1.7.2",
+    "@types/express": "^4.17.6",
+    "@types/node": "^14.0.5",
+    "@types/nodegit": "^0.26.3"
   },
   "main": "src/index.js",
   "license": "Apache-2.0",
