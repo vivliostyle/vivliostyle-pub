@@ -1,4 +1,4 @@
-const Git = require('nodegit');
+import * as Git from 'nodegit';
 
 const { App } = require("@octokit/app");
 const { request } = require("@octokit/request");

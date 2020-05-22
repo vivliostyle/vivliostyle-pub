@@ -1,12 +1,13 @@
-const express = require('express');
-const fs = require('fs');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
-const uploadFile = require('./cloud-storage');
-const gitClone = require('./git-clone');
-const makeHtmlIfNot = require('./makeHtmlIfNot');
+import * as express from 'express';
+import * as fs from 'fs';
+import * as util from 'util';
+import * as child_process from 'child_process';
+import * as uploadFile from './cloud-storage';
+import * as gitClone from './git-clone';
+import * as makeHtmlIfNot from './makeHtmlIfNot';
+import * as admin from 'firebase-admin';
 
-const admin = require('firebase-admin');
+const exec = util.promisify(child_process.exec);
 
 if (!admin.apps.length) {
   admin.initializeApp();

@@ -1,5 +1,6 @@
-const all = require('mdast-util-to-hast/lib/all');
-const u = require('unist-builder');
+// copy from https://github.com/vivliostyle/vivliostyle-pub/blob/master/web/src/components/MarkdownPreviewer/ruby.js
+import * as all from 'mdast-util-to-hast/lib/all';
+import * as u from 'unist-builder';
 
 // remark
 function locateMention(value, fromIndex) {
@@ -30,7 +31,7 @@ function tokenizeRuby(eat, value, silent) {
   }
 }
 
-function rubyParser() {
+export function rubyParser() {
   if (!this.Parser) {
     return;
   }
@@ -40,7 +41,7 @@ function rubyParser() {
 }
 
 // rehype
-function rubyHandler(h, node) {
+export function rubyHandler(h, node) {
   const rtStart =
     node.children.length > 0
       ? node.children[node.children.length - 1].position.end
@@ -57,5 +58,3 @@ function rubyHandler(h, node) {
 
   return h(node, 'ruby', [...all(h, node), rtNode]);
 }
-
-module.exports = {rubyParser, rubyHandler};
