@@ -1,6 +1,6 @@
 // Imports the Google Cloud client library
 import { Storage } from '@google-cloud/storage';
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
 
 const storage = new Storage();
 

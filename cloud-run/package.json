@@ -24,13 +24,13 @@
     "typescript": "^3.9.3",
     "unified": "^9.0.0",
     "unist-builder": "^2.0.3",
-    "uuid": "^8.0.0"
+    "uuid": "^8.1.0"
   },
   "devDependencies": {
     "@google-cloud/pubsub": "^1.7.2",
     "@types/express": "^4.17.6",
     "@types/node": "^14.0.5",
-    "@types/nodegit": "^0.26.3"
+    "@types/nodegit": "^0.26.3",
   },
   "main": "src/index.js",
   "license": "Apache-2.0",
