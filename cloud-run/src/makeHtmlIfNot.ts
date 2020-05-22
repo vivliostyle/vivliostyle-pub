@@ -1,28 +1,30 @@
 import * as unified from 'unified';
 import * as markdown from 'remark-parse';
-import * as remark2rehype from 'remark-rehype';
-import * as raw from 'rehype-raw';
-import * as doc from 'rehype-document';
-import * as stringify from 'rehype-stringify';
+import * as fs from 'fs';
+
+const remark2rehype = require('remark-rehype');
+const raw  = require('rehype-raw');
+const doc = require('rehype-document');
+const stringify = require('rehype-stringify');
 
 import {rubyParser, rubyHandler} from './ruby';
 
-function makeHtmlIfNot(
+export function makeHtmlIfNot(
   {stylesheet = ''}
 ){
-  import * as fs from 'fs';
   try {
     fs.accessSync('index.html');
   } catch (error) {
     console.log('>> index.html was not found, so create index.html from index.md');
-    const markdownString = fs.readFileSync("index.md");
+    const markdownString = fs.readFileSync("index.md").toString();
     const htmlString = stringifyMarkdown( markdownString, { stylesheet })
     fs.writeFileSync("index.html", htmlString);
   }
 }
 
+// copied from https://github.com/vivliostyle/vivliostyle-pub/blob/master/web/src/components/MarkdownPreviewer/index.tsx
 function stringifyMarkdown(
-  markdownString, {stylesheet = ''}
+  markdownString:string, {stylesheet = ''}
 ) {
   const processor = unified()
     .use(markdown, {commonmark: true})
@@ -37,5 +39,3 @@ function stringifyMarkdown(
   const generated = String(processor.processSync(markdownString));
   return generated;
 }
-
-module.exports = makeHtmlIfNot

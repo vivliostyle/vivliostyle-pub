@@ -4,7 +4,7 @@ const { App } = require("@octokit/app");
 const { request } = require("@octokit/request");
 const app = new App({ id: process.env.GH_APPS_ID, privateKey: process.env.GH_APPS_PRIVATEKEY });
 
-async function gitClone(owner, repo, repoDir) {
+export async function gitClone(owner:string, repo:string, repoDir:string) {
   
   const jwt = app.getSignedJsonWebToken();
   const { data } = await request("GET /repos/:owner/:repo/installation", {
@@ -21,8 +21,6 @@ async function gitClone(owner, repo, repoDir) {
       installationId,
   });  
 
-  await Git.Clone(`https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git`, repoDir);
+  await Git.Clone.clone(`https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git`, repoDir);
 
 }
-
-module.exports = gitClone

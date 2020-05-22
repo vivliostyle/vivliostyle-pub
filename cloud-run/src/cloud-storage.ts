@@ -1,22 +1,19 @@
 // Imports the Google Cloud client library
-const {Storage} = require('@google-cloud/storage');
-const uuid = require('uuid');
+import { Storage } from '@google-cloud/storage';
+import * as uuid from 'node-uuid';
 
 const storage = new Storage();
 
 const bucketName = 'vivliostyle-pub-build-pdf';
 
-async function uploadFile(name, path) {
-  const filename = `${name}-${uuid.v4()}.pdf`;
-  const res = await storage.bucket(bucketName).upload(path, {
-    gzip: true,
+export async function uploadFile(name:string, path:string) {
+  const filename = `${name}-${uuid.v4()}.pdf`
+  await storage.bucket(bucketName).upload(path, {
+  gzip: true,
     metadata: {
       cacheControl: 'public, max-age=31536000',
     },
-    destination: filename,
+    destination: filename
   });
-
-  return `https://storage.cloud.google.com/${bucketName}/${filename}?hl=ja`;
+  return `https://storage.cloud.google.com/${bucketName}/${filename}?hl=ja`
 }
-
-module.exports = uploadFile;
