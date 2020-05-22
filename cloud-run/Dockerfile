@@ -33,7 +33,7 @@ WORKDIR /usr/src/app
 COPY package.json package*.json ./
 
 # Install production dependencies.
-RUN yarn install --prod
+RUN npm install
 
 # Copy local code to the container image.
 COPY . .
@@ -42,8 +42,8 @@ COPY . .
 ARG GH_APP_ID
 ARG GH_APP_PRIVATEKEY
 
-ENV GH_APP_ID=$GH_APP_ID
-ENV GH_APP_PRIVATEKEY=$GH_APP_PRIVATEKEY
+# Install production dependencies.
+RUN npm run build
 
 # Run the web service on container startup.
 CMD [ "yarn", "start" ]
