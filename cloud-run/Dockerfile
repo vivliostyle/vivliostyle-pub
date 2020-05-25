@@ -46,4 +46,4 @@ ARG GH_APP_PRIVATEKEY
 RUN npm run build
 
 # Run the web service on container startup.
-CMD [ "yarn", "start" ]
+CMD [ "npm", "start" ]
