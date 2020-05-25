@@ -3,8 +3,8 @@ import * as Git from 'nodegit';
 const {App} = require('@octokit/app');
 const {request} = require('@octokit/request');
 const app = new App({
-  id: process.env.GH_APPS_ID,
-  privateKey: process.env.GH_APPS_PRIVATEKEY,
+  id: process.env.GH_APP_ID,
+  privateKey: process.env.GH_APP_PRIVATEKEY,
 });
 
 export async function gitClone(owner: string, repo: string, repoDir: string) {
