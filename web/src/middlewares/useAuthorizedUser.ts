@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import firebase from '../services/firebase';
+import {useState, useEffect} from 'react';
+
+import firebase from '@services/firebase';
 
 export const useAuthorizedUser = () => {
   const [isPending, setPending] = useState(true);
@@ -12,5 +13,5 @@ export const useAuthorizedUser = () => {
     });
   }, []);
 
-  return { user, isPending };
+  return {user, isPending};
 };

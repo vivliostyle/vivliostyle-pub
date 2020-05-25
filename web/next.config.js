@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({path: '../.env'});
 
 const checkPublicEnv = (envName) => {
   return [
@@ -9,7 +9,7 @@ const checkPublicEnv = (envName) => {
     'FIREBASE_STORAGE_BUCKET',
     'FIREBASE_MESSAGING_SENDER_ID',
     'FIREBASE_APP_ID',
-    'GITHUB_APP_INSTALLATION_URL',
+    'GH_APP_INSTALLATION_URL',
   ].includes(envName);
 };
 const env = Object.keys(process.env).reduce((acc, key) => {

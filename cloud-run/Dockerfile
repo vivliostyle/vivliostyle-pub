@@ -18,35 +18,32 @@ RUN  \
   && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
   && apt update \
   && apt install -y google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-    --no-install-recommends \
+  --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# RUN git clone https://github.com/vivliostyle/vivliostyle-cli.git /opt/vivliostyle-cli/
-COPY ./vivliostyle-cli /opt/vivliostyle-cli
-
-RUN set -x \
-  && cd /opt/vivliostyle-cli \
-  && yarn install \
-  && yarn build && yarn link
+# Install Vivliostyle CLI
+RUN yarn global add @vivliostyle/cli
 
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 
 # Copy application dependency manifests to the container image.
-# A wildcard is used to ensure both package.json AND package-lock.json are copied.
-# Copying this separately prevents re-running npm install on every code change.
+#   A wildcard is used to ensure both package.json AND package-lock.json are copied.
+#   Copying this separately prevents re-running npm install on every code change.
 COPY package.json package*.json ./
 
 # Install production dependencies.
-RUN npm install --only=production
+RUN yarn install --prod
 
 # Copy local code to the container image.
 COPY . .
 
-ARG GH_APPS_ID
-ENV GH_APPS_ID=$GH_APPS_ID
-ARG GH_APPS_PRIVATEKEY
-ENV GH_APPS_PRIVATEKEY=$GH_APPS_PRIVATEKEY
+# Setup credentials
+ARG GH_APP_ID
+ARG GH_APP_PRIVATEKEY
+
+ENV GH_APP_ID=$GH_APP_ID
+ENV GH_APP_PRIVATEKEY=$GH_APP_PRIVATEKEY
 
 # Run the web service on container startup.
-CMD [ "npm", "start" ]
+CMD [ "yarn", "start" ]

@@ -1,5 +1,7 @@
 import crypto from 'crypto';
 
+import {firebasePrivateKey, githubAppsPrivateKey} from '../../keys.enc';
+
 const key = crypto.scryptSync(process.env.APP_SECRET, 'salt', 32);
 
 export const encrypt = (data: string): string => {
@@ -18,3 +20,19 @@ export const decrypt = (data: string): string => {
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString('utf8');
 };
+
+export function getDecryptedSecret(encryptedKey: string) {
+  const decipher = crypto.createDecipheriv(
+    'aes-256-cbc',
+    process.env.ENCRYPTION_SECRET,
+    process.env.ENCRYPTION_IV,
+  );
+  let decrypted = decipher.update(encryptedKey, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+export const getFirebasePrivateKey = () =>
+  getDecryptedSecret(firebasePrivateKey);
+export const getGithubAppsPrivateKey = () =>
+  getDecryptedSecret(githubAppsPrivateKey);

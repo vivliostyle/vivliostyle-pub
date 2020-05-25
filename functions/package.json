@@ -2,22 +2,18 @@
   "name": "functions",
   "scripts": {
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "emulator:export": "firebase emulators:export --force ./emulator_data",
     "emulator:runtimeconfig": "firebase functions:config:get > .runtimeconfig.json",
     "emulator:start": "firebase emulators:start",
     "emulator:start:import": "firebase emulators:start --import ./emulator_data",
-    "emulator:export": "firebase emulators:export --force ./emulator_data",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "preemulator:start": "npm run build && yarn emulator:runtimeconfig",
-    "preemulator:start:import": "npm run build && yarn emulator:runtimeconfig"
+    "preemulator:start:import": "npm run build && yarn emulator:runtimeconfig",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell"
   },
-  "engines": {
-    "node": "8"
-  },
-  "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/pubsub": "^1.7.3",
     "@octokit/webhooks": "^7.2.0",
@@ -27,6 +23,10 @@
   "devDependencies": {
     "firebase-functions-test": "^0.2.1",
     "typescript": "^3.8.3"
+  },
+  "main": "lib/index.js",
+  "engines": {
+    "node": "8"
   },
   "private": true
 }

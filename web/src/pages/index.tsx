@@ -1,9 +1,11 @@
 import React from 'react';
-import {GithubReposList} from '../components/GithubReposList';
-import {Header} from '../components/Header';
-import {InstallGithubAppsButton} from '../components/InstallGithubAppsButton';
-import * as UI from '../components/ui';
-import {useAuthorizedUser} from '../middlewares/useAuthorizedUser';
+
+import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
+
+import * as UI from '@components/ui';
+import {Header} from '@components/Header';
+import {GithubReposList} from '@components/GithubReposList';
+import {InstallGithubAppsButton} from '@components/InstallGithubAppsButton';
 
 export default () => {
   const {user, isPending} = useAuthorizedUser();

@@ -1,7 +1,7 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
-import githubApp from '../../../services/githubApp';
-import firebaseAdmin from '../../../services/firebaseAdmin';
+import githubApp from '@services/githubApp';
+import firebaseAdmin from '@services/firebaseAdmin';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
   const {sessionId} = req.body;

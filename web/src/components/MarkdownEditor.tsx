@@ -1,6 +1,8 @@
 import React, {useCallback, useState, useEffect} from 'react';
 import Editor, {EditorDidMount} from '@monaco-editor/react';
 
+const REFRESH_MS = 2000;
+
 function useDefferedEffect(
   fn: () => void,
   args: React.DependencyList,
@@ -30,7 +32,7 @@ export const MarkdownEditor = ({
       onUpdate(currentValue);
     },
     [currentValue],
-    3000,
+    REFRESH_MS,
   );
 
   const editorDidMount: EditorDidMount = useCallback(

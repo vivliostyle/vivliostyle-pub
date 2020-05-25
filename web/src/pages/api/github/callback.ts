@@ -1,8 +1,9 @@
 import {NextApiHandler} from 'next';
 import fetch from 'isomorphic-unfetch';
 import {Octokit} from '@octokit/rest';
-import firebaseAdmin from '../../../services/firebaseAdmin';
-import {encrypt} from '../../../utils/encryption';
+
+import firebaseAdmin from '@services/firebaseAdmin';
+import {encrypt} from '@utils/encryption';
 
 const installation: NextApiHandler = async (req, res) => {
   const installationId = +req.query['installation_id'];
@@ -10,7 +11,7 @@ const installation: NextApiHandler = async (req, res) => {
   const code = req.query['code'];
   if (!(installationId > 0) || !code) {
     res.writeHead(302, {
-      Location: process.env.GITHUB_APP_INSTALLATION_URL,
+      Location: process.env.GH_APP_INSTALLATION_URL,
     });
     return res.end();
   }
@@ -25,8 +26,8 @@ const installation: NextApiHandler = async (req, res) => {
       'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify({
-      client_id: process.env.GITHUB_APP_CLIENT_ID,
-      client_secret: process.env.GITHUB_APP_CLIENT_SECRET,
+      client_id: process.env.GH_APP_CLIENT_ID,
+      client_secret: process.env.GH_APP_CLIENT_SECRET,
       code,
     }),
   });

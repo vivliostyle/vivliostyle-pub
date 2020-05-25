@@ -4,7 +4,7 @@ export const InstallGithubAppsButton = () => {
   return (
     <UI.Button
       onClick={async () => {
-        window.location.href = process.env.GITHUB_APP_INSTALLATION_URL;
+        window.location.href = process.env.GH_APP_INSTALLATION_URL;
       }}
     >
       Install GitHub Apps

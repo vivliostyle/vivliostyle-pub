@@ -1,8 +1,9 @@
-import { NextApiHandler } from 'next';
-import { Octokit } from '@octokit/rest';
-import githubApp from '../../../services/githubApp';
-import firebaseAdmin from '../../../services/firebaseAdmin';
-import { decrypt } from '../../../utils/encryption';
+import {NextApiHandler} from 'next';
+import {Octokit} from '@octokit/rest';
+
+import githubApp from '@services/githubApp';
+import firebaseAdmin from '@services/firebaseAdmin';
+import {decrypt} from '@utils/encryption';
 
 export interface GithubRequestSessionApiResponse {
   id: string;
@@ -10,9 +11,9 @@ export interface GithubRequestSessionApiResponse {
 
 const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = async (
   req,
-  res
+  res,
 ) => {
-  const { owner, repo } = req.body;
+  const {owner, repo} = req.body;
   if (req.method !== 'POST' || !owner || !repo) {
     return res.status(400).send(null);
   }
@@ -40,16 +41,14 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
       const octokit = new Octokit({
         auth: `Bearer ${jwt}`,
       });
-      const { data } = await octokit.apps.getRepoInstallation({ owner, repo });
+      const {data} = await octokit.apps.getRepoInstallation({owner, repo});
       return data.id;
     })(),
     (async () => {
       const octokit = new Octokit({
         auth: `token ${decrypted}`,
       });
-      const {
-        data,
-      } = await octokit.apps.listInstallationsForAuthenticatedUser();
+      const {data} = await octokit.apps.listInstallationsForAuthenticatedUser();
       return data.installations.map((i) => i.id);
     })(),
   ]);
@@ -66,7 +65,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
   });
   let content = '';
   try {
-    const { data } = await octokit.repos.getContents({
+    const {data} = await octokit.repos.getContents({
       owner,
       repo,
       path: 'index.md',
@@ -88,7 +87,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
       owner,
       repo,
     });
-  res.send({ id: sessionDoc.id });
+  res.send({id: sessionDoc.id});
 };
 
 export default requestSession;

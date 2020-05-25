@@ -58,4 +58,4 @@ function rubyHandler(h, node) {
   return h(node, 'ruby', [...all(h, node), rtNode]);
 }
 
-module.exports = {rubyParser, rubyHandler}
+module.exports = {rubyParser, rubyHandler};

@@ -7,23 +7,21 @@ const stringify = require('rehype-stringify');
 
 const {rubyParser, rubyHandler} = require('./ruby');
 
-function makeHtmlIfNot(
-  {stylesheet = ''}
-){
+function makeHtmlIfNot({stylesheet = ''}) {
   const fs = require('fs');
   try {
     fs.accessSync('index.html');
   } catch (error) {
-    console.log('>> index.html was not found, so create index.html from index.md');
-    const markdownString = fs.readFileSync("index.md");
-    const htmlString = stringifyMarkdown( markdownString, { stylesheet })
-    fs.writeFileSync("index.html", htmlString);
+    console.log(
+      '>> index.html was not found, so create index.html from index.md',
+    );
+    const markdownString = fs.readFileSync('index.md');
+    const htmlString = stringifyMarkdown(markdownString, {stylesheet});
+    fs.writeFileSync('index.html', htmlString);
   }
 }
 
-function stringifyMarkdown(
-  markdownString, {stylesheet = ''}
-) {
+function stringifyMarkdown(markdownString, {stylesheet = ''}) {
   const processor = unified()
     .use(markdown, {commonmark: true})
     .use(rubyParser)
@@ -38,4 +36,4 @@ function stringifyMarkdown(
   return generated;
 }
 
-module.exports = makeHtmlIfNot
+module.exports = makeHtmlIfNot;
