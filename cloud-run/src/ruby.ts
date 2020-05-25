@@ -37,7 +37,7 @@ interface RubyHandler {
 }
 
 // remark
-function locateMention(value: string, fromIndex: number) {
+function locateRuby(value: string, fromIndex: number) {
   return value.indexOf('{', fromIndex);
 }
 
@@ -65,7 +65,7 @@ const tokenizeRuby: RubyTokenizer = function (eat, value, silent) {
 };
 
 tokenizeRuby.notInLink = true;
-tokenizeRuby.locator = locateMention;
+tokenizeRuby.locator = locateRuby;
 
 export const rubyParser: RubyParser = function () {
   if (!this.Parser) {
