@@ -1,20 +1,25 @@
-const express = require('express');
-const fs = require('fs');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
-const uploadFile = require('./cloud-storage');
-const gitClone = require('./git-clone');
-const makeHtmlIfNot = require('./makeHtmlIfNot');
+import * as express from 'express';
+import {NextFunction, Request, Response} from 'express';
+import * as fs from 'fs';
+import * as util from 'util';
+import * as child_process from 'child_process';
+import * as admin from 'firebase-admin';
 
-const admin = require('firebase-admin');
+import {uploadFile} from './cloud-storage';
+import {gitClone} from './git-clone';
+import {makeHtmlIfNot} from './makeHtmlIfNot';
 
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
+const exec = util.promisify(child_process.exec);
+
+if (!admin.apps.length) admin.initializeApp();
 const firestore = admin.firestore();
 
 const app = express();
-const allowCrossDomain = function (req, res, next) {
+const allowCrossDomain = function (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.header(
@@ -30,11 +35,10 @@ const allowCrossDomain = function (req, res, next) {
   }
 };
 app.use(allowCrossDomain);
-
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-async function compileFromGit(owner, repo, stylesheet = '') {
+async function compileFromGit(owner: string, repo: string, stylesheet = '') {
   try {
     console.log(`>> git clone https://github.com/${owner}/${repo}`);
     // Clone a given repository into the `./tmp` folder.
@@ -56,8 +60,7 @@ async function compileFromGit(owner, repo, stylesheet = '') {
 
     if (stderr) {
       console.log(`stderr: ${stderr}`);
-      res.send(`stderr: ${stderr}`);
-      return;
+      throw stderr;
     }
 
     console.log(`stdout: ${stdout}`);
@@ -67,6 +70,7 @@ async function compileFromGit(owner, repo, stylesheet = '') {
     return `/tmp/${owner}/${repo}.pdf`;
   } catch (error) {
     console.log(error);
+    throw error;
   }
 }
 
@@ -94,7 +98,7 @@ app.post('/', async (req, res) => {
 app.get('/pdf/:owner/:repo', async (req, res) => {
   try {
     const outputFile = await compileFromGit(req.params.owner, req.params.repo);
-    url = await uploadFile(req.params.repo, outputFile);
+    const url = await uploadFile(req.params.repo, outputFile);
     res.send(url);
   } catch (error) {
     console.log(error);

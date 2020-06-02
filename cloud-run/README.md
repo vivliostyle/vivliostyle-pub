@@ -10,7 +10,7 @@
 ### Fire up test server
 
 ```shell
-GOOGLE_APPLICATION_CREDENTIALS="$PWD/path-to-your-credentials.json" scripts/dev.sh
+GOOGLE_APPLICATION_CREDENTIALS="absolute-path-to-your-credentials.json" scripts/dev.sh
 curl -m 900 http://localhost:8080/pdf/takanakahiko/viola-project
 ```
 
