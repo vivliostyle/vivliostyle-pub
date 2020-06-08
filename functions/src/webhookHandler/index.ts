@@ -7,19 +7,19 @@ if (!admin.apps.length) {
 }
 const firestore = admin.firestore();
 
-const getEnv = (service: string, key: string) =>
+const getEnv = (key: string) =>
   process.env.FIREBASE_CONFIG
-    ? functions.config()[service.toLowerCase().replace(/[^a-z0-9]/g, '')][
+    ? functions.config()['github_app'][
         key.toLowerCase().replace(/[^a-z0-9]/g, '')
       ]
-    : process.env[`${service}_${key}`];
+    : process.env[`GH_APP_${key}`];
 
 const webhooks = new WebhooksApi({
-  secret: getEnv('GITHUB_APP', 'WEBHOOK_SECRET'),
+  secret: getEnv('WEBHOOK_SECRET'),
 });
 
 webhooks.on('installation', async (event) => {
-  const { action, installation } = event.payload;
+  const {action, installation} = event.payload;
   if (action === 'created' || action === 'new_permissions_accepted') {
     await firestore
       .collection('installations')
