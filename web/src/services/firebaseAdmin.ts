@@ -1,24 +1,17 @@
 import * as admin from 'firebase-admin';
 
-import {getFirebasePrivateKey} from '../utils/encryption';
+import {firebaseAdminServiceAccount} from '@utils/keys';
 
 if (!admin.apps.length) {
+  const {databaseURL} = JSON.parse(process.env.FIREBASE_CONFIG);
+
   admin.initializeApp({
-    // credential: admin.credential.applicationDefault(),
     credential: admin.credential.cert({
-      type: 'service_account',
-      project_id: process.env.FIREBASE_PROJECT_ID,
-      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-      private_key: getFirebasePrivateKey(),
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      client_id: process.env.FIREBASE_CLIENT_ID,
-      auth_uri: process.env.FIREBASE_AUTH_URI,
-      token_uri: process.env.FIREBASE_TOKEN_URI,
-      auth_provider_x509_cert_url:
-        process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-      client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-    } as any),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
+      projectId: firebaseAdminServiceAccount.project_id,
+      clientEmail: firebaseAdminServiceAccount.client_email,
+      privateKey: firebaseAdminServiceAccount.private_key,
+    }),
+    databaseURL,
   });
 }
 
