@@ -1,13 +1,6 @@
 import {useRef, useEffect, useMemo} from 'react';
+import {stringifyMarkdown} from '@vivliostyle/vfm';
 import path from 'path';
-import unified from 'unified';
-import markdown from 'remark-parse';
-import remark2rehype from 'remark-rehype';
-import raw from 'rehype-raw';
-import doc from 'rehype-document';
-import stringify from 'rehype-stringify';
-
-import {rubyParser, rubyHandler} from './ruby';
 
 interface PreviewerProps {
   body: string;
@@ -32,24 +25,6 @@ function buildViewerURL(
     url += `&style=${style}`;
   }
   return url;
-}
-
-function stringifyMarkdown(
-  markdownString: string,
-  {stylesheet = ''}: {stylesheet?: string} = {},
-): string {
-  const processor = unified()
-    .use(markdown, {commonmark: true})
-    .use(rubyParser)
-    .use(remark2rehype, {
-      allowDangerousHtml: true,
-      handlers: {ruby: rubyHandler},
-    })
-    .use(raw)
-    .use(doc, {language: 'ja', css: stylesheet})
-    .use(stringify);
-  const generated = String(processor.processSync(markdownString));
-  return generated;
 }
 
 async function updateCache(cachePath: string, content: any) {
