@@ -36,7 +36,7 @@ const installation: NextApiHandler = async (req, res) => {
   const octokit = new Octokit({
     auth: `token ${githubAccessToken}`,
   });
-  const emails = await octokit.users.listEmails();
+  const emails = await octokit.users.listEmailsForAuthenticated();
   const primaryEmail = emails.data.find((entry) => entry.primary)?.email;
   if (!githubAccessToken || !primaryEmail) {
     return res.status(500).send(null);

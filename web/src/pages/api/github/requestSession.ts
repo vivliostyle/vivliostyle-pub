@@ -65,7 +65,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
   });
   let content = '';
   try {
-    const {data} = await octokit.repos.getContents({
+    const {data} = await octokit.repos.getContent({
       owner,
       repo,
       path: 'index.md',

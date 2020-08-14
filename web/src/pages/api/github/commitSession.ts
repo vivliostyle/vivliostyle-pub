@@ -50,7 +50,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   });
   const contentSha = await (async () => {
     try {
-      const {data} = await octokit.repos.getContents({
+      const {data} = await octokit.repos.getContent({
         owner,
         repo,
         path: 'index.md',
@@ -60,7 +60,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
       }
     } catch (error) {}
   })();
-  await octokit.repos.createOrUpdateFile({
+  await octokit.repos.createOrUpdateFileContents({
     owner,
     repo,
     path: 'index.md',

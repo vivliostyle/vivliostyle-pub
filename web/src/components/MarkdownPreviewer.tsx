@@ -1,5 +1,5 @@
 import {useRef, useEffect, useMemo} from 'react';
-import {stringifyMarkdown} from '@vivliostyle/vfm';
+import {stringify} from '@vivliostyle/vfm';
 import path from 'path';
 
 interface PreviewerProps {
@@ -47,7 +47,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
   const viewerURL = useMemo(() => buildViewerURL(basename), []);
 
   useEffect(() => {
-    const htmlString = stringifyMarkdown(body, {stylesheet});
+    const htmlString = stringify(body, {style: stylesheet});
 
     updateCache('index.html', htmlString).then(() => {
       reload();
