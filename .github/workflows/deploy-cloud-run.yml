@@ -31,8 +31,8 @@ jobs:
         run: |
           docker build cloud-run \
             -t $IMAGE \
-            --build-arg GH_APP_PRIVATEKEY="${{ secrets.GH_APP_PRIVATEKEY }}" \
-            --build-arg GH_APP_ID="${{ secrets.GH_APP_ID }}"
+            --build-arg GH_APPS_PRIVATEKEY="${{ secrets.GH_APPS_PRIVATEKEY }}" \
+            --build-arg GH_APPS_ID="${{ secrets.GH_APPS_ID }}"
 
       - name: Push the docker image
         run: docker push $IMAGE

@@ -3,7 +3,7 @@
 ## Prepare
 
 - Download proper service account credentials from GCP and set credentials path to `$GOOGLE_APPLICATION_CREDENTIALS`
-- Set credentials for GitHub Apps to `$GH_APP_PRIVATEKEY` and `$GH_APP_ID`
+- Set credentials for GitHub Apps to `$GH_APPS_PRIVATEKEY` and `$GH_APPS_ID`
 
 ## Operation check locally
 
