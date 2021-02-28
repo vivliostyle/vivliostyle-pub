@@ -1,13 +1,13 @@
 import * as express from 'express';
 import {NextFunction, Request, Response} from 'express';
-import * as fs from 'fs';
+//import * as fs from 'fs';
 import * as util from 'util';
 import * as child_process from 'child_process';
 import * as admin from 'firebase-admin';
+import * as uuid from 'uuid'
 
 import {uploadFile} from './cloud-storage';
 import {gitClone} from './git-clone';
-import {makeHtmlIfNot} from './makeHtmlIfNot';
 
 const exec = util.promisify(child_process.exec);
 
@@ -38,70 +38,79 @@ app.use(allowCrossDomain);
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-async function compileFromGit(owner: string, repo: string, stylesheet = '') {
+const execCommanad = async(cmd: string) => {
+  const {stdout, stderr} = await exec(cmd);
+  console.log('>> execCommanad stdout:', stdout);
+  console.log('>> execCommanad stderr:', stderr);
+}
+
+// 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から PDF をローカルに生成する
+// PDF のパスを返却する
+async function buildFromGithubRepository(owner: string, repo: string) {
+  const processID = uuid.v4()
+  console.log(`>> Run buildFromGithubRepository( process ID: ${processID} )`)
   try {
     console.log(`>> git clone https://github.com/${owner}/${repo}`);
-    // Clone a given repository into the `./tmp` folder.
-    const currentDir = process.cwd();
-    const repoDir = `/tmp/${owner}/${repo}`;
+    const cwd = process.cwd();
+    const repoDir = `${cwd}/tmp/repos/${processID}/${owner}/${repo}`;
     await gitClone(owner, repo, repoDir);
-
-    process.chdir(repoDir);
-
-    makeHtmlIfNot({stylesheet});
-
     console.log('>> Start compile');
-
-    const {stdout, stderr} = await exec(
-      `vivliostyle build --no-sandbox index.html --book -o ../${repo}.pdf`,
-    );
-
-    fs.rmdirSync(repoDir, {recursive: true});
-
-    if (stderr) {
-      console.log(`stderr: ${stderr}`);
-      throw stderr;
-    }
-
-    console.log(`stdout: ${stdout}`);
-
-    process.chdir(currentDir);
-
-    return `/tmp/${owner}/${repo}.pdf`;
+    const outputPdfPath = `${cwd}/tmp/pdfs/${processID}.pdf`
+    process.chdir(repoDir);
+    await execCommanad(`$(npm bin)/vivliostyle build --no-sandbox --output ${outputPdfPath}`);
+    process.chdir(cwd);
+    await execCommanad(`rm -rf ${cwd}/tmp/repos/${processID}`);
+    return outputPdfPath;
   } catch (error) {
     console.log(error);
     throw error;
   }
 }
 
+// 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から GCS 上に PDF を生成する
+// GCS 上の PDF の URL を返却する
+const buildAndUpload = async(owner: string, repo: string) => {
+  try {
+    const outputPdfPath = await buildFromGithubRepository(owner, repo);
+    const url = await uploadFile(`${owner}-${repo}`, outputPdfPath);
+    await execCommanad(`rm ${outputPdfPath}`);
+    return url
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+// PubSub のハンドラ
+// PubSub のメッセージ内容は '{"owner": "takanakahiko", "repo": "vivliostyle-sample"}' の形式とする
+// 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から GCS 上に PDF を生成する
+// PubSub のメッセージ内容に '{"owner": "...", "repo": "...", "id": "hoge" }' ののように id が指定されていたら結果を Firestore に書き込む
 app.post('/', async (req, res) => {
   try {
-    const pubSubMessage = req.body.message;
-    const data = JSON.parse(
-      Buffer.from(pubSubMessage.data, 'base64').toString(),
+    console.log(Buffer.from(req.body.message.data, 'base64').toString())
+    const {owner, repo, id } = JSON.parse(
+      Buffer.from(req.body.message.data, 'base64').toString(),
     );
-    const {owner, repo, stylesheet} = data.repo;
-    const outputFile = await compileFromGit(owner, repo, stylesheet);
-    const url = await uploadFile(repo, outputFile);
-    if (data.id)
-      await firestore.collection('builds').doc(data.id).update({url});
+    const url = await buildAndUpload(owner, repo);
+    if (id) await firestore.collection('builds').doc(id).update({url});
     console.log('>> Complete build: ' + url);
     res.status(204).send();
   } catch (error) {
     console.error(`error: ${error}`);
     //400や500番台で返すとリトライを繰り返してしまうため、暫定的に204を返しています
-    //res.status(400).send(`Bad Request: ${msg}`);
     res.status(204).send(`Bad Request: ${error}`);
   }
 });
 
+// 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から GCS 上に PDF を生成する
+// GCS 上の PDF の URL をレスポンスとして返却する
 app.get('/pdf/:owner/:repo', async (req, res) => {
   try {
-    const outputFile = await compileFromGit(req.params.owner, req.params.repo);
-    const url = await uploadFile(req.params.repo, outputFile);
+    const url = await buildAndUpload(req.params.owner, req.params.repo);
     res.send(url);
   } catch (error) {
-    console.log(error);
+    console.error(`error: ${error}`);
+    res.status(500).send(`Bad Request: ${error}`)
   }
 });
 

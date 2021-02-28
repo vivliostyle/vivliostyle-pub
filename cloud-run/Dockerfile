@@ -21,9 +21,6 @@ RUN  \
   --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Vivliostyle CLI
-RUN yarn global add @vivliostyle/cli
-
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 
@@ -41,6 +38,8 @@ COPY . .
 # Setup credentials
 ARG GH_APP_ID
 ARG GH_APP_PRIVATEKEY
+ENV GH_APP_ID=$GH_APP_ID
+ENV GH_APP_PRIVATEKEY=$GH_APP_PRIVATEKEY
 
 # Install production dependencies.
 RUN npm run build

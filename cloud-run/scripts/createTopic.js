@@ -2,7 +2,9 @@
 
 const main = async (topicName, subscriptionName) => {
   const {PubSub} = require('@google-cloud/pubsub');
-  const pubSubClient = new PubSub();
+  const pubSubClient = new PubSub({
+    
+  });
   const [topic] = await pubSubClient.createTopic(topicName);
   console.log(`>> Topic ${topicName} created.`);
   const options = {pushConfig: {pushEndpoint: `http://localhost:8080/`}};

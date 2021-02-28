@@ -18,8 +18,8 @@ curl -m 900 http://localhost:8080/pdf/takanakahiko/viola-project
 
 ```shell
 gcloud beta emulators pubsub start
-node scripts/createTopic.js test
-node scripts/publishMessage.js test '{"owner": "takanakahiko", "repo": "viola-project", "stylesheet": "https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css"}'
+node scripts/createTopic.js test test
+node scripts/publishMessage.js test '{"owner": "takanakahiko", "repo": "vivliostyle-sample"}'
 ```
 
 ## Upload built image to Container Registry
