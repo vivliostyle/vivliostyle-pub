@@ -25,10 +25,16 @@ node scripts/publishMessage.js test '{"owner": "takanakahiko", "repo": "vivliost
 ## Upload built image to Container Registry
 
 ```shell
-gcloud builds submit --tag gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf
+$ gcloud auth configure-docker --quiet
+$ docker build . -t gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf \
+    --build-arg GH_APPS_PRIVATEKEY="$GH_APPS_PRIVATEKEY" \
+    --build-arg GH_APPS_ID="$GH_APPS_ID"
+$ docker push gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf
+$ gcloud run deploy vivliostyle-pub-build-pdf \
+    --image gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf \
+    --project vivliostyle-81c48 --region asia-northeast1 \
+    --platform managed --timeout 900 --memory 1Gi
 ```
-
-c.f. https://cloud.google.com/run/docs/quickstarts/build-and-deploy#containerizing
 
 ## Deploy
 
