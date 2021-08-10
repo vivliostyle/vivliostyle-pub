@@ -44,13 +44,9 @@ function useBuildStatus(
   buildID: string | null,
   onBuildFinished?: (artifactURL: string) => void,
 ) {
-  const toast = useToast();
-
   useEffect(() => {
-    if (!buildID) {
-      return;
-    }
-    const unscribe = firebase
+    if (!buildID) return;
+    const unsubscribe = firebase
       .firestore()
       .collection('builds')
       .doc(buildID)
@@ -58,34 +54,10 @@ function useBuildStatus(
         const {url} = doc.data() as BuildRecord;
         console.log('Current data: ', doc.data());
         if (!url) return;
-
-        unscribe();
-        // toast({
-        //   title: 'Build succeeded',
-        //   description: 'Your PDF has been created.',
-        //   status: 'success',
-        //   duration: 9000,
-        //   isClosable: true,
-        // });
-        toast({
-          duration: 9000,
-          isClosable: true,
-          render: ({onClose}) => (
-            <UI.Box bg="tomato" p={5} color="white">
-              <UI.Link href={url} isExternal onClick={onClose}>
-                View PDF
-              </UI.Link>
-            </UI.Box>
-          ),
-        });
-        if (onBuildFinished) {
-          onBuildFinished(url);
-        }
+        unsubscribe();
+        if (onBuildFinished) onBuildFinished(url);
       });
-
-    return () => {
-      unscribe();
-    };
+    return unsubscribe;
   }, [buildID]);
 }
 
@@ -109,8 +81,20 @@ export default () => {
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
-  useBuildStatus(buildID, () => {
+
+  useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
+    toast({
+      duration: 9000,
+      isClosable: true,
+      render: ({onClose}) => (
+        <UI.Box bg="tomato" p={5} color="white">
+          <UI.Link href={artifactURL} isExternal onClick={onClose}>
+            View PDF
+          </UI.Link>
+        </UI.Box>
+      ),
+    });
   });
 
   // check login
