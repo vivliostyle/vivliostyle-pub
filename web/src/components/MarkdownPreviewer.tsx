@@ -20,6 +20,7 @@ function buildViewerURL(
 ): string {
   let url =
     VIVLIOSTYLE_VIEWER_HTML_URL +
+    `?${(new Date()).getTime()}` + // disable viewer cache
     `#x=${path.join(VPUBFS_ROOT, filename)}&bookMode=true`;
   if (style) {
     url += `&style=${style}`;
