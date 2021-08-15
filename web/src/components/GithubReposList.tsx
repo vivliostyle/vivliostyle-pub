@@ -16,7 +16,7 @@ export const GithubReposList: React.FC<{user: firebase.User}> = ({user}) => {
   const [idToken, setIdToken] = useState<string | null>(null);
   useEffect(() => {
     user
-      .getIdToken()
+      .getIdToken(true)
       .then(setIdToken)
       .catch(() => setIdToken(null));
   }, [user]);

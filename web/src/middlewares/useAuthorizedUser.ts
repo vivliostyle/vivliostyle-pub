@@ -8,6 +8,7 @@ export const useAuthorizedUser = () => {
 
   useEffect(() => {
     return firebase.auth().onAuthStateChanged((user) => {
+      if(user) user.getIdToken(true);
       setUser(user);
       setPending(false);
     });
