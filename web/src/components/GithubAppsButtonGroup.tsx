@@ -1,6 +1,6 @@
 import * as UI from './ui';
 
-export const GithubAppsButtonGroup = () => {
+const GithubAppsButtonGroup = () => {
   return (
     <UI.ButtonGroup spacing={4}>
       <UI.Button
@@ -22,3 +22,4 @@ export const GithubAppsButtonGroup = () => {
     </UI.ButtonGroup>
   );
 };
+export default GithubAppsButtonGroup;
