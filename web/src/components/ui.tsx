@@ -18,6 +18,7 @@ export {
   MenuGroup,
   MenuDivider,
   Spinner,
+  ButtonGroup,
 } from '@chakra-ui/core';
 
 export const Container = (props: FlexProps) => (
