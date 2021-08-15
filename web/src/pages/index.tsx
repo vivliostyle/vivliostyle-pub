@@ -5,7 +5,7 @@ import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
 import {GithubReposList} from '@components/GithubReposList';
-import {InstallGithubAppsButton} from '@components/InstallGithubAppsButton';
+import {GithubAppsButtonGroup} from '@components/GithubAppsButtonGroup';
 
 export default () => {
   const {user, isPending} = useAuthorizedUser();
@@ -16,7 +16,7 @@ export default () => {
       {user ? (
         <>
           <UI.Container mt={6}>
-            <InstallGithubAppsButton />
+            <GithubAppsButtonGroup />
           </UI.Container>
           <UI.Container mt={6}>
             <GithubReposList {...{user}} />
