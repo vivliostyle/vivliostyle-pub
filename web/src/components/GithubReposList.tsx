@@ -31,7 +31,11 @@ export const GithubReposList: React.FC<{user: firebase.User}> = ({user}) => {
     return isValidating ? (
       <UI.Text>Loading</UI.Text>
     ) : (
-      <UI.Text>No repositories</UI.Text>
+      <UI.Text>No repositories<br/>
+        <br/>
+        1. Push [Install GitHub Apps] for check and edit install status for GitHub Apps.<br/>
+        2. Push [Refresh GitHub Access Token] for refresh GitHub Access Token.<br/> 
+      </UI.Text>
     );
   }
   return (
