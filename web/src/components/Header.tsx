@@ -19,7 +19,7 @@ const HeaderUserInfo: React.FC = () => {
     if (user) {
       console.log(user.providerData);
 
-      user.getIdTokenResult().then((data) => console.log(data));
+      user.getIdTokenResult(true).then((data) => console.log(data));
     }
   }, [user]);
   if (isPending) {

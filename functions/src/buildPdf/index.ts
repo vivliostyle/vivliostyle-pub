@@ -21,8 +21,9 @@ export const buildPDF = functions.https.onCall(async(repoInfo, context) => {
     repo: repoInfo
   });
   await publishMessage("buildRequest", {
-    repo: repoInfo,
+    owner: repoInfo.owner,
+    repo: repoInfo.repo,
     id: ref.id
   });
-  return { buildPDF: ref.id };
+  return { buildID : ref.id };
 })

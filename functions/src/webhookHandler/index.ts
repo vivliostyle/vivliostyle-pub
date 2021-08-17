@@ -9,7 +9,7 @@ const firestore = admin.firestore();
 
 const getEnv = (key: string) =>
   process.env.FIREBASE_CONFIG
-    ? functions.config()['github_app'][
+    ? functions.config()['githubapp'][
         key.toLowerCase().replace(/[^a-z0-9]/g, '')
       ]
     : process.env[`GH_APP_${key}`];
