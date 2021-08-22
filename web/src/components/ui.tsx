@@ -9,6 +9,7 @@ export {
   Heading,
   Icon,
   Image,
+  Input,
   Link,
   Text,
   Menu,

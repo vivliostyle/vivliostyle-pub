@@ -8,10 +8,12 @@ export function useEditorSession({
   owner,
   repo,
   user,
+  path,
 }: {
   owner: string;
   repo: string;
   user: firebase.User | null;
+  path: string;
 }) {
   const [
     session,
@@ -29,7 +31,7 @@ export function useEditorSession({
         '/api/github/requestSession',
         {
           method: 'POST',
-          body: JSON.stringify({owner, repo}),
+          body: JSON.stringify({owner, repo, path}),
           headers: {
             'content-type': 'application/json',
             'x-id-token': idToken,
@@ -45,7 +47,7 @@ export function useEditorSession({
       setSession(session);
       setSessionId(id);
     })();
-  }, [owner, repo, user]);
+  }, [owner, repo, user, path]);
 
   return {session, sessionId};
 }

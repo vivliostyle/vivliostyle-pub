@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useRef} from 'react';
+import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
 import {useRouter} from 'next/router';
 import {useToast} from '@chakra-ui/core';
 
@@ -6,6 +6,7 @@ import firebase from '@services/firebase';
 import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
 import {useEditorSession} from '@middlewares/useEditorSession';
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
+import {useVivlioStyleConfig} from '@middlewares/useVivliostyleConfig'
 
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
@@ -67,10 +68,12 @@ export default () => {
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
   const repoStr = Array.isArray(repo) ? repo[0] : repo;
+  const [filePath, setFilePath] = useState('');
   const {session, sessionId} = useEditorSession({
     user,
     owner: ownerStr!,
     repo: repoStr!,
+    path: filePath
   });
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
@@ -179,6 +182,30 @@ export default () => {
     setStylesheet(themeURL);
   }
 
+  const config = useVivlioStyleConfig({
+    user,
+    owner: ownerStr!,
+    repo: repoStr!,
+  })
+  const filenames = useMemo(() => {
+    if(!config || !config.entry) return []
+    const ret = [] as string[]
+    if(Array.isArray(config.entry)) {
+      config.entry.forEach(e => {
+        if(typeof e == 'string') ret.push(e)
+        else if('path' in e) ret.push(e.path)
+      })
+    } else {
+      if(typeof config.entry == 'string') ret.push(config.entry)
+      else if('path' in config.entry) ret.push(config.entry.path)
+    }
+    return ret
+  }, [config])
+  const [filenamesFilterText, setFilenamesFilterText] = useState("")
+  const filterdFilenames = useMemo(() => {
+    return filenames.filter(f => f.includes(filenamesFilterText))
+  }, [filenames, filenamesFilterText])
+
   return (
     <UI.Box>
       <Header />
@@ -224,16 +251,36 @@ export default () => {
           </UI.Flex>
         </UI.Flex>
       </UI.Flex>
-      {!isPending && status !== 'init' ? (
-        <UI.Flex>
-          <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-          <Previewer body={text} stylesheet={stylesheet} />
-        </UI.Flex>
-      ) : (
-        <UI.Container mt={6}>
-          <UI.Text>Loading</UI.Text>
-        </UI.Container>
-      )}
+      <UI.Flex w="100vw">
+        <UI.Box w="280px" p="4">
+          <UI.Input
+            placeholder="search file" 
+            value={filenamesFilterText}
+            onChange={event => { if('value' in event.target) setFilenamesFilterText(event.target.value) } }
+          />
+          <UI.Box h="calc(100vh - 200px)" overflowY="auto">
+            { filterdFilenames.map( path =>(
+              <UI.Container key={path} onClick={() => setFilePath(path)}>
+                <UI.Text mt={6}>{path}</UI.Text>
+              </UI.Container>
+            )) }
+          </UI.Box>
+        </UI.Box>
+        {!isPending && status !== 'init' ? (
+          <UI.Flex flex="1">
+            <UI.Box flex="1">
+              <MarkdownEditor value={text} {...{onModified, onUpdate}} />
+            </UI.Box>
+            <UI.Box width="40%" overflow="scroll">
+              <Previewer basename={`${filePath}.html`} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
+            </UI.Box>
+          </UI.Flex>
+        ) : (
+          <UI.Container flex="1">
+            <UI.Text mt={6}>Loading</UI.Text>
+          </UI.Container>
+        )}
+      </UI.Flex>
     </UI.Box>
   );
 };

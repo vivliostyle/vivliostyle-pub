@@ -1,20 +1,20 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
+import {ReposGetContentResponseData} from '@octokit/types'
 
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 
-export interface GithubRequestSessionApiResponse {
-  id: string;
-}
+export type ContentOfRepositoryApiResponse = ReposGetContentResponseData
 
-const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = async (
+const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null> = async (
   req,
   res,
 ) => {
-  const {owner, repo, path} = req.body;
-  if (req.method !== 'POST' || !owner || !repo) {
+  const {owner, repo, path} = req.query;
+  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path)) {
+    console.log("validation error")
     return res.status(400).send(null);
   }
   const idToken = req.headers['x-id-token'];
@@ -27,6 +27,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
     idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
   } catch (error) {
+    console.log(error)
     return res.status(400).send(null);
   }
 
@@ -56,39 +57,18 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     return res.status(405).send(null);
   }
 
-  // Get index.md from repo
   const token = await githubApp.getInstallationAccessToken({
     installationId: id,
   });
   const octokit = new Octokit({
     auth: `token ${token}`,
   });
-  let content = '';
   try {
-    const {data} = await octokit.repos.getContent({
-      owner,
-      repo,
-      path,
-    });
-    if (!Array.isArray(data) && data.type === 'file' && data.content) {
-      content = Buffer.from(data.content, 'base64').toString('utf8');
-    }
-  } catch (error) {}
-
-  // create session
-  const sessionDoc = await firebaseAdmin
-    .firestore()
-    .collection('users')
-    .doc(idTokenDecoded.uid)
-    .collection('sessions')
-    .add({
-      userUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
-      text: content,
-      owner,
-      repo,
-      path,
-    });
-  res.send({id: sessionDoc.id});
+    const {data} = await octokit.repos.getContent({owner, repo, path});
+    return res.send(data)
+  } catch (error) {
+    throw error
+  }
 };
 
-export default requestSession;
+export default contentOfRepository;

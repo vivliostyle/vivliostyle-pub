@@ -48,7 +48,7 @@ export const MarkdownEditor = ({
 
   return (
     <Editor
-      height="80vh"
+      height="100%"
       language="markdown"
       value={value}
       options={{

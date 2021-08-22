@@ -31,7 +31,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   if (!sessionSnapshot.exists) {
     return res.status(400).send(null);
   }
-  const {owner, repo, text} = sessionSnapshot.data()!;
+  const {owner, repo, text, path} = sessionSnapshot.data()!;
 
   // Save index.md
   const installationId = await (async () => {
@@ -53,7 +53,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
       const {data} = await octokit.repos.getContent({
         owner,
         repo,
-        path: 'index.md',
+        path,
       });
       if (!Array.isArray(data) && data.type === 'file') {
         return data.sha;
