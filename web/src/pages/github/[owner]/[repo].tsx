@@ -252,7 +252,7 @@ export default () => {
         </UI.Flex>
       </UI.Flex>
       <UI.Flex w="100vw">
-        <UI.Box w="280px" p="4">
+        <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
           <UI.Input
             placeholder="search file" 
             value={filenamesFilterText}
@@ -260,8 +260,8 @@ export default () => {
           />
           <UI.Box h="calc(100vh - 200px)" overflowY="auto">
             { filterdFilenames.map( path =>(
-              <UI.Container key={path} onClick={() => setFilePath(path)}>
-                <UI.Text mt={6}>{path}</UI.Text>
+              <UI.Container p={0} key={path} onClick={() => setFilePath(path)}>
+                <UI.Text mt={3} fontSize="sm">{path}</UI.Text>
               </UI.Container>
             )) }
           </UI.Box>
