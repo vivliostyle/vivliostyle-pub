@@ -1,4 +1,4 @@
-FROM node:12-slim
+FROM node:16-slim
 LABEL maintainer "Vivliostyle Foundation <mail@vivliostyle.org>"
 
 RUN set -x \
