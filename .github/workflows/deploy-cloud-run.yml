@@ -45,5 +45,5 @@ jobs:
             --region $GCP_REGION \
             --platform managed \
             --timeout 900 \
-            --memory 2Gi \
+            --memory 4Gi \
             --quiet
