@@ -1,24 +1,25 @@
 FROM node:16-slim
 LABEL maintainer "Vivliostyle Foundation <mail@vivliostyle.org>"
 
+# Set up for @vivliostyle/cli
+RUN set -x \
+  && apt-get update \
+  && apt-get install -y wget gnupg \
+  && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+  && sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+    # dependencies for puppeteer
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    # dependencies for press-ready
+    ghostscript poppler-utils \
+  && rm -rf /var/lib/apt/lists/*
+
+# Set up for nodegit
 RUN set -x \
   && apt update \
   && apt install -y --no-install-recommends \
-  libasound2-dev libgtk-3-0 libnss3-dev libx11-xcb-dev libxss-dev libxtst-dev \
-  ghostscript poppler-utils wget gnupg \
-  xvfb gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 \
-  libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 \
-  libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 \
-  libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 \
-  libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils git \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN  \
-  wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-  && apt update \
-  && apt install -y google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-  --no-install-recommends \
+   python build-essential libssl-dev libkrb5-dev libc++-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # Create and change to the app directory.
