@@ -256,7 +256,9 @@ export default () => {
           <UI.Input
             placeholder="search file" 
             value={filenamesFilterText}
-            onChange={event => { if('value' in event.target) setFilenamesFilterText(event.target.value) } }
+            onChange={(event: React.ChangeEvent<HTMLInputElement>)=> {
+              setFilenamesFilterText(event.target.value)
+            }}
           />
           <UI.Box h="calc(100vh - 200px)" overflowY="auto">
             { filterdFilenames.map( path =>(
