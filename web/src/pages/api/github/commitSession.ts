@@ -63,7 +63,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   await octokit.repos.createOrUpdateFileContents({
     owner,
     repo,
-    path: 'index.md',
+    path,
     sha: contentSha,
     content: Buffer.from(text, 'utf8').toString('base64'),
     message: 'Update index.md',
