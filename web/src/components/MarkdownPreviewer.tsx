@@ -21,6 +21,10 @@ function buildViewerURL(
     `?${(new Date()).getTime()}` + // disable viewer cache
     `#x=${path.join(VPUBFS_ROOT, filename)}&bookMode=true`;
   if (style) {
+    let relativeStylesheetpath = style
+    if( !style.includes('https://') && !style.includes('http://') ){
+      relativeStylesheetpath = path.relative(path.dirname(filename), style)
+    }
     url += `&style=${style}`;
   }
   return url;
@@ -28,7 +32,7 @@ function buildViewerURL(
 
 const getContent = async(owner:string, repo:string, path: string, user: firebase.User) => {
   const idToken = await user.getIdToken();
-  const params = {owner, repo, path: 'vivliostyle.config.js'}
+  const params = {owner, repo, path}
   const query_params = new URLSearchParams(params); 
   const content : ContentOfRepositoryApiResponse = await fetch(
     `/api/github/contentOfRepository?${query_params}`,
@@ -46,6 +50,7 @@ async function updateCache(cachePath: string, content: any) {
   const filePath = path.join(VPUBFS_ROOT, cachePath);
   const cache = await caches.open(VPUBFS_CACHE_NAME);
   const contentType = mime.lookup(filePath)
+  console.log(`updateCache : ${filePath}`)
   return await cache.put(
     filePath,
     new Response(content, contentType ? {
@@ -77,7 +82,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
   useEffect(() => {
     if(!user) return
     (async() => {
-      const htmlString = stringify(body, {style: stylesheet});
+      let relativeStylesheetpath = stylesheet
+      if( !stylesheet.includes('https://') && !stylesheet.includes('http://') ){
+        relativeStylesheetpath = path.relative(path.dirname(basename), stylesheet)
+      }
+      const htmlString = stringify(body, {style: relativeStylesheetpath});
 
       const imagePaths = [] as string[]
       const parser = new DOMParser();
@@ -92,6 +101,12 @@ export const Previewer: React.FC<PreviewerProps> = ({
         const contentPath = path.join(path.dirname(basename), imagePaths[i])
         const content = await getContent(owner,repo, contentPath, user)
         await updateCache(contentPath, Buffer.from(content.content, 'base64'))
+      }
+
+      if( !stylesheet.includes('https://') && !stylesheet.includes('http://') ){
+        const content = await getContent(owner,repo, stylesheet, user)
+        console.log(content)
+        await updateCache(stylesheet, Buffer.from(content.content, 'base64').toString('utf8'))
       }
 
       await updateCache(basename, htmlString)

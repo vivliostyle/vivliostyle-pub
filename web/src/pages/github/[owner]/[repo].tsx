@@ -206,6 +206,10 @@ export default () => {
     return filenames.filter(f => f.includes(filenamesFilterText))
   }, [filenames, filenamesFilterText])
 
+  useEffect(() => {
+    if(config && config.theme) setStylesheet(config.theme)
+  }, [config])
+
   return (
     <UI.Box>
       <Header />
@@ -274,7 +278,7 @@ export default () => {
               <MarkdownEditor value={text} {...{onModified, onUpdate}} />
             </UI.Box>
             <UI.Box width="40%" overflow="scroll">
-              <Previewer basename={`${filePath}.html`} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
+              <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
             </UI.Box>
           </UI.Flex>
         ) : (
