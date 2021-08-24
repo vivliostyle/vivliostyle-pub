@@ -1,5 +1,5 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const { execSync } = require('child_process')
 
 console.log(process.cwd())
@@ -11,16 +11,11 @@ console.log('child __dirname: ' + __dirname);
 console.log('path._makeLong: ' + path._makeLong('./package.json'));
 console.log('process.cwd(): ' + process.cwd());
 
+fs.removeSync('public/viewer')
 const viewerPath = path.join(viewerModulePath, 'lib')
-
-const stdout = execSync(`rm -rf public/viewer`)
-console.log(`stdout: ${stdout.toString()}`)
-
-const stdout2 = execSync(`cp -rf ${viewerPath} public/viewer`)
-console.log(`stdout: ${stdout2.toString()}`)
-// fs.copySync(viewerPath, 'public/viewer', {
-//   overwrite: true
-// })
+fs.copySync(viewerPath, 'public/viewer', {
+  overwrite: true
+})
 
 const execCommand = (com) => {
   const stdout = execSync(com)
@@ -31,7 +26,7 @@ execCommand('ls -al public')
 execCommand('ls -al public/viewer')
 execCommand('ls -al public/viewer/js')
 
-const jspath = 'public/viewer/js/vivliostyle-viewer.js'
+const jspath = './public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
 const newJsData = jsData.replaceAll('"HEAD"', '"GET" ')
 fs.writeFileSync(jspath, newJsData, 'utf8')
