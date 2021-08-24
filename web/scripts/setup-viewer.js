@@ -29,22 +29,21 @@ execCommand('ls -al public/viewer/js')
 
 const jspath = './public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
-console.log(jsData)
-const newJsData = jsData.replaceAll('"HEAD"', '"GET" ')
+const newJsData = jsData.replace(/"HEAD"/g, '"GET" ')
 fs.writeFileSync(jspath, newJsData, 'utf8')
 
 const htmlpath = 'public/viewer/index.html'
 const htmlData = fs.readFileSync(htmlpath, 'utf8')
 const newHtmlData = htmlData
-  .replaceAll(/\b(src|href)="(css|resources|js)\b/g, '$1="\/viewer\/$2')
-  .replaceAll('<head>', 
+  .replace(/\b(src|href)="(css|resources|js)\b/g, '$1="\/viewer\/$2')
+  .replace(/<head>/g,'' 
     `<head>
     <!-- Hotfix (push back later) -->
     <!-- 
       - Add serviceWorker.js
       - Replace HEAD request with GET
     -->`)
-  .replaceAll('</head>',`  <script>
+  .replace(/<\/head>/g,`  <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker.register("/worker/serviceWorker.js").then(
