@@ -9,6 +9,10 @@ fs.copySync(viewerPath, 'public/viewer', {
   overwrite: true
 })
 
+const { execSync } = require('child_process')
+const stdout = execSync('find ./**/vivliostyle-viewer.js')
+console.log(`stdout: ${stdout.toString()}`)
+
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
 const newJsData = jsData.replaceAll('"HEAD"', '"GET" ')
