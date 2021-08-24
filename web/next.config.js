@@ -12,4 +12,10 @@ const env = Object.keys(process.env).reduce((acc, key) => {
 
 module.exports = {
   env,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      require('./scripts/setup-viewer');
+    }
+    return config;
+  },
 };
