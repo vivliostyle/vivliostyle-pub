@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs-extra');
 
+console.log(process.cwd())
+
 const viewerModulePath = path.dirname(require.resolve('@vivliostyle/viewer/package.json'))
 const viewerPath = path.join(viewerModulePath, 'lib')
 fs.copySync(viewerPath, 'public/viewer', {
