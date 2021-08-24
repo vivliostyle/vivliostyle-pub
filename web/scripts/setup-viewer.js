@@ -36,8 +36,7 @@ const htmlpath = 'public/viewer/index.html'
 const htmlData = fs.readFileSync(htmlpath, 'utf8')
 const newHtmlData = htmlData
   .replace(/\b(src|href)="(css|resources|js)\b/g, '$1="\/viewer\/$2')
-  .replace(/<head>/g,'' 
-    `<head>
+  .replace(/<head>/g,`<head>
     <!-- Hotfix (push back later) -->
     <!-- 
       - Add serviceWorker.js
