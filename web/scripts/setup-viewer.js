@@ -22,9 +22,8 @@ console.log(`stdout: ${stdout2.toString()}`)
 //   overwrite: true
 // })
 
-// const { execSync } = require('child_process')
-// const stdout = execSync('ls -al /vercel/path0/web/node_modules/@vivliostyle/viewer/lib')
-// console.log(`stdout: ${stdout.toString()}`)
+const stdout3 = execSync('ls -al public')
+console.log(`stdout: ${stdout3.toString()}`)
 
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
