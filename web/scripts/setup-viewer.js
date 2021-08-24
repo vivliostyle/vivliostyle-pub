@@ -6,6 +6,9 @@ console.log(process.cwd())
 const viewerModulePath = path.dirname(require.resolve('@vivliostyle/viewer/package.json'))
 
 console.log(`viewerModulePath : ${viewerModulePath}`)
+log.log('child __dirname: ' + __dirname);
+log.log('path._makeLong: ' + path._makeLong('./package.json'));
+log.log('process.cwd(): ' + process.cwd());
 
 const viewerPath = path.join(viewerModulePath, 'lib')
 fs.copySync(viewerPath, 'public/viewer', {
