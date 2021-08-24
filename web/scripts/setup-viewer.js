@@ -29,6 +29,7 @@ execCommand('cat public/viewer/js/vivliostyle-viewer.js')
 
 const jspath = './public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
+console.log(jsData)
 const newJsData = jsData.replaceAll('"HEAD"', '"GET" ')
 fs.writeFileSync(jspath, newJsData, 'utf8')
 
