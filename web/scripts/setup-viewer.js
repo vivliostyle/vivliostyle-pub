@@ -16,7 +16,7 @@ fs.copySync(viewerPath, 'public/viewer', {
 })
 
 const { execSync } = require('child_process')
-const stdout = execSync('find /vercel/path0/**/vivliostyle-viewer.js')
+const stdout = execSync('ls -al /vercel/path0/web/node_modules/@vivliostyle/viewer')
 console.log(`stdout: ${stdout.toString()}`)
 
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
