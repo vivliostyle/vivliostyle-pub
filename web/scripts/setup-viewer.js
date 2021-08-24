@@ -22,8 +22,14 @@ console.log(`stdout: ${stdout2.toString()}`)
 //   overwrite: true
 // })
 
-const stdout3 = execSync('ls -al public')
-console.log(`stdout: ${stdout3.toString()}`)
+const execCommand = (com) => {
+  const stdout = execSync(com)
+  console.log(`stdout: ${stdout.toString()}`)
+}
+
+execCommand('ls -al public')
+execCommand('ls -al public/viewer')
+execCommand('ls -al public/viewer/js')
 
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
