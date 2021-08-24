@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs-extra');
+const { execSync } = require('child_process')
 
 console.log(process.cwd())
 
@@ -11,13 +12,19 @@ console.log('path._makeLong: ' + path._makeLong('./package.json'));
 console.log('process.cwd(): ' + process.cwd());
 
 const viewerPath = path.join(viewerModulePath, 'lib')
-fs.copySync(viewerPath, 'public/viewer', {
-  overwrite: true
-})
 
-const { execSync } = require('child_process')
-const stdout = execSync('ls -al /vercel/path0/web/node_modules/@vivliostyle/viewer/lib')
+const stdout = execSync(`rm -rf public/viewer`)
 console.log(`stdout: ${stdout.toString()}`)
+
+const stdout2 = execSync(`cp -rf ${viewerPath} public/viewer`)
+console.log(`stdout: ${stdout2.toString()}`)
+// fs.copySync(viewerPath, 'public/viewer', {
+//   overwrite: true
+// })
+
+// const { execSync } = require('child_process')
+// const stdout = execSync('ls -al /vercel/path0/web/node_modules/@vivliostyle/viewer/lib')
+// console.log(`stdout: ${stdout.toString()}`)
 
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
