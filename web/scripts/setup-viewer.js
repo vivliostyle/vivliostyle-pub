@@ -25,7 +25,7 @@ const execCommand = (com) => {
 execCommand('ls -al public')
 execCommand('ls -al public/viewer')
 execCommand('ls -al public/viewer/js')
-execCommand('cat public/viewer/js/vivliostyle-viewer.js')
+// execCommand('cat public/viewer/js/vivliostyle-viewer.js')
 
 const jspath = './public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
