@@ -62,7 +62,7 @@ function useBuildStatus(
   }, [buildID]);
 }
 
-export default () => {
+const GitHubOwnerRepo =  () => {
   const {user, isPending} = useAuthorizedUser();
   const router = useRouter();
   const {owner, repo} = router.query;
@@ -290,3 +290,5 @@ export default () => {
     </UI.Box>
   );
 };
+
+export default GitHubOwnerRepo;

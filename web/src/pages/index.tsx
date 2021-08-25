@@ -12,7 +12,7 @@ const GithubAppsButtonGroup = dynamic(
   {ssr: false}
 )
 
-export default () => {
+const Index = () => {
   const {user, isPending} = useAuthorizedUser();
   return (
     <UI.Box>
@@ -39,3 +39,5 @@ export default () => {
     </UI.Box>
   );
 };
+
+export default Index;
