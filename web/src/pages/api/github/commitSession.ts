@@ -66,7 +66,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
     path,
     sha: contentSha,
     content: Buffer.from(text, 'utf8').toString('base64'),
-    message: 'Update index.md',
+    message: `Update ${path}`,
   });
   res.status(201).send(null);
 };
