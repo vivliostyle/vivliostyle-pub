@@ -1,12 +1,12 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
-import {ReposGetContentResponseData} from '@octokit/types'
+import {Endpoints} from '@octokit/types';
 
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 
-export type ContentOfRepositoryApiResponse = ReposGetContentResponseData
+export type ContentOfRepositoryApiResponse = Endpoints["GET /repos/{owner}/{repo}/contents/{path}"]['response']['data']
 
 const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null> = async (
   req,
@@ -64,7 +64,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     auth: `token ${token}`,
   });
   try {
-    const {data} = await octokit.repos.getContent({owner, repo, path});
+    const { data } = await octokit.repos.getContent({owner, repo, path});
+    const content = Array.isArray(data)? data[0] : data
     return res.send(data)
   } catch (error) {
     throw error

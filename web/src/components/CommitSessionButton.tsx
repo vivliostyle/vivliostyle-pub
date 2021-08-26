@@ -33,7 +33,7 @@ export const CommitSessionButton = ({
         setBusy(false);
       }
     })();
-  }, [user, sessionId]);
+  }, [user, sessionId, onDidSaved]);
 
   return (
     <UI.Button

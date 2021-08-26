@@ -5,7 +5,7 @@ import {Octokit} from '@octokit/rest';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 
-export type GithubReposApiResponse = Endpoints['GET /user/installations/:installation_id/repositories']['response']['data']['repositories'];
+export type GithubReposApiResponse = Endpoints['GET /user/installations/{installation_id}/repositories']['response']['data']['repositories'];
 
 const repos: NextApiHandler<GithubReposApiResponse | null> = async (
   req,

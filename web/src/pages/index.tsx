@@ -5,12 +5,7 @@ import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
 import {GithubReposList} from '@components/GithubReposList';
-
-import dynamic from "next/dynamic"
-const GithubAppsButtonGroup = dynamic(
-  () => import('@components/GithubAppsButtonGroup'), 
-  {ssr: false}
-)
+import {GithubAppsButtonGroup} from '@components/GithubAppsButtonGroup';
 
 const Index = () => {
   const {user, isPending} = useAuthorizedUser();

@@ -43,7 +43,7 @@ export const MarkdownEditor = ({
         onModified(value);
       });
     },
-    [],
+    [onModified],
   );
 
   return (

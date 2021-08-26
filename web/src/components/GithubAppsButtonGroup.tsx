@@ -1,6 +1,13 @@
+import React, {useMemo} from 'react';
+
 import * as UI from './ui';
 
-const GithubAppsButtonGroup = () => {
+export const GithubAppsButtonGroup = () => {
+
+  const redirectUri = useMemo(() => {
+    return `${window.location.origin}/api/github/callback`
+  }, [])
+
   return (
     <UI.ButtonGroup spacing={4}>
       <UI.Button
@@ -13,8 +20,7 @@ const GithubAppsButtonGroup = () => {
       </UI.Button>
       <UI.Button
         onClick={async () => {
-          const redirect_uri = encodeURIComponent(`${window.location.origin}/api/github/callback`)
-          window.location.href = `https://github.com/login/oauth/authorize?client_id=Iv1.82f91d6603ec90aa&redirect_uri=${redirect_uri}`;
+          window.location.href = `https://github.com/login/oauth/authorize?client_id=Iv1.82f91d6603ec90aa&redirect_uri=${encodeURIComponent(redirectUri)}`;
         }}
       >
         Refresh GitHub Access Token
@@ -22,4 +28,3 @@ const GithubAppsButtonGroup = () => {
     </UI.ButtonGroup>
   );
 };
-export default GithubAppsButtonGroup;

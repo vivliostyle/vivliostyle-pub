@@ -30,7 +30,7 @@ function buildViewerURL(
   return url;
 }
 
-const getContent = async(owner:string, repo:string, path: string, user: firebase.User) => {
+const getFileContent = async(owner:string, repo:string, path: string, user: firebase.User) => {
   const idToken = await user.getIdToken();
   const params = {owner, repo, path}
   const query_params = new URLSearchParams(params); 
@@ -43,6 +43,10 @@ const getContent = async(owner:string, repo:string, path: string, user: firebase
       },
     },
   ).then((r) => r.json());
+  if( Array.isArray(content) || !("content" in content) ) {
+    // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
+    throw new Error(`Content type is not file`);
+  }
   return content
 }
 
@@ -99,13 +103,12 @@ export const Previewer: React.FC<PreviewerProps> = ({
       
       for(let i=0; i < imagePaths.length; i++) {
         const contentPath = path.join(path.dirname(basename), imagePaths[i])
-        const content = await getContent(owner,repo, contentPath, user)
+        const content = await getFileContent(owner,repo, contentPath, user)
         await updateCache(contentPath, Buffer.from(content.content, 'base64'))
       }
 
       if( !stylesheet.includes('https://') && !stylesheet.includes('http://') ){
-        const content = await getContent(owner,repo, stylesheet, user)
-        console.log(content)
+        const content = await getFileContent(owner,repo, stylesheet, user)
         await updateCache(stylesheet, Buffer.from(content.content, 'base64').toString('utf8'))
       }
 

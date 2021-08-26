@@ -31,7 +31,7 @@ const HeaderUserInfo: React.FC = () => {
       {user && (
         <UI.Button
           variant="outline"
-          variantColor="blackAlpha"
+          variantcolor="blackAlpha"
           onClick={signOut}
         >
           Logout

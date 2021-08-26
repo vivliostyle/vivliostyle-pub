@@ -1,6 +1,6 @@
-import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
+import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
-import {useToast} from '@chakra-ui/core';
+import { useToast, RenderProps } from "@chakra-ui/react"
 
 import firebase from '@services/firebase';
 import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
@@ -59,7 +59,7 @@ function useBuildStatus(
         if (onBuildFinished) onBuildFinished(url);
       });
     return unsubscribe;
-  }, [buildID]);
+  }, [buildID, onBuildFinished]);
 }
 
 const GitHubOwnerRepo =  () => {
@@ -87,16 +87,17 @@ const GitHubOwnerRepo =  () => {
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
+    const ViewPDFToast = ({onClose}: RenderProps) => (
+      <UI.Box bg="tomato" p={5} color="white">
+        <UI.Link href={artifactURL} isExternal onClick={onClose}>
+          View PDF
+        </UI.Link>
+      </UI.Box>
+    )
     toast({
       duration: 9000,
       isClosable: true,
-      render: ({onClose}) => (
-        <UI.Box bg="tomato" p={5} color="white">
-          <UI.Link href={artifactURL} isExternal onClick={onClose}>
-            View PDF
-          </UI.Link>
-        </UI.Box>
-      ),
+      render: ViewPDFToast,
     });
   });
 
@@ -105,7 +106,7 @@ const GitHubOwnerRepo =  () => {
     if (!user && !isPending) {
       router.replace('/');
     }
-  }, [user, isPending]);
+  }, [user, isPending, router]);
 
   // set text
   useEffect(() => {
@@ -125,7 +126,7 @@ const GitHubOwnerRepo =  () => {
   const onModified = useCallback(() => {
     setStatus('modified');
     setWarnDialog(true);
-  }, []);
+  }, [setWarnDialog]);
 
   const onUpdate = useCallback(
     (updatedText) => {
@@ -148,7 +149,7 @@ const GitHubOwnerRepo =  () => {
   const onDidSaved = useCallback(() => {
     setStatus('clean');
     setWarnDialog(false);
-  }, []);
+  }, [setWarnDialog]);
 
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);

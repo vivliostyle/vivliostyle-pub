@@ -62,6 +62,10 @@ export function useVivlioStyleConfig({
           },
         },
       ).then((r) => r.json());
+      if( Array.isArray(content) || !("content" in content) ) {
+        // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
+        throw new Error(`Content type is not file`);
+      }
       const parsedContent = parseConfig(Buffer.from(content.content, 'base64').toString('utf8'))
       setConfig(parsedContent);
     })();

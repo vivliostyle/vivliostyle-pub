@@ -70,6 +70,10 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
       repo,
       path,
     });
+    if( Array.isArray(content) || !("content" in data) ) {
+      // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
+      throw new Error(`Content type is not file`);
+    }
     if (!Array.isArray(data) && data.type === 'file' && data.content) {
       content = Buffer.from(data.content, 'base64').toString('utf8');
     }

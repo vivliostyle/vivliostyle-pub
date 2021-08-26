@@ -6,12 +6,15 @@ export const useAuthorizedUser = () => {
   const [isPending, setPending] = useState(true);
   const [user, setUser] = useState<firebase.User | null>(null);
 
+  // throw new Error("ギャア！")
+
   useEffect(() => {
-    return firebase.auth().onAuthStateChanged((user) => {
+    const unsubscriber = firebase.auth().onAuthStateChanged(user => {
       if(user) user.getIdToken(true);
       setUser(user);
       setPending(false);
     });
+    return () => unsubscriber()
   }, []);
 
   return {user, isPending};
