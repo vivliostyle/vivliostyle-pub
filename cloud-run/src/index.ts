@@ -57,7 +57,7 @@ async function buildFromGithubRepository(owner: string, repo: string) {
     console.log('>> Start compile');
     const outputPdfPath = `${cwd}/tmp/pdfs/${processID}.pdf`
     process.chdir(repoDir);
-    await execCommanad(`${cwd}/node_modules/.bin/vivliostyle build --no-sandbox --timeout 60 --output ${outputPdfPath}`);
+    await execCommanad(`${cwd}/node_modules/.bin/vivliostyle build --no-sandbox --timeout 3600 --output ${outputPdfPath}`);
     process.chdir(cwd);
     await execCommanad(`rm -rf ${cwd}/tmp/repos/${processID}`);
     return outputPdfPath;
