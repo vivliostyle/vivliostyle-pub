@@ -10,7 +10,7 @@ RUN set -x \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
     # dependencies for puppeteer
-    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
     # dependencies for press-ready
     ghostscript poppler-utils \
   && rm -rf /var/lib/apt/lists/*
