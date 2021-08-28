@@ -1,4 +1,5 @@
 import React, {useMemo} from 'react';
+import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import * as UI from './ui';
 
@@ -11,7 +12,7 @@ export const GithubAppsButtonGroup = () => {
   return (
     <UI.ButtonGroup spacing={4}>
       <UI.Button
-        leftIcon="external-link"
+        leftIcon={<ExternalLinkIcon />}
         onClick={async () => {
           window.open(process.env.GH_APP_INSTALLATION_URL, '_blank')
         }}
