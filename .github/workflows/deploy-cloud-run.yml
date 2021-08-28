@@ -45,6 +45,7 @@ jobs:
             --region $GCP_REGION \
             --platform managed \
             --timeout 60m \
-            --memory 4Gi \
-            --concurrency 2
+            --cpu 4 \
+            --memory 8Gi \
+            --concurrency 1 \
             --quiet
