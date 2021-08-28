@@ -44,6 +44,6 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --region $GCP_REGION \
             --platform managed \
-            --timeout 900 \
+            --timeout 60m \
             --memory 4Gi \
             --quiet
