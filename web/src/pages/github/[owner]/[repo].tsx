@@ -79,7 +79,7 @@ const GitHubOwnerRepo =  () => {
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
     'init',
   );
-  const [stylesheet, setStylesheet] = useState<string>('');
+  const [stylesheet, setStylesheet] = useState<string>(themes[2].css);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
