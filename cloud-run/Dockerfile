@@ -11,6 +11,8 @@ RUN set -x \
   && apt-get install -y --no-install-recommends \
     # dependencies for puppeteer
     google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    # https://seri.hatenablog.com/entry/2020/10/04/012459
+    libgtk-3.0 libgbm-dev libnss3 libatk-bridge2.0-0 libasound2 \
     # dependencies for press-ready
     ghostscript poppler-utils \
   && rm -rf /var/lib/apt/lists/*
