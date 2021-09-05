@@ -20,13 +20,7 @@ function buildViewerURL(
     VIVLIOSTYLE_VIEWER_HTML_URL +
     `?${(new Date()).getTime()}` + // disable viewer cache
     `#x=${path.join(VPUBFS_ROOT, filename)}`;
-  if (style) {
-    let relativeStylesheetpath = style
-    if( !style.includes('https://') && !style.includes('http://') ){
-      relativeStylesheetpath = path.relative(path.dirname(filename), style)
-    }
-    url += `&style=${style}`;
-  }
+  if (style) url += `&style=${style}`;
   return url;
 }
 
@@ -55,13 +49,16 @@ async function updateCache(cachePath: string, content: any) {
   const cache = await caches.open(VPUBFS_CACHE_NAME);
   const contentType = mime.lookup(filePath)
   console.log(`updateCache : ${filePath}`)
-  return await cache.put(
+  const headers = new Headers();
+  headers.append('content-type', `${contentType.toString()}`);
+  await cache.delete(filePath)
+  await cache.put(
     filePath,
-    new Response(content, contentType ? {
-      headers: {'content-type': contentType},
-    } : undefined),
+    new Response(content, { headers }),
   );
 }
+
+const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
 
 interface PreviewerProps {
   body: string;
@@ -75,44 +72,42 @@ interface PreviewerProps {
 export const Previewer: React.FC<PreviewerProps> = ({
   body,
   basename,
-  stylesheet = '',
+  stylesheet,
   owner,
   repo,
   user,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const viewerURL = useMemo(() => buildViewerURL(basename), [basename]);
+  // Why Date.now()? -> disable viewer cache
+  const viewerURL = useMemo(() => {
+    let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, basename)}`
+    if(stylesheet) url += `&style=${isURL(stylesheet) ? stylesheet : path.join(VPUBFS_ROOT, stylesheet)}`
+    return url
+  },[basename, stylesheet]);
 
   useEffect(() => {
     if(!user) return
     (async() => {
-      let relativeStylesheetpath = stylesheet
-      if( !stylesheet.includes('https://') && !stylesheet.includes('http://') ){
-        relativeStylesheetpath = path.relative(path.dirname(basename), stylesheet)
+      if( stylesheet && !isURL(stylesheet) ){
+        const content = await getFileContent(owner,repo, stylesheet, user)
+        await updateCache(stylesheet, Buffer.from(content.content, 'base64').toString())
       }
-      const htmlString = stringify(body, {style: relativeStylesheetpath});
+      const htmlString = stringify(body);
+      await updateCache(basename, htmlString)
 
       const imagePaths = [] as string[]
       const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlString, 'text/html')
-      const imageElements = doc.querySelectorAll('img')
-      imageElements.forEach(element => {
+      parser.parseFromString(htmlString, 'text/html').querySelectorAll('img').forEach(element => {
         const src = element.getAttribute("src")
-        if( src && !( src.includes("https://") || src.includes("http://") ) ) imagePaths.push(src)
+        if( src && !isURL(src) ) imagePaths.push(src)
       })
-      
-      for(let i=0; i < imagePaths.length; i++) {
-        const contentPath = path.join(path.dirname(basename), imagePaths[i])
-        const content = await getFileContent(owner,repo, contentPath, user)
+
+      await Promise.all(imagePaths.map(imagePath => async() => {
+        const contentPath = path.join(path.dirname(basename), imagePath)
+        const content = await getFileContent(owner, repo, contentPath, user)
         await updateCache(contentPath, Buffer.from(content.content, 'base64'))
-      }
+      }))
 
-      if( !stylesheet.includes('https://') && !stylesheet.includes('http://') ){
-        const content = await getFileContent(owner,repo, stylesheet, user)
-        await updateCache(stylesheet, Buffer.from(content.content, 'base64').toString('utf8'))
-      }
-
-      await updateCache(basename, htmlString)
       iframeRef.current?.contentWindow?.location.reload()
     })()
   }, [body, basename, stylesheet, owner, repo, user]);
