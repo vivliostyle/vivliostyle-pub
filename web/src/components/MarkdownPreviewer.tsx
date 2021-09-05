@@ -19,7 +19,7 @@ function buildViewerURL(
   let url =
     VIVLIOSTYLE_VIEWER_HTML_URL +
     `?${(new Date()).getTime()}` + // disable viewer cache
-    `#x=${path.join(VPUBFS_ROOT, filename)}&bookMode=true`;
+    `#x=${path.join(VPUBFS_ROOT, filename)}`;
   if (style) {
     let relativeStylesheetpath = style
     if( !style.includes('https://') && !style.includes('http://') ){
