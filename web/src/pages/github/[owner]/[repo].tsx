@@ -1,6 +1,6 @@
 import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
-import { useToast, RenderProps } from "@chakra-ui/react"
+import { useToast, RenderProps, useDisclosure } from "@chakra-ui/react"
 
 import firebase from '@services/firebase';
 import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
@@ -13,6 +13,7 @@ import {Header} from '@components/Header';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
+import {FileUploadModal} from '@components/FileUploadModal';
 
 const themes = [
   {
@@ -211,6 +212,12 @@ const GitHubOwnerRepo =  () => {
     if(config && config.theme) setStylesheet(config.theme)
   }, [config])
 
+  const {
+    isOpen:isOpenFileUploadModal,
+    onOpen:onOpenFileUploadModal,
+    onClose:onCloseFileUploadModal
+  } = useDisclosure()
+
   return (
     <UI.Box>
       <Header />
@@ -244,6 +251,20 @@ const GitHubOwnerRepo =  () => {
                       {theme.name}
                     </UI.MenuItem>
                   ))}
+                </UI.MenuGroup>
+                <UI.MenuDivider />
+                <UI.MenuGroup title="Add Files">
+                  <UI.MenuItem onClick={onOpenFileUploadModal}>
+                    Add Image
+                  </UI.MenuItem>
+                  <FileUploadModal
+                    user={user}
+                    owner={ownerStr!}
+                    repo={repoStr!} 
+                    isOpen={isOpenFileUploadModal}
+                    onOpen={onOpenFileUploadModal}
+                    onClose={onCloseFileUploadModal}
+                  />
                 </UI.MenuGroup>
                 <UI.MenuDivider />
                 <UI.MenuGroup title="Export">

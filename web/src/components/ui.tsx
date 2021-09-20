@@ -1,4 +1,4 @@
-import {Flex, FlexProps} from '@chakra-ui/react';
+import {Flex, FlexProps, Input, FormControl, FormLabel, InputGroup, InputLeftElement, FormErrorMessage, Code, Icon} from '@chakra-ui/react';
 
 export {
   Box,
@@ -19,6 +19,15 @@ export {
   MenuDivider,
   Spinner,
   ButtonGroup,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
 
 export const Container = (props: FlexProps) => (
