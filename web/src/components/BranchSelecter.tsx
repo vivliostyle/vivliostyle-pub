@@ -1,15 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import * as UI from './ui';
-import useSWR from 'swr';
 import firebase from '@services/firebase';
 import {BranchesApiResponse} from '../pages/api/github/branches';
-
-const fetcher = (url: string, idToken: string) =>
-  fetch(url, {
-    headers: {
-      'x-id-token': idToken,
-    },
-  }).then((r) => r.json());
 
 export const BranchSelecter = ({
   user,
@@ -22,37 +14,45 @@ export const BranchSelecter = ({
   repo: string;
   onChange: (branch:string)=>void;
 }) => {
-  const [idToken, setIdToken] = useState<string | null>(null);
+  const [branch, setBranch] = useState<string | null>(null);
+  const [branches, setBranches] = useState<string[]>([]);
   useEffect(() => {
+    console.log(`AAAAAA!!!!!!: ${user}`)
     if(!user) return
-    user
-      .getIdToken(true)
-      .then(setIdToken)
-      .catch(() => setIdToken(null));
-  }, [user]);
-
-  const {data, isValidating} = useSWR<BranchesApiResponse>(
-    idToken ? [`/api/github/branches?${new URLSearchParams({owner, repo})}`, idToken] : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    },
-  );
+    (async () => {
+      try {
+        console.log(`ouuuuuuuuuuuuuuu!!!!!!: ${user}`)
+        const idToken = await user.getIdToken();
+        const resp = await fetch(`/api/github/branches?${new URLSearchParams({owner, repo})}`, {
+          method: 'GET',
+          headers: {
+            'x-id-token': idToken,
+          },
+        });
+        const data = (await resp.json()) as BranchesApiResponse
+        console.log(data)
+        setBranches(data.branches.map(b => b.name))
+        setBranch(data.default);
+      } catch (error) {
+        console.error(error);
+      }
+    })()
+  }, [user, owner, repo]);
 
   useEffect(() => {
-    if(data) onChange(data.default)
-  }, [data]);
+    if(branch) onChange(branch)
+  }, [branch]);
 
   const onChangeBranch = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange(e.target.value)
+    setBranch(e.target.value)
   }, [])
 
   return (
     <UI.Select
       onChange={onChangeBranch} 
-      value={(isValidating || !data) ? '' : data.default}
+      value={branch ? branch : ""}
     >
-        { (isValidating || !data) ? null : data.branches.map(branch => <option value={branch.name} key={branch.name}>{branch.name}</option>) }
+        { branches.map(name => <option value={name} key={name}>{name}</option>) }
     </UI.Select>
   );
 };
