@@ -12,19 +12,7 @@ const VPUBFS_ROOT = '/vpubfs';
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
 
-function buildViewerURL(
-  filename: string,
-  {style}: {style?: string} = {},
-): string {
-  let url =
-    VIVLIOSTYLE_VIEWER_HTML_URL +
-    `?${(new Date()).getTime()}` + // disable viewer cache
-    `#x=${path.join(VPUBFS_ROOT, filename)}`;
-  if (style) url += `&style=${style}`;
-  return url;
-}
-
-const getFileContent = async(owner:string, repo:string, path: string, user: firebase.User) => {
+const getFileContentFromGithub = async(owner:string, repo:string, path: string, user: firebase.User) => {
   const idToken = await user.getIdToken();
   const params = {owner, repo, path}
   const query_params = new URLSearchParams(params); 
@@ -60,6 +48,13 @@ async function updateCache(cachePath: string, content: any) {
 
 const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
 
+const updateCacheFromPath = async(owner: string, repo: string, basePath: string, contentRelativePath: string, user: firebase.User) => {
+  if( isURL(contentRelativePath) ) return;
+  const contentPath = path.join(path.dirname(basePath), contentRelativePath)
+  const content = await getFileContentFromGithub(owner, repo, contentPath, user)
+  await updateCache(contentPath, Buffer.from(content.content, 'base64'))
+}
+
 interface PreviewerProps {
   body: string;
   basename: string;
@@ -89,8 +84,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
     if(!user) return
     (async() => {
       if( stylesheet && !isURL(stylesheet) ){
-        const content = await getFileContent(owner,repo, stylesheet, user)
-        await updateCache(stylesheet, Buffer.from(content.content, 'base64').toString())
+        const content = await getFileContentFromGithub(owner,repo, stylesheet, user)
+        const stylesheetString = Buffer.from(content.content, 'base64').toString()
+        await updateCache(stylesheet, stylesheetString)
+        const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
+        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, stylesheet, imageOfStyle, user)))
       }
       const htmlString = stringify(body);
       await updateCache(basename, htmlString)
@@ -102,11 +100,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
         if( src && !isURL(src) ) imagePaths.push(src)
       })
 
-      await Promise.all(imagePaths.map(imagePath => async() => {
-        const contentPath = path.join(path.dirname(basename), imagePath)
-        const content = await getFileContent(owner, repo, contentPath, user)
-        await updateCache(contentPath, Buffer.from(content.content, 'base64'))
-      }))
+      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, basename, imagePath, user)))
 
       iframeRef.current?.contentWindow?.location.reload()
     })()
