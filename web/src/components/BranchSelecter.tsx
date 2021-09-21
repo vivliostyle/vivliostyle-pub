@@ -17,11 +17,9 @@ export const BranchSelecter = ({
   const [branch, setBranch] = useState<string | null>(null);
   const [branches, setBranches] = useState<string[]>([]);
   useEffect(() => {
-    console.log(`AAAAAA!!!!!!: ${user}`)
     if(!user) return
     (async () => {
       try {
-        console.log(`ouuuuuuuuuuuuuuu!!!!!!: ${user}`)
         const idToken = await user.getIdToken();
         const resp = await fetch(`/api/github/branches?${new URLSearchParams({owner, repo})}`, {
           method: 'GET',
