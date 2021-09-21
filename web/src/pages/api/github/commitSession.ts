@@ -2,9 +2,10 @@ import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
+import branches from './branches';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
-  const {sessionId} = req.body;
+  const {sessionId, branch} = req.body;
   if (req.method !== 'PUT' || !sessionId) {
     return res.status(400).send(null);
   }
@@ -54,6 +55,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
         owner,
         repo,
         path,
+        ref: branch
       });
       if (!Array.isArray(data) && data.type === 'file') {
         return data.sha;

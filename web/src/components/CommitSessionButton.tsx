@@ -4,11 +4,13 @@ import * as UI from './ui';
 export const CommitSessionButton = ({
   user,
   sessionId,
+  branch,
   disabled,
   onDidSaved = () => {},
 }: {
   user: firebase.User;
   sessionId: string;
+  branch: string | undefined;
   disabled?: boolean;
   onDidSaved?: () => void;
 }) => {
@@ -20,7 +22,7 @@ export const CommitSessionButton = ({
         const idToken = await user.getIdToken();
         await fetch('/api/github/commitSession', {
           method: 'PUT',
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify({ sessionId, branch }),
           headers: {
             'content-type': 'application/json',
             'x-id-token': idToken,

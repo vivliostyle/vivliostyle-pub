@@ -28,6 +28,7 @@ export {
   ModalCloseButton,
   InputGroup,
   InputLeftElement,
+  Select,
 } from '@chakra-ui/react';
 
 export const Container = (props: FlexProps) => (

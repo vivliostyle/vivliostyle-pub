@@ -12,8 +12,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   req,
   res,
 ) => {
-  const {owner, repo, path} = req.query;
-  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path)) {
+  const {owner, repo, path, branch} = req.query;
+  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path) || Array.isArray(branch)) {
     console.log("validation error")
     return res.status(400).send(null);
   }
@@ -64,7 +64,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     auth: `token ${token}`,
   });
   try {
-    const { data } = await octokit.repos.getContent({owner, repo, path});
+    const { data } = await octokit.repos.getContent({owner, repo, path, branch});
     const content = Array.isArray(data)? data[0] : data
     return res.send(data)
   } catch (error) {

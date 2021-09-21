@@ -17,6 +17,7 @@ export const FileUploadModal = ({
   user,
   owner,
   repo,
+  branch,
   isOpen,
   onOpen,
   onClose,
@@ -24,6 +25,7 @@ export const FileUploadModal = ({
   user: firebase.User | null;
   owner: string;
   repo: string;
+  branch: string | undefined;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -67,6 +69,7 @@ export const FileUploadModal = ({
           body: JSON.stringify({
             owner,
             repo,
+            branch,
             path: fileName,
             content: base64image?.toString().replace("data:image/jpeg;base64,", "")
           }),

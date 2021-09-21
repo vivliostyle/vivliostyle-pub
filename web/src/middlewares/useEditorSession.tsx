@@ -7,11 +7,13 @@ import {GithubRequestSessionApiResponse} from '../pages/api/github/requestSessio
 export function useEditorSession({
   owner,
   repo,
+  branch,
   user,
   path,
 }: {
   owner: string;
   repo: string;
+  branch: string | undefined;
   user: firebase.User | null;
   path: string;
 }) {
@@ -31,7 +33,7 @@ export function useEditorSession({
         '/api/github/requestSession',
         {
           method: 'POST',
-          body: JSON.stringify({owner, repo, path}),
+          body: JSON.stringify({owner, repo, path, branch}),
           headers: {
             'content-type': 'application/json',
             'x-id-token': idToken,

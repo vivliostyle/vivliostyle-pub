@@ -4,6 +4,7 @@ import fetch from 'isomorphic-unfetch';
 import firebase from '@services/firebase';
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 import type {VivliostyleConfigSchema} from './vivliostyle.config'
+import branches from 'pages/api/github/branches';
 
 const parseConfig = (configString: string) => {
   // 
@@ -41,17 +42,20 @@ export function useVivlioStyleConfig({
   owner,
   repo,
   user,
+  branch,
 }: {
   owner: string;
   repo: string;
+  branch: string | undefined;
   user: firebase.User | null;
 }) {
   const [config, setConfig] = useState<VivliostyleConfigSchema>()
   useEffect(() => {
-    if (!user) return
+    console.log(`branch: ${branch}`)
+    if (!user || !branch) return
     (async () => {
       const idToken = await user.getIdToken();
-      const params = {owner, repo, path: 'vivliostyle.config.js'}
+      const params = {owner, repo, branch, path: 'vivliostyle.config.js'}
       const query_params = new URLSearchParams(params); 
       const content : ContentOfRepositoryApiResponse = await fetch(
         `/api/github/contentOfRepository?${query_params}`,
@@ -69,6 +73,6 @@ export function useVivlioStyleConfig({
       const parsedContent = parseConfig(Buffer.from(content.content, 'base64').toString('utf8'))
       setConfig(parsedContent);
     })();
-  }, [owner, repo, user]);
+  }, [owner, repo, user, branch]);
   return config
 }

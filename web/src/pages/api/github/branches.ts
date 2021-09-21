@@ -1,20 +1,23 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
+import {Endpoints} from '@octokit/types';
 
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 
-export interface GithubRequestSessionApiResponse {
-  id: string;
+export type BranchesApiResponse = {
+    branches: Endpoints["GET /repos/{owner}/{repo}/branches"]['response']['data'];
+    default: string;
 }
 
-const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = async (
+const branches: NextApiHandler<BranchesApiResponse | null> = async (
   req,
   res,
 ) => {
-  const {owner, repo, path, branch} = req.body;
-  if (req.method !== 'POST' || !owner || !repo) {
+  const {owner, repo} = req.query;
+  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo)) {
+    console.log("validation error")
     return res.status(400).send(null);
   }
   const idToken = req.headers['x-id-token'];
@@ -27,6 +30,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
     idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
   } catch (error) {
+    console.log(error)
     return res.status(400).send(null);
   }
 
@@ -56,44 +60,22 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
     return res.status(405).send(null);
   }
 
-  // Get index.md from repo
   const token = await githubApp.getInstallationAccessToken({
     installationId: id,
   });
   const octokit = new Octokit({
     auth: `token ${token}`,
   });
-  let content = '';
   try {
-    const {data} = await octokit.repos.getContent({
-      owner,
-      repo,
-      path,
-      branch,
-    });
-    if( Array.isArray(content) || !("content" in data) ) {
-      // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
-      throw new Error(`Content type is not file`);
-    }
-    if (!Array.isArray(data) && data.type === 'file' && data.content) {
-      content = Buffer.from(data.content, 'base64').toString('utf8');
-    }
-  } catch (error) {}
-
-  // create session
-  const sessionDoc = await firebaseAdmin
-    .firestore()
-    .collection('users')
-    .doc(idTokenDecoded.uid)
-    .collection('sessions')
-    .add({
-      userUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
-      text: content,
-      owner,
-      repo,
-      path,
-    });
-  res.send({id: sessionDoc.id});
+    const { data: branches } = await octokit.repos.listBranches({owner, repo});
+    const { data: repoInfo } = await octokit.repos.get({owner, repo});
+    return res.send({
+        branches: branches,
+        default: repoInfo.default_branch
+    })
+  } catch (error) {
+    throw error
+  }
 };
 
-export default requestSession;
+export default branches;

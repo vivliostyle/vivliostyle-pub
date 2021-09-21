@@ -4,7 +4,7 @@ import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
-  const {owner, repo, path, content} = req.body;
+  const {owner, repo, path, content, branch} = req.body;
   if (req.method !== 'POST' || !owner || !repo || !path || !content) {
     return res.status(400).send(null);
   }
@@ -41,6 +41,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   await octokit.repos.createOrUpdateFileContents({
     owner,
     repo,
+    branch,
     path,
     content,
     message: `Create ${path}`,

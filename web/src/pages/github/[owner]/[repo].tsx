@@ -14,6 +14,7 @@ import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
 import {FileUploadModal} from '@components/FileUploadModal';
+import {BranchSelecter} from '@components/BranchSelecter';
 
 const themes = [
   {
@@ -70,11 +71,13 @@ const GitHubOwnerRepo =  () => {
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
   const repoStr = Array.isArray(repo) ? repo[0] : repo;
   const [filePath, setFilePath] = useState('');
+  const [branch, setBranch] = useState<string | undefined>()
   const {session, sessionId} = useEditorSession({
     user,
     owner: ownerStr!,
     repo: repoStr!,
-    path: filePath
+    branch: branch,
+    path: filePath,
   });
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
@@ -188,6 +191,7 @@ const GitHubOwnerRepo =  () => {
     user,
     owner: ownerStr!,
     repo: repoStr!,
+    branch: branch
   })
   const filenames = useMemo(() => {
     if(!config || !config.entry) return []
@@ -218,6 +222,10 @@ const GitHubOwnerRepo =  () => {
     onClose:onCloseFileUploadModal
   } = useDisclosure()
 
+  const onBranchUpdate = useCallback((branch:string) => {
+    setBranch(branch)
+  }, [] );
+
   return (
     <UI.Box>
       <Header />
@@ -228,13 +236,23 @@ const GitHubOwnerRepo =  () => {
         borderBottomColor="gray.300"
       >
         <UI.Flex w="100%" px={8} justify="space-between" align="center">
-          {status === 'saved' && <UI.Text>Document updated</UI.Text>}
-          {user && sessionId && (
-            <CommitSessionButton
-              {...{user, sessionId, onDidSaved}}
-              disabled={status !== 'saved'}
-            />
-          )}
+          <UI.Flex align="center">
+            {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
+            {user && sessionId && (
+              <CommitSessionButton
+                {...{user, sessionId, onDidSaved, branch}}
+                disabled={status !== 'saved'}
+              />
+            )}
+            <UI.Box w="180px" px="4">
+              <BranchSelecter
+                user={user}
+                owner={ownerStr!}
+                repo={repoStr!}
+                onChange={onBranchUpdate}
+              />
+            </UI.Box>
+          </UI.Flex>
           <UI.Flex align="center">
             {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
             <UI.Menu>
@@ -261,6 +279,7 @@ const GitHubOwnerRepo =  () => {
                     user={user}
                     owner={ownerStr!}
                     repo={repoStr!} 
+                    branch={branch}
                     isOpen={isOpenFileUploadModal}
                     onOpen={onOpenFileUploadModal}
                     onClose={onCloseFileUploadModal}
