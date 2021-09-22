@@ -3,7 +3,22 @@ import {Octokit} from '@octokit/rest';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 
-const commitSession: NextApiHandler<null> = async (req, res) => {
+export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner: string, repo: string, branch: string, path: string, base64edContent: string) => {
+  const contentSha = await (async () => {
+    try {
+      const {data} = await octokit.repos.getContent({owner, repo, path, ref: branch});
+      if (!Array.isArray(data) && data.type === 'file') return data.sha;
+    } catch (error) {}
+  })();
+  await octokit.repos.createOrUpdateFileContents({
+    owner, repo, path,
+    sha: contentSha,
+    content: base64edContent,
+    message: contentSha ? `Update ${path}` : `Create ${path}`,
+  });
+}
+
+const createOrUpdateFileContents: NextApiHandler<null> = async (req, res) => {
   const {owner, repo, path, content, branch} = req.body;
   if (req.method !== 'POST' || !owner || !repo || !path || !content) {
     return res.status(400).send(null);
@@ -13,12 +28,9 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
     return res.status(401).send(null);
   }
 
-  req.query.file
-
-  let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
   try {
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
-    idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
+    await firebaseAdmin.auth().verifyIdToken(tokenString);
   } catch (error) {
     return res.status(400).send(null);
   }
@@ -38,15 +50,8 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   const octokit = new Octokit({
     auth: `token ${token}`,
   });
-  await octokit.repos.createOrUpdateFileContents({
-    owner,
-    repo,
-    branch,
-    path,
-    content,
-    message: `Create ${path}`,
-  });
+  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, content)
   res.status(201).send(null);
 };
 
-export default commitSession;
+export default createOrUpdateFileContents;

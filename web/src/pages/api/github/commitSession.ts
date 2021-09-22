@@ -1,8 +1,10 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
+import {stringify} from '@vivliostyle/vfm';
+
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
-import branches from './branches';
+import {createOrUpdateFileContentsInternal} from './createOrUpdateFileContents';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
   const {sessionId, branch} = req.body;
@@ -49,27 +51,8 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   const octokit = new Octokit({
     auth: `token ${token}`,
   });
-  const contentSha = await (async () => {
-    try {
-      const {data} = await octokit.repos.getContent({
-        owner,
-        repo,
-        path,
-        ref: branch
-      });
-      if (!Array.isArray(data) && data.type === 'file') {
-        return data.sha;
-      }
-    } catch (error) {}
-  })();
-  await octokit.repos.createOrUpdateFileContents({
-    owner,
-    repo,
-    path,
-    sha: contentSha,
-    content: Buffer.from(text, 'utf8').toString('base64'),
-    message: `Update ${path}`,
-  });
+  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'))
+  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), Buffer.from(stringify(text), 'utf8').toString('base64'))
   res.status(201).send(null);
 };
 
