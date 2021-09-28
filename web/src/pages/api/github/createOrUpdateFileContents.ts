@@ -11,7 +11,7 @@ export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner:
     } catch (error) {}
   })();
   await octokit.repos.createOrUpdateFileContents({
-    owner, repo, path,
+    owner, repo, path, branch,
     sha: contentSha,
     content: base64edContent,
     message: contentSha ? `Update ${path}` : `Create ${path}`,

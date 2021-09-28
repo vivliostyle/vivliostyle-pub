@@ -64,7 +64,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     auth: `token ${token}`,
   });
   try {
-    const { data } = await octokit.repos.getContent({owner, repo, path, branch});
+    const { data } = await octokit.repos.getContent({owner, repo, path, ref: branch});
     const content = Array.isArray(data)? data[0] : data
     return res.send(data)
   } catch (error) {

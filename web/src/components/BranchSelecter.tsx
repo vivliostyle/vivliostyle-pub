@@ -39,7 +39,7 @@ export const BranchSelecter = ({
 
   useEffect(() => {
     if(branch) onChange(branch)
-  }, [branch]);
+  }, [branch, onChange]);
 
   const onChangeBranch = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setBranch(e.target.value)

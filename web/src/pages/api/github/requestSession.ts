@@ -69,7 +69,7 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
       owner,
       repo,
       path,
-      branch,
+      ref: branch,
     });
     if( Array.isArray(content) || !("content" in data) ) {
       // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples

@@ -49,7 +49,7 @@ export function useEditorSession({
       setSession(session);
       setSessionId(id);
     })();
-  }, [owner, repo, user, path]);
+  }, [owner, repo, user, path, branch]);
 
   return {session, sessionId};
 }

@@ -35,7 +35,7 @@ export const CommitSessionButton = ({
         setBusy(false);
       }
     })();
-  }, [user, sessionId, onDidSaved]);
+  }, [user, sessionId, branch, onDidSaved]);
 
   return (
     <UI.Button

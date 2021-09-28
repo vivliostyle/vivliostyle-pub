@@ -51,7 +51,6 @@ export function useVivlioStyleConfig({
 }) {
   const [config, setConfig] = useState<VivliostyleConfigSchema>()
   useEffect(() => {
-    console.log(`branch: ${branch}`)
     if (!user || !branch) return
     (async () => {
       const idToken = await user.getIdToken();

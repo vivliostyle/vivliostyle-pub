@@ -89,7 +89,7 @@ export const FileUploadModal = ({
         setBusy(false);
       }
     })()
-  }, [user, file, fileName])
+  }, [user, owner, repo, branch, file, fileName, onClose, toast])
 
   return (
     <UI.Modal isOpen={isOpen} onClose={onClose}>
