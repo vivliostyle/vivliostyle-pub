@@ -19,13 +19,12 @@ export const CommitSessionButton = ({
     (async () => {
       setBusy(true);
       try {
-        const idToken = await user.getIdToken();
         await fetch('/api/github/commitSession', {
           method: 'PUT',
           body: JSON.stringify({ sessionId, branch }),
           headers: {
             'content-type': 'application/json',
-            'x-id-token': idToken,
+            'x-id-token': await user.getIdToken(),
           },
         });
         onDidSaved();

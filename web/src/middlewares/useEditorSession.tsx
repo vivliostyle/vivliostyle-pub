@@ -17,18 +17,12 @@ export function useEditorSession({
   user: firebase.User | null;
   path: string;
 }) {
-  const [
-    session,
-    setSession,
-  ] = useState<firebase.firestore.DocumentReference | null>(null);
+  const [session, setSession] = useState<firebase.firestore.DocumentReference | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
+    if (!user || !path) return;
     (async () => {
-      const idToken = await user.getIdToken();
       const {id}: GithubRequestSessionApiResponse = await fetch(
         '/api/github/requestSession',
         {
@@ -36,10 +30,10 @@ export function useEditorSession({
           body: JSON.stringify({owner, repo, path, branch}),
           headers: {
             'content-type': 'application/json',
-            'x-id-token': idToken,
+            'x-id-token': await user.getIdToken(),
           },
         },
-      ).then((r) => r.json());
+      ).then(r => r.json());
       const session = await firebase
         .firestore()
         .collection('users')

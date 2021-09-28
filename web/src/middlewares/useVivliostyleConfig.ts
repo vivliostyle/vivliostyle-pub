@@ -53,15 +53,12 @@ export function useVivlioStyleConfig({
   useEffect(() => {
     if (!user || !branch) return
     (async () => {
-      const idToken = await user.getIdToken();
-      const params = {owner, repo, branch, path: 'vivliostyle.config.js'}
-      const query_params = new URLSearchParams(params); 
       const content : ContentOfRepositoryApiResponse = await fetch(
-        `/api/github/contentOfRepository?${query_params}`,
+        `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path: 'vivliostyle.config.js'})}`,
         {
           headers: {
             'content-type': 'application/json',
-            'x-id-token': idToken,
+            'x-id-token': await user.getIdToken(),
           },
         },
       ).then((r) => r.json());

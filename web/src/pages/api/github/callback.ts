@@ -11,7 +11,7 @@ const installation: NextApiHandler = async (req, res) => {
     return res.status(500).send("parameter code not found");
   }
 
-  const response = await fetch('https://github.com/login/oauth/access_token', {
+  const { access_token: githubAccessToken } = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -22,9 +22,7 @@ const installation: NextApiHandler = async (req, res) => {
       client_secret: process.env.GH_APP_CLIENT_SECRET,
       code,
     }),
-  });
-  const json = await response.json();
-  const githubAccessToken = json.access_token;
+  }).then(r => r.json());
   const octokit = new Octokit({
     auth: `token ${githubAccessToken}`,
   });
@@ -33,11 +31,10 @@ const installation: NextApiHandler = async (req, res) => {
   if (!githubAccessToken || !primaryEmail) {
     return res.status(500).send(null);
   }
-  const encrypted = encrypt(githubAccessToken);
   try {
     const user = await firebaseAdmin.auth().getUserByEmail(primaryEmail);
     await firebaseAdmin.auth().setCustomUserClaims(user.uid, {
-      githubAccessToken: encrypted,
+      githubAccessToken: encrypt(githubAccessToken),
     });
   } catch (e) {}
   res.writeHead(302, {Location: '/'});

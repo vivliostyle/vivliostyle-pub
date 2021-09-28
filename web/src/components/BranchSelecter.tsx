@@ -20,11 +20,10 @@ export const BranchSelecter = ({
     if(!user) return
     (async () => {
       try {
-        const idToken = await user.getIdToken();
         const resp = await fetch(`/api/github/branches?${new URLSearchParams({owner, repo})}`, {
           method: 'GET',
           headers: {
-            'x-id-token': idToken,
+            'x-id-token': await user.getIdToken(),
           },
         });
         const data = (await resp.json()) as BranchesApiResponse

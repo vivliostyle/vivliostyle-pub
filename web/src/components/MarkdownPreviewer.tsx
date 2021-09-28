@@ -13,15 +13,12 @@ const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
 
 const getFileContentFromGithub = async(owner:string, repo:string, path: string, user: firebase.User) => {
-  const idToken = await user.getIdToken();
-  const params = {owner, repo, path}
-  const query_params = new URLSearchParams(params); 
   const content : ContentOfRepositoryApiResponse = await fetch(
-    `/api/github/contentOfRepository?${query_params}`,
+    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, path})}`,
     {
       headers: {
         'content-type': 'application/json',
-        'x-id-token': idToken,
+        'x-id-token': await user.getIdToken(),
       },
     },
   ).then((r) => r.json());

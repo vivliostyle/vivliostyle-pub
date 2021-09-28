@@ -61,8 +61,6 @@ export const FileUploadModal = ({
         return
       }
       setBusy(true)
-      const base64image = await getBase64(file)
-      const idToken = await user.getIdToken();
       try {
         await fetch('/api/github/createFileContents', {
           method: 'POST',
@@ -71,11 +69,11 @@ export const FileUploadModal = ({
             repo,
             branch,
             path: fileName,
-            content: base64image?.toString().replace("data:image/jpeg;base64,", "")
+            content: (await getBase64(file))?.toString().split(',')[1] // remove dataURL's prefix
           }),
           headers: {
             'content-type': 'application/json',
-            'x-id-token': idToken,
+            'x-id-token': await user.getIdToken(),
           },
         });
         toast({
