@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import * as encryptedKeys from '../../secrets.enc.json';
+import encryptedKeys from '../../secrets.enc.json';
 
 interface ServiceAccountJson {
   type: string;
