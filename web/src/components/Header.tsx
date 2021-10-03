@@ -31,14 +31,14 @@ const HeaderUserInfo: React.FC = () => {
       {user && (
         <UI.Button
           variant="outline"
-          variantcolor="blackAlpha"
+          colorScheme="blackAlpha"
           onClick={signOut}
         >
           Logout
         </UI.Button>
       )}
       {!user && (
-        <UI.Button variant="outline" variantColor="blackAlpha" onClick={signIn}>
+        <UI.Button variant="outline" colorScheme="blackAlpha" onClick={signIn}>
           Login
         </UI.Button>
       )}
