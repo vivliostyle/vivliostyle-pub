@@ -8,6 +8,8 @@ fs.copySync(viewerPath, 'public/viewer', {
   overwrite: true
 })
 
+fs.copyFileSync('public/worker/serviceWorker.js','public/viewer/serviceWorker.js')
+
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
 const jsData = fs.readFileSync(jspath, 'utf8')
 const newJsData = jsData.replace(/"HEAD"/g, '"GET" ')
@@ -26,7 +28,7 @@ const newHtmlData = htmlData
   .replace(/<\/head>/g,`  <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/worker/serviceWorker.js").then(
+          navigator.serviceWorker.register("/viewer/serviceWorker.js").then(
             function (registration) {
               // Registration was successful
               console.log(
