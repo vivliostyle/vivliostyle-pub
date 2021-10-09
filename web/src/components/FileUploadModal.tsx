@@ -62,7 +62,7 @@ export const FileUploadModal = ({
       }
       setBusy(true)
       try {
-        await fetch('/api/github/createFileContents', {
+        await fetch('/api/github/createOrUpdateFileContents', {
           method: 'POST',
           body: JSON.stringify({
             owner,
