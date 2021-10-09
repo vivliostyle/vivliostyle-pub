@@ -307,7 +307,7 @@ const GitHubOwnerRepo =  () => {
           />
           <UI.Box h="calc(100vh - 200px)" overflowY="auto">
             { filterdFilenames.map( path =>(
-              <UI.Container p={0} key={path} onClick={() => setFilePath(path)}>
+              <UI.Container p={0} key={path} onClick={() => setFilePath(path)} cursor="default">
                 <UI.Text mt={3} fontSize="sm" fontWeight={path == filePath ? "bold":"normal"}>{path}</UI.Text>
               </UI.Container>
             )) }
