@@ -4,7 +4,7 @@ import firebase from '@services/firebase';
 import { useToast } from "@chakra-ui/react"
 
 
-const getBase64 = (file: File):Promise<string | ArrayBuffer | null> => {
+const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
   const reader = new FileReader()
   return new Promise((resolve, reject) => {
     reader.onload = () => resolve(reader.result)
@@ -30,30 +30,30 @@ export const FileUploadModal = ({
   onOpen: () => void;
   onClose: () => void;
 }) => {
-  const [file, setFile] = useState<File|null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   const fileName = useMemo(() => {
-    if(!file) return ""
+    if (!file) return ""
     return file.name
   }, [file])
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if(e.target.files) setFile(e.target.files?.item(0))
+    if (e.target.files) setFile(e.target.files?.item(0))
   };
 
   const toast = useToast()
   const onUploadButtonClick = useCallback(() => {
     (async () => {
-      if(file===null) {
+      if (file === null) {
         toast({
           title: "file not selected",
           status: "warning",
         })
         return
       }
-      if(user===null) {
+      if (user === null) {
         toast({
           title: "user not found",
           status: "warning",
@@ -62,7 +62,7 @@ export const FileUploadModal = ({
       }
       setBusy(true)
       try {
-        await fetch('/api/github/createOrUpdateFileContents', {
+        const response = await fetch('/api/github/createOrUpdateFileContents', {
           method: 'POST',
           body: JSON.stringify({
             owner,
@@ -76,10 +76,27 @@ export const FileUploadModal = ({
             'x-id-token': await user.getIdToken(),
           },
         });
-        toast({
-          title: "image uploaded",
-          status: "success",
-        })
+        if (response.status === 201) {
+          toast({
+            title: "image uploaded",
+            status: "success",
+          })
+        } else if (response.status === 400 || response.status === 401) {
+          toast({
+            title: "authentication error",
+            status: "error"
+          })
+        } else if (response.status === 413) {
+          toast({
+            title: "image size too large",
+            status: "error"
+          })
+        } else {
+          toast({
+            title: "error:" + response.status,
+            status: "error"
+          })
+        }
         onClose()
       } catch (error) {
         console.error(error);
