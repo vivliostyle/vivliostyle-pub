@@ -237,13 +237,7 @@ const GitHubOwnerRepo =  () => {
       >
         <UI.Flex w="100%" px={8} justify="space-between" align="center">
           <UI.Flex align="center">
-            {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
-            {user && sessionId && (
-              <CommitSessionButton
-                {...{user, sessionId, onDidSaved, branch}}
-                disabled={status !== 'saved'}
-              />
-            )}
+            {owner} / {repo} /
             <UI.Box w="180px" px="4">
               <BranchSelecter
                 user={user}
@@ -252,6 +246,13 @@ const GitHubOwnerRepo =  () => {
                 onChange={onBranchUpdate}
               />
             </UI.Box>
+            {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
+            {user && sessionId && (
+              <CommitSessionButton
+                {...{user, sessionId, onDidSaved, branch}}
+                disabled={status !== 'saved'}
+              />
+            )}
           </UI.Flex>
           <UI.Flex align="center">
             {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
