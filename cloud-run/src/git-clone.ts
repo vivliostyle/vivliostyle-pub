@@ -1,4 +1,6 @@
-import * as Git from 'nodegit';
+import { promisify } from 'util';
+import * as child_process from 'child_process'; 
+const exec = promisify(child_process.exec);
 
 import { App } from '@octokit/app'
 import {request} from '@octokit/request';
@@ -23,8 +25,7 @@ export async function gitClone(owner: string, repo: string, repoDir: string) {
   const installationAccessToken = await app.getInstallationAccessToken({
     installationId: data.id,
   });
-  await Git.Clone.clone(
-    `https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git`,
-    repoDir,
-  );
+
+  await exec(`git clone https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git repoDir`)
+
 }
