@@ -15,6 +15,8 @@ import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
 import {FileUploadModal} from '@components/FileUploadModal';
 import {BranchSelecter} from '@components/BranchSelecter';
+import requestSession, { GithubRequestSessionApiResponse } from 'pages/api/github/requestSession';
+import { readFile } from '@middlewares/functions';
 
 const themes = [
   {
@@ -41,6 +43,12 @@ interface BuildRecord {
     repo: string;
     stylesheet: string;
   };
+}
+type FileState = 'init' | 'clean' | 'modified' | 'saved';
+export type CurrentFile = {
+    text: string;
+    state: FileState; 
+    path: string;
 }
 
 function useBuildStatus(
@@ -70,17 +78,13 @@ const GitHubOwnerRepo =  () => {
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
   const repoStr = Array.isArray(repo) ? repo[0] : repo;
-  const [filePath, setFilePath] = useState('');
+  // const [filePath, setFilePath] = useState('');
+  const [currentFile, setCurrentFile] = useState<CurrentFile>({text:'',path:'',state:'init'});
   const [branch, setBranch] = useState<string | undefined>()
-  const {session, sessionId} = useEditorSession({
-    user,
-    owner: ownerStr!,
-    repo: repoStr!,
-    branch: branch,
-    path: filePath,
-  });
-  const [text, setText] = useState('');
-  const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
+  const [session, setSession] = useState<firebase.firestore.DocumentReference<firebase.firestore.DocumentData>|null>(null);
+
+  // const [text, setText] = useState('');
+  const [status, setStatus] = useState<FileState>(
     'init',
   );
   const [stylesheet, setStylesheet] = useState<string>(themes[2].css);
@@ -117,37 +121,53 @@ const GitHubOwnerRepo =  () => {
     if (!session) {
       return;
     }
+    console.log('setOnSnapshot',session,currentFile);
     return session.onSnapshot((doc) => {
       const data = doc.data();
-      if (!data?.text || data.text === text || doc.metadata.hasPendingWrites) {
+      console.log("session("+session.id+").onSnapshot(state:",data?.state," path:",data?.path,", hasPendingWrites:",doc.metadata.hasPendingWrites,")");
+      if(data?.state == 'add') {
+
+      }else if(data?.state === 'update') {
+
+      }else if(data?.state === 'commit') {
+
+      }
+      
+      if (!data?.text || data.text === currentFile.text || doc.metadata.hasPendingWrites) {
         return;
       }
-      setText(data.text);
+      console.log("setText");
+      setCurrentFile({...currentFile,text:data.text});
+//      setText(data.text);
       setStatus('clean');
     });
-  }, [session, text]);
+  }, [session, currentFile]);
 
   const onModified = useCallback(() => {
+    console.log('onModified');
     setStatus('modified');
     setWarnDialog(true);
   }, [setWarnDialog]);
 
   const onUpdate = useCallback(
     (updatedText) => {
-      if (!session || updatedText === text) {
+      console.log('onUpdate');
+      if (!session || updatedText === currentFile.text) {
         return;
       }
-      setText(updatedText);
+//      setText(updatedText);
+      setCurrentFile({...currentFile,text:updatedText});
       session
         .update({
           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           text: updatedText,
+          state: 'update'
         })
         .then(() => {
           setStatus('saved');
         });
     },
-    [text, session],
+    [currentFile, session],
   );
 
   const onDidSaved = useCallback(() => {
@@ -226,6 +246,34 @@ const GitHubOwnerRepo =  () => {
     setBranch(branch)
   }, [] );
 
+  /**
+   * ファイルリストでファイルが選択された
+   * @param path ファイルのパス
+   * @returns void
+   */
+  const selectFile = (path:string)=>{
+    // 同じファイルを選択した場合何もしない
+    if(path === currentFile.path || !user) { return; } 
+    // 現在の対象ファイルが未コミットなら警告を表示
+    if(status !== 'clean' && ! confirm('ファイルが保存されていませんが対象ファイルを切り替えても良いですか?')){
+        return;
+    }
+    // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
+    readFile({user,owner:ownerStr,repo:repoStr,branch,path})
+    .then((file)=>{
+      if(file) {
+        // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
+        setCurrentFile(file);
+        setStatus('clean');
+      }else{
+        // ファイル情報が取得できなかった
+        console.error('file not found');
+      }
+    }).catch((err)=>{
+      console.error(err);
+    });
+  }
+
   return (
     <UI.Box>
       <Header />
@@ -247,9 +295,9 @@ const GitHubOwnerRepo =  () => {
               />
             </UI.Box>
             {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
-            {user && sessionId && (
+            {user && session?.id && (
               <CommitSessionButton
-                {...{user, sessionId, onDidSaved, branch}}
+                {...{user, sessionId:session.id, onDidSaved, branch}}
                 disabled={status !== 'saved'}
               />
             )}
@@ -308,8 +356,8 @@ const GitHubOwnerRepo =  () => {
           />
           <UI.Box h="calc(100vh - 200px)" overflowY="auto">
             { filterdFilenames.map( path =>(
-              <UI.Container p={0} key={path} onClick={() => setFilePath(path)} cursor="default">
-                <UI.Text mt={3} fontSize="sm" fontWeight={path == filePath ? "bold":"normal"}>{path}</UI.Text>
+              <UI.Container p={0} key={path} onClick={() => selectFile(path)} cursor="default">
+                <UI.Text mt={3} fontSize="sm" fontWeight={path == currentFile.path ? "bold":"normal"}>{path}</UI.Text>
               </UI.Container>
             )) }
           </UI.Box>
@@ -317,10 +365,10 @@ const GitHubOwnerRepo =  () => {
         {!isPending && status !== 'init' ? (
           <UI.Flex flex="1">
             <UI.Box flex="1">
-              <MarkdownEditor value={text} {...{onModified, onUpdate}} />
+              <MarkdownEditor currentFile={currentFile} {...{onModified, onUpdate}} />
             </UI.Box>
             <UI.Box width="40%" overflow="scroll">
-              <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
+              <Previewer basename={currentFile.path.replace(/\.md$/, '.html')} body={currentFile.text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
             </UI.Box>
           </UI.Flex>
         ) : (

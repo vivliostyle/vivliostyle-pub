@@ -1,5 +1,6 @@
 import React, {useCallback, useState, useEffect} from 'react';
-import Editor, {EditorDidMount} from '@monaco-editor/react';
+import Editor, {Monaco} from '@monaco-editor/react';
+import { CurrentFile } from 'pages/github/[owner]/[repo]';
 
 const REFRESH_MS = 2000;
 
@@ -17,45 +18,56 @@ function useDefferedEffect(
 }
 
 export const MarkdownEditor = ({
-  value = '',
+  currentFile = undefined,
   onModified = () => {},
   onUpdate = () => {},
 }: {
-  value?: string;
+  currentFile?:CurrentFile;
   onModified?: (value: string) => void;
   onUpdate?: (value: string) => void;
 }) => {
-  const [currentValue, setCurrentValue] = useState(() => value);
+  const [currentValue, setCurrentValue] = useState(() => currentFile?.text);
 
   useDefferedEffect(
     () => {
-      onUpdate(currentValue);
+      if(currentValue){
+        onUpdate(currentValue);
+      }
     },
     [currentValue],
     REFRESH_MS,
   );
 
-  const editorDidMount: EditorDidMount = useCallback(
-    (getEditorValue, monaco) => {
-      monaco.onDidChangeModelContent(() => {
-        const value = getEditorValue();
-        setCurrentValue(value);
-        onModified(value);
-      });
-    },
-    [onModified],
-  );
+  // const editorDidMount: EditorDidMount = useCallback(
+  //   (getEditorValue, monaco) => {
+  //     monaco.onDidChangeModelContent(() => {
+  //       const value = getEditorValue();
+  //       setCurrentValue(value);
+  //       onModified(value);
+  //     });
+  //   },
+  //   [onModified],
+  // );
+
+  const onChange = (value:string|undefined,event:any)=>{
+    if(value) {
+      console.log('editor.onChange');
+      setCurrentValue(value);
+      onModified(value);  
+    }
+  }
 
   return (
     <Editor
       height="100%"
       language="markdown"
-      value={value}
+      value={currentFile?.text}
+      path={currentFile?.path}
       options={{
         minimap: {enabled: false},
         wordWrap: 'on',
       }}
-      editorDidMount={editorDidMount}
+      onChange = {onChange}
     />
   );
 };
