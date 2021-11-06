@@ -4,7 +4,7 @@
   "author": "Vivliostyle Pub Team",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node-dev src/index.ts",
     "start": "node .",
     "storage": "node src/cloud-storage.js"
   },

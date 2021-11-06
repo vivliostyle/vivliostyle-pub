@@ -26,6 +26,6 @@ export async function gitClone(owner: string, repo: string, repoDir: string) {
     installationId: data.id,
   });
 
-  await exec(`git clone https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git repoDir`)
+  await exec(`git clone https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git ${repoDir}`)
 
 }
