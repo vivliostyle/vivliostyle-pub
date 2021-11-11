@@ -13,6 +13,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   res,
 ) => {
   const {owner, repo, path, branch} = req.query;
+  console.log("contentOfRepository:",path);
   if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path) || Array.isArray(branch)) {
     console.log("validation error")
     return res.status(400).send(null);

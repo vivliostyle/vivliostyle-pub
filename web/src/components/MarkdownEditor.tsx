@@ -38,17 +38,6 @@ export const MarkdownEditor = ({
     REFRESH_MS,
   );
 
-  // const editorDidMount: EditorDidMount = useCallback(
-  //   (getEditorValue, monaco) => {
-  //     monaco.onDidChangeModelContent(() => {
-  //       const value = getEditorValue();
-  //       setCurrentValue(value);
-  //       onModified(value);
-  //     });
-  //   },
-  //   [onModified],
-  // );
-
   const onChange = (value:string|undefined,event:any)=>{
     if(value) {
       console.log('editor.onChange');

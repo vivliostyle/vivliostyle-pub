@@ -95,7 +95,7 @@ const selectFile: NextApiHandler<GithubRequestSessionApiResponse | null> = async
       path,
       state:'select'
     });
-  console.log('selectFile:',path,content);
+  // console.log('selectFile:',path,content);
   res.send({id: sessionDoc.id});
 };
 

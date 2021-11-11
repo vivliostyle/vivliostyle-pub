@@ -10,13 +10,47 @@ type RepositoryPath = {
   path: string;
 };
 
+const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
+  const reader = new FileReader()
+  return new Promise((resolve, reject) => {
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file)
+  })
+}
+
 export async function createFile({
   user,
   owner,
   repo,
   branch,
   path,
-}: RepositoryPath): Promise<CurrentFile | null> {
+}: RepositoryPath,data:File): Promise<CurrentFile | null> {
+  if (!(user && owner && repo && branch && path)) {
+    return null;
+  }
+  try {
+    const result = await fetch('/api/github/createOrUpdateFileContents', {
+      method: 'POST',
+      body: JSON.stringify({
+        owner,
+        repo,
+        branch,
+        path: path,
+        content: (await getBase64(data))?.toString().split(',')[1] // remove dataURL's prefixr
+      }),
+      headers: {
+        'content-type': 'application/json',
+        'x-id-token': await user.getIdToken(),
+      },
+    });
+    console.log(result.status);
+  } catch (error) {
+    console.error(error);
+  }
+
+  
+
   return null;
 }
 
@@ -68,9 +102,18 @@ export async function readFile({
     state: 'init',
     text: data.text,
     path: path,
+    session: session
   };
 }
 
-export function updateFile() {}
+export async function updateFile() {
 
-export function deleteFile() {}
+}
+
+export async function commitFile() {
+
+}
+
+export async function deleteFile() {
+
+}

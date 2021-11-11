@@ -22,6 +22,7 @@ export function useEditorSession({
 
   useEffect(() => {
     if (!user || !path) return;
+    console.log("useEditorSession");
     (async () => {
       const {id}: GithubRequestSessionApiResponse = await fetch(
         '/api/github/requestSession',

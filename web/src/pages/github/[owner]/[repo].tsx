@@ -1,12 +1,11 @@
 import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
-import { useToast, RenderProps, useDisclosure } from "@chakra-ui/react"
+import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
 
 import firebase from '@services/firebase';
 import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
-import {useEditorSession} from '@middlewares/useEditorSession';
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
-import {useVivlioStyleConfig} from '@middlewares/useVivliostyleConfig'
+import {useVivlioStyleConfig} from '@middlewares/useVivliostyleConfig';
 
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
@@ -15,26 +14,29 @@ import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
 import {FileUploadModal} from '@components/FileUploadModal';
 import {BranchSelecter} from '@components/BranchSelecter';
-import requestSession, { GithubRequestSessionApiResponse } from 'pages/api/github/requestSession';
-import { readFile } from '@middlewares/functions';
+import {createFile, readFile} from '@middlewares/functions';
 
-const themes = [
-  {
-    name: '縦書き小説',
-    css:
-      'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
-  },
-  {
-    name: '横書き欧文',
-    css:
-      'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
-  },
-  {
-    name: 'Viola',
-    css:
-      'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
-  },
-];
+import {ThemeManager} from 'theme-manager';
+import { Theme } from 'theme-manager/lib/ThemeManager';
+
+const GitHubAccessToken:string|null = "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";
+
+const themeManager = new ThemeManager(GitHubAccessToken);
+
+// const themes = [
+//   {
+//     name: '縦書き小説',
+//     css: 'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
+//   },
+//   {
+//     name: '横書き欧文',
+//     css: 'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
+//   },
+//   {
+//     name: 'Viola',
+//     css: 'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
+//   },
+// ];
 
 interface BuildRecord {
   url: string | null;
@@ -46,10 +48,11 @@ interface BuildRecord {
 }
 type FileState = 'init' | 'clean' | 'modified' | 'saved';
 export type CurrentFile = {
-    text: string;
-    state: FileState; 
-    path: string;
-}
+  text: string;
+  state: FileState;
+  path: string;
+  session?: firebase.firestore.DocumentReference;
+};
 
 function useBuildStatus(
   buildID: string | null,
@@ -72,26 +75,41 @@ function useBuildStatus(
   }, [buildID, onBuildFinished]);
 }
 
-const GitHubOwnerRepo =  () => {
+const GitHubOwnerRepo = () => {
+
+
   const {user, isPending} = useAuthorizedUser();
   const router = useRouter();
   const {owner, repo} = router.query;
   const ownerStr = Array.isArray(owner) ? owner[0] : owner;
   const repoStr = Array.isArray(repo) ? repo[0] : repo;
   // const [filePath, setFilePath] = useState('');
-  const [currentFile, setCurrentFile] = useState<CurrentFile>({text:'',path:'',state:'init'});
-  const [branch, setBranch] = useState<string | undefined>()
-  const [session, setSession] = useState<firebase.firestore.DocumentReference<firebase.firestore.DocumentData>|null>(null);
+  const [currentFile, setCurrentFile] = useState<CurrentFile>({
+    text: '',
+    path: '',
+    state: 'init',
+  });
+  const [branch, setBranch] = useState<string | undefined>();
+  const [session, setSession] =
+    useState<firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | null>(
+      null,
+    );
 
   // const [text, setText] = useState('');
-  const [status, setStatus] = useState<FileState>(
-    'init',
-  );
-  const [stylesheet, setStylesheet] = useState<string>(themes[2].css);
+  const [status, setStatus] = useState<FileState>('init');
+  const [stylesheet, setStylesheet] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
+
+  const [themes, setThemes] = useState<Theme[]>([]);
+  useEffect(()=>{
+    (async () =>{
+      const themeList = await themeManager.searchFromNpm();
+      setThemes(themeList);
+    })();
+  },[user]);
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -101,7 +119,7 @@ const GitHubOwnerRepo =  () => {
           View PDF
         </UI.Link>
       </UI.Box>
-    )
+    );
     toast({
       duration: 9000,
       isClosable: true,
@@ -121,24 +139,37 @@ const GitHubOwnerRepo =  () => {
     if (!session) {
       return;
     }
-    console.log('setOnSnapshot',session,currentFile);
+    // console.log('setOnSnapshot', session, currentFile);
     return session.onSnapshot((doc) => {
       const data = doc.data();
-      console.log("session("+session.id+").onSnapshot(state:",data?.state," path:",data?.path,", hasPendingWrites:",doc.metadata.hasPendingWrites,")");
-      if(data?.state == 'add') {
-
-      }else if(data?.state === 'update') {
-
-      }else if(data?.state === 'commit') {
-
-      }
-      
-      if (!data?.text || data.text === currentFile.text || doc.metadata.hasPendingWrites) {
+      if(data?.path !== currentFile.path) {
         return;
       }
-      console.log("setText");
-      setCurrentFile({...currentFile,text:data.text});
-//      setText(data.text);
+      // console.log(
+      //   'session(' + session.id + ').onSnapshot(state:',
+      //   data?.state,
+      //   ' path:',
+      //   data?.path,
+      //   ', hasPendingWrites:',
+      //   doc.metadata.hasPendingWrites,
+      //   ')',
+      // );
+      if (data?.state === 'update') { // update content
+        setStatus('saved');
+      } else if (data?.state === 'commit') { // commit file
+        setStatus('clean');
+      }
+
+      if (
+        !data?.text ||
+        data.text === currentFile.text ||
+        doc.metadata.hasPendingWrites
+      ) {
+        return;
+      }
+      // console.log('setText');
+      setCurrentFile({...currentFile, text: data.text});
+      //      setText(data.text);
       setStatus('clean');
     });
   }, [session, currentFile]);
@@ -153,15 +184,16 @@ const GitHubOwnerRepo =  () => {
     (updatedText) => {
       console.log('onUpdate');
       if (!session || updatedText === currentFile.text) {
+        // console.log('same text',session ,updatedText, currentFile.text);
         return;
       }
-//      setText(updatedText);
-      setCurrentFile({...currentFile,text:updatedText});
+      //      setText(updatedText);
+      setCurrentFile({...currentFile, text: updatedText});
       session
         .update({
           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           text: updatedText,
-          state: 'update'
+          state: 'update',
         })
         .then(() => {
           setStatus('saved');
@@ -203,76 +235,104 @@ const GitHubOwnerRepo =  () => {
       });
   }
 
-  function onThemeSelected(themeURL: string) {
-    setStylesheet(themeURL);
+  /**
+   * スタイルシートが変更された
+   * @param theme 
+   */
+  function onThemeSelected(theme: Theme) {
+    const VPUBFS_CACHE_NAME = 'vpubfs';
+    const VPUBFS_ROOT = '/vpubfs';
+    (async()=>{
+      const cache = await caches.open(VPUBFS_CACHE_NAME);
+      const file:File = new File([theme.files[theme.style]],theme.style);
+      const headers = new Headers();
+      headers.append('content-type', 'text/css');
+      const stylesheetPath = `${theme.name}/${theme.style}`;
+      const vpubfsPath = `${VPUBFS_ROOT}/${stylesheetPath}`;
+      await cache.delete(new Request(vpubfsPath));
+      await cache.put(
+        vpubfsPath,
+        new Response(theme.files[theme.style], { headers }),
+      );
+      setStylesheet(stylesheetPath);
+    })();
   }
 
   const config = useVivlioStyleConfig({
     user,
     owner: ownerStr!,
     repo: repoStr!,
-    branch: branch
-  })
+    branch: branch,
+  });
   const filenames = useMemo(() => {
-    if(!config || !config.entry) return []
-    const ret = [] as string[]
-    if(Array.isArray(config.entry)) {
-      config.entry.forEach(e => {
-        if(typeof e == 'string') ret.push(e)
-        else if('path' in e) ret.push(e.path)
-      })
+    if (!config || !config.entry) return [];
+    const ret = [] as string[];
+    if (Array.isArray(config.entry)) {
+      config.entry.forEach((e) => {
+        if (typeof e == 'string') ret.push(e);
+        else if ('path' in e) ret.push(e.path);
+      });
     } else {
-      if(typeof config.entry == 'string') ret.push(config.entry)
-      else if('path' in config.entry) ret.push(config.entry.path)
+      if (typeof config.entry == 'string') ret.push(config.entry);
+      else if ('path' in config.entry) ret.push(config.entry.path);
     }
-    return ret
-  }, [config])
-  const [filenamesFilterText, setFilenamesFilterText] = useState("")
+    return ret;
+  }, [config]);
+  const [filenamesFilterText, setFilenamesFilterText] = useState('');
   const filterdFilenames = useMemo(() => {
-    return filenames.filter(f => f.includes(filenamesFilterText))
-  }, [filenames, filenamesFilterText])
+    return filenames.filter((f) => f.includes(filenamesFilterText));
+  }, [filenames, filenamesFilterText]);
 
   useEffect(() => {
-    if(config && config.theme) setStylesheet(config.theme)
-  }, [config])
+    if (config && config.theme) setStylesheet(config.theme);
+  }, [config]);
 
   const {
-    isOpen:isOpenFileUploadModal,
-    onOpen:onOpenFileUploadModal,
-    onClose:onCloseFileUploadModal
-  } = useDisclosure()
+    isOpen: isOpenFileUploadModal,
+    onOpen: onOpenFileUploadModal,
+    onClose: onCloseFileUploadModal,
+  } = useDisclosure();
 
-  const onBranchUpdate = useCallback((branch:string) => {
-    setBranch(branch)
-  }, [] );
+  const onBranchUpdate = useCallback((branch: string) => {
+    setBranch(branch);
+  }, []);
 
   /**
    * ファイルリストでファイルが選択された
    * @param path ファイルのパス
    * @returns void
    */
-  const selectFile = (path:string)=>{
+  const selectFile = (path: string) => {
     // 同じファイルを選択した場合何もしない
-    if(path === currentFile.path || !user) { return; } 
+    if (path === currentFile.path || !user) {
+      return;
+    }
     // 現在の対象ファイルが未コミットなら警告を表示
-    if(status !== 'clean' && ! confirm('ファイルが保存されていませんが対象ファイルを切り替えても良いですか?')){
-        return;
+    if (
+      status !== 'clean' &&
+      !confirm('ファイルが保存されていません。変更を破棄しますか?')
+    ) {
+      return;
     }
     // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    readFile({user,owner:ownerStr,repo:repoStr,branch,path})
-    .then((file)=>{
-      if(file) {
-        // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
-        setCurrentFile(file);
-        setStatus('clean');
-      }else{
-        // ファイル情報が取得できなかった
-        console.error('file not found');
-      }
-    }).catch((err)=>{
-      console.error(err);
-    });
-  }
+    readFile({user, owner: ownerStr, repo: repoStr, branch, path})
+      .then((file) => {
+        if (file) {
+          // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
+          setCurrentFile(file);
+          setStatus('clean');
+          if (file.session) {
+            setSession(file.session);
+          }
+        } else {
+          // ファイル情報が取得できなかった
+          console.error('file not found');
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  };
 
   return (
     <UI.Box>
@@ -297,10 +357,11 @@ const GitHubOwnerRepo =  () => {
             {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
             {user && session?.id && (
               <CommitSessionButton
-                {...{user, sessionId:session.id, onDidSaved, branch}}
+                {...{user, sessionId: session.id, onDidSaved, branch}}
                 disabled={status !== 'saved'}
               />
             )}
+            {stylesheet}
           </UI.Flex>
           <UI.Flex align="center">
             {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
@@ -313,9 +374,9 @@ const GitHubOwnerRepo =  () => {
                   {themes.map((theme) => (
                     <UI.MenuItem
                       key={theme.name}
-                      onClick={() => onThemeSelected(theme.css)}
+                      onClick={() => onThemeSelected(theme)}
                     >
-                      {theme.name}
+                      {theme.description}
                     </UI.MenuItem>
                   ))}
                 </UI.MenuGroup>
@@ -327,7 +388,7 @@ const GitHubOwnerRepo =  () => {
                   <FileUploadModal
                     user={user}
                     owner={ownerStr!}
-                    repo={repoStr!} 
+                    repo={repoStr!}
                     branch={branch}
                     isOpen={isOpenFileUploadModal}
                     onOpen={onOpenFileUploadModal}
@@ -348,27 +409,48 @@ const GitHubOwnerRepo =  () => {
       <UI.Flex w="100vw">
         <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
           <UI.Input
-            placeholder="search file" 
+            placeholder="search file"
             value={filenamesFilterText}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>)=> {
-              setFilenamesFilterText(event.target.value)
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setFilenamesFilterText(event.target.value);
             }}
           />
           <UI.Box h="calc(100vh - 200px)" overflowY="auto">
-            { filterdFilenames.map( path =>(
-              <UI.Container p={0} key={path} onClick={() => selectFile(path)} cursor="default">
-                <UI.Text mt={3} fontSize="sm" fontWeight={path == currentFile.path ? "bold":"normal"}>{path}</UI.Text>
+            {filterdFilenames.map((path) => (
+              <UI.Container
+                p={0}
+                key={path}
+                onClick={() => selectFile(path)}
+                cursor="default"
+              >
+                <UI.Text
+                  mt={3}
+                  fontSize="sm"
+                  fontWeight={path == currentFile.path ? 'bold' : 'normal'}
+                >
+                  {path}
+                </UI.Text>
               </UI.Container>
-            )) }
+            ))}
           </UI.Box>
         </UI.Box>
         {!isPending && status !== 'init' ? (
           <UI.Flex flex="1">
             <UI.Box flex="1">
-              <MarkdownEditor currentFile={currentFile} {...{onModified, onUpdate}} />
+              <MarkdownEditor
+                currentFile={currentFile}
+                {...{onModified, onUpdate}}
+              />
             </UI.Box>
             <UI.Box width="40%" overflow="scroll">
-              <Previewer basename={currentFile.path.replace(/\.md$/, '.html')} body={currentFile.text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
+              <Previewer
+                basename={currentFile.path.replace(/\.md$/, '.html')}
+                body={currentFile.text}
+                stylesheet={stylesheet}
+                owner={ownerStr!}
+                repo={repoStr!}
+                user={user}
+              />
             </UI.Box>
           </UI.Flex>
         ) : (
