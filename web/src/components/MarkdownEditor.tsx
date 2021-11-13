@@ -1,5 +1,5 @@
 import React, {useCallback, useState, useEffect} from 'react';
-import Editor, {EditorDidMount} from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 
 const REFRESH_MS = 2000;
 
@@ -35,19 +35,13 @@ export const MarkdownEditor = ({
     REFRESH_MS,
   );
 
-  const editorDidMount: EditorDidMount = useCallback(
-    (getEditorValue, monaco) => {
-      monaco.onDidChangeModelContent(() => {
-        const value = getEditorValue();
-        setCurrentValue(value);
-        onModified(value);
-      });
-    },
-    [onModified],
-  );
-
-  return (
-    <Editor
+  const onChange = useCallback((value,event)=>{
+    setCurrentValue(value??'');
+    onModified(value??'');
+  },[onModified]);
+  
+    return (
+      <Editor
       height="100%"
       language="markdown"
       value={value}
@@ -55,7 +49,7 @@ export const MarkdownEditor = ({
         minimap: {enabled: false},
         wordWrap: 'on',
       }}
-      editorDidMount={editorDidMount}
+      onChange={onChange}
     />
-  );
+    );
 };
