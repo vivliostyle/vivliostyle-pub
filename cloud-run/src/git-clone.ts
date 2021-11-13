@@ -1,6 +1,4 @@
-import { promisify } from 'util';
-import * as child_process from 'child_process'; 
-const exec = promisify(child_process.exec);
+import { execCommanad } from './util'
 
 import { App } from '@octokit/app'
 import {request} from '@octokit/request';
@@ -26,6 +24,5 @@ export async function gitClone(owner: string, repo: string, repoDir: string) {
     installationId: data.id,
   });
 
-  await exec(`git clone https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git ${repoDir}`)
-
+  await execCommanad(`git clone --depth 1 https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git ${repoDir}`)
 }
