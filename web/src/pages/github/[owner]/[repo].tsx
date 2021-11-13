@@ -32,6 +32,11 @@ const themes = [
     css:
       'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
   },
+  {
+    name: '@vivliostyle/theme-slide',
+    css:
+    'https://raw.githubusercontent.com/vivliostyle/themes/master/packages/%40vivliostyle/theme-slide/theme_common.css',
+  }
 ];
 
 interface BuildRecord {
