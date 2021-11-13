@@ -17,7 +17,7 @@
     "@octokit/app": "^4.2.0",
     "@octokit/rest": "^18.0.3",
     "@vivliostyle/vfm": "1.0.2",
-    "@vivliostyle/viewer": "2.11.3",
+    "@vivliostyle/viewer": "2.12.0",
     "dotenv": "^8.2.0",
     "firebase": "^7.15.0",
     "firebase-admin": "^8.12.1",
