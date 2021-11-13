@@ -88,6 +88,7 @@ const GitHubOwnerRepo =  () => {
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
+  const [isPresentationMode,setPresentationMode] = useState<boolean>(false);
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -261,6 +262,8 @@ const GitHubOwnerRepo =  () => {
                 <UI.Icon name="chevron-down" /> Actions
               </UI.MenuButton>
               <UI.MenuList>
+                <UI.MenuItem key="presen" onClick={()=>{ setPresentationMode(!isPresentationMode) }}>{isPresentationMode?'✔ ':' '}Presentation Mode</UI.MenuItem>
+                <UI.MenuDivider />
                 <UI.MenuGroup title="Theme">
                   {themes.map((theme) => (
                     <UI.MenuItem
@@ -297,7 +300,8 @@ const GitHubOwnerRepo =  () => {
           </UI.Flex>
         </UI.Flex>
       </UI.Flex>
-      <UI.Flex w="100vw">
+      <UI.Flex w="100vw" h={isPresentationMode ? 'calc(100vh - 115px)' : ''}>
+        { isPresentationMode ? '': (
         <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
           <UI.Input
             placeholder="search file" 
@@ -314,12 +318,15 @@ const GitHubOwnerRepo =  () => {
             )) }
           </UI.Box>
         </UI.Box>
+        )}
         {!isPending && status !== 'init' ? (
           <UI.Flex flex="1">
+            {! isPresentationMode ? (
             <UI.Box flex="1">
               <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-            </UI.Box>
-            <UI.Box width="40%" overflow="scroll">
+            </UI.Box>)
+            :''}
+            <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
               <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
             </UI.Box>
           </UI.Flex>
