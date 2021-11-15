@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef, useMemo } from 'react';
 import * as UI from './ui';
 import firebase from '@services/firebase';
 import { useToast } from "@chakra-ui/react"
+import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 
 
 const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
@@ -15,21 +16,17 @@ const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
 
 export const FileUploadModal = ({
   user,
-  owner,
-  repo,
-  branch,
   isOpen,
   onOpen,
   onClose,
 }: {
   user: firebase.User | null;
-  owner: string;
-  repo: string;
-  branch: string | undefined;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
 }) => {
+  const repository = useRepositoryContext();
+
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -65,9 +62,9 @@ export const FileUploadModal = ({
         const response = await fetch('/api/github/createOrUpdateFileContents', {
           method: 'POST',
           body: JSON.stringify({
-            owner,
-            repo,
-            branch,
+            owner:repository.owner,
+            repo:repository.repo,
+            branch:repository.branch,
             path: fileName,
             content: (await getBase64(file))?.toString().split(',')[1] // remove dataURL's prefix
           }),
@@ -104,7 +101,7 @@ export const FileUploadModal = ({
         setBusy(false);
       }
     })()
-  }, [user, owner, repo, branch, file, fileName, onClose, toast])
+  }, [user, repository, file, fileName, onClose, toast])
 
   return (
     <UI.Modal isOpen={isOpen} onClose={onClose}>

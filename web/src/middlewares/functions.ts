@@ -117,3 +117,22 @@ export async function commitFile() {
 export async function deleteFile() {
 
 }
+
+import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
+
+export async function getFileContentFromGithub(owner:string, repo:string, path: string, user: firebase.User):Promise<ContentOfRepositoryApiResponse> {
+  const content : ContentOfRepositoryApiResponse = await fetch(
+    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, path})}`,
+    {
+      headers: {
+        'content-type': 'application/json',
+        'x-id-token': await user.getIdToken(),
+      },
+    },
+  ).then((r) => r.json());
+  if( Array.isArray(content) || !("content" in content) ) {
+    // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
+    throw new Error(`Content type is not file`);
+  }
+  return content
+}

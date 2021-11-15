@@ -19,24 +19,12 @@ import {createFile, readFile} from '@middlewares/functions';
 import {ThemeManager} from 'theme-manager';
 import { Theme } from 'theme-manager/lib/ThemeManager';
 
+import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
+import { useRepositoryContext } from '@middlewares/useRepositoryContext';
+
 const GitHubAccessToken:string|null = "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";
 
 const themeManager = new ThemeManager(GitHubAccessToken);
-
-// const themes = [
-//   {
-//     name: '縦書き小説',
-//     css: 'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
-//   },
-//   {
-//     name: '横書き欧文',
-//     css: 'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
-//   },
-//   {
-//     name: 'Viola',
-//     css: 'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
-//   },
-// ];
 
 interface BuildRecord {
   url: string | null;
@@ -75,21 +63,43 @@ function useBuildStatus(
   }, [buildID, onBuildFinished]);
 }
 
+/**
+ * 遅延処理
+ */
+const REFRESH_MS = 2000;
+function useDefferedEffect(
+  fn: () => void,
+  args: React.DependencyList,
+  duration: number,
+) {
+  useEffect(() => {
+    const timer = setTimeout(() => fn(), duration);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, args);
+}
+
+
+/**
+ * メインコンポーネント
+ * @returns 
+ */
 const GitHubOwnerRepo = () => {
 
 
   const {user, isPending} = useAuthorizedUser();
+  const repository = useRepositoryContext();
+
   const router = useRouter();
   const {owner, repo} = router.query;
-  const ownerStr = Array.isArray(owner) ? owner[0] : owner;
-  const repoStr = Array.isArray(repo) ? repo[0] : repo;
-  // const [filePath, setFilePath] = useState('');
+  repository.setOwner(Array.isArray(owner) ? owner[0] : owner ?? null);
+  repository.setRepo(Array.isArray(repo) ? repo[0] : repo ?? null);
   const [currentFile, setCurrentFile] = useState<CurrentFile>({
     text: '',
     path: '',
     state: 'init',
   });
-  const [branch, setBranch] = useState<string | undefined>();
   const [session, setSession] =
     useState<firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | null>(
       null,
@@ -103,8 +113,10 @@ const GitHubOwnerRepo = () => {
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode,setPresentationMode] = useState<boolean>(false);
-
   const [themes, setThemes] = useState<Theme[]>([]);
+  
+  const modifiedText = useModifiedTextContext();
+  
   useEffect(()=>{
     (async () =>{
       const themeList = await themeManager.searchFromNpm();
@@ -169,41 +181,45 @@ const GitHubOwnerRepo = () => {
         return;
       }
       // console.log('setText');
-      setCurrentFile({...currentFile, text: data.text});
+      // setCurrentFile({...currentFile, text: data.text});
       //      setText(data.text);
-      setStatus('clean');
+      // setStatus('clean');
     });
   }, [session, currentFile]);
 
-  const onModified = useCallback(() => {
-    console.log('onModified');
-    setStatus('modified');
-    setWarnDialog(true);
-  }, [setWarnDialog]);
-
-  const onUpdate = useCallback(
-    (updatedText) => {
-      console.log('onUpdate');
-      if (!session || updatedText === currentFile.text) {
-        // console.log('same text',session ,updatedText, currentFile.text);
-        return;
-      }
-      //      setText(updatedText);
-      setCurrentFile({...currentFile, text: updatedText});
-      session
-        .update({
-          userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          text: updatedText,
-          state: 'update',
-        })
-        .then(() => {
-          setStatus('saved');
-        });
+  useDefferedEffect(
+    () => {
+      if(modifiedText.text){
+        console.log('onUpdate');
+        if (!session) {
+          // console.log('same text',session ,updatedText, currentFile.text);
+          return;
+        }
+        session
+          .update({
+            userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            text: modifiedText.text,
+            state: 'update',
+          })
+          .then(() => {
+            setStatus('saved');
+          });
+        }
     },
-    [currentFile, session],
+    [modifiedText.text],
+    REFRESH_MS,
   );
 
+  const onModified = useCallback((updatedText) => {
+    console.log('onModified');
+    modifiedText.set(updatedText);
+    setStatus('modified');
+    setWarnDialog(true);
+  
+  }, [setWarnDialog]);
+
   const onDidSaved = useCallback(() => {
+    console.log('onDidSaved');
     setStatus('clean');
     setWarnDialog(false);
   }, [setWarnDialog]);
@@ -261,9 +277,9 @@ const GitHubOwnerRepo = () => {
 
   const config = useVivlioStyleConfig({
     user,
-    owner: ownerStr!,
-    repo: repoStr!,
-    branch: branch,
+    owner: repository.owner!,
+    repo: repository.repo!,
+    branch: repository.branch!,
   });
   const filenames = useMemo(() => {
     if (!config || !config.entry) return [];
@@ -294,10 +310,6 @@ const GitHubOwnerRepo = () => {
     onClose: onCloseFileUploadModal,
   } = useDisclosure();
 
-  const onBranchUpdate = useCallback((branch: string) => {
-    setBranch(branch);
-  }, []);
-
   /**
    * ファイルリストでファイルが選択された
    * @param path ファイルのパス
@@ -316,11 +328,12 @@ const GitHubOwnerRepo = () => {
       return;
     }
     // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    readFile({user, owner: ownerStr, repo: repoStr, branch, path})
+    readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path})
       .then((file) => {
         if (file) {
           // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
           setCurrentFile(file);
+          modifiedText.set(file.text);
           setStatus('clean');
           if (file.session) {
             setSession(file.session);
@@ -350,17 +363,17 @@ const GitHubOwnerRepo = () => {
             <UI.Box w="180px" px="4">
               <BranchSelecter
                 user={user}
-                owner={ownerStr!}
-                repo={repoStr!}
-                onChange={onBranchUpdate}
               />
             </UI.Box>
-            {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
+            {/* {status === 'saved' && <UI.Text>Document updated : </UI.Text>} */}
             {user && session?.id && (
-              <CommitSessionButton
-                {...{user, sessionId: session.id, onDidSaved, branch}}
-                disabled={status !== 'saved'}
-              />
+                <div>
+                <CommitSessionButton
+                {...{user, currentFile, onDidSaved, branch:repository.branch!}}
+                disabled={!(status == 'saved' || status == 'modified')}
+                />
+                {status}
+                </div>
             )}
             {/* {stylesheet} */}
           </UI.Flex>
@@ -389,9 +402,6 @@ const GitHubOwnerRepo = () => {
                   </UI.MenuItem>
                   <FileUploadModal
                     user={user}
-                    owner={ownerStr!}
-                    repo={repoStr!}
-                    branch={branch}
                     isOpen={isOpenFileUploadModal}
                     onOpen={onOpenFileUploadModal}
                     onClose={onCloseFileUploadModal}
@@ -444,19 +454,15 @@ const GitHubOwnerRepo = () => {
             <UI.Box flex="1">
               <MarkdownEditor
                 currentFile={currentFile}
-                {...{onModified, onUpdate}}
+                {...{onModified}}
               />
             </UI.Box>
             )}
             <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
               <Previewer
                 basename={currentFile.path.replace(/\.md$/, '.html')}
-                body={currentFile.text}
                 stylesheet={stylesheet}
-                owner={ownerStr!}
-                repo={repoStr!}
-                user={user}
-              />
+                user={user}            />
             </UI.Box>
           </UI.Flex>
         ) : (
