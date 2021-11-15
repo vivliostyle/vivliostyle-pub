@@ -5,6 +5,7 @@ import mime from 'mime-types'
 
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 import firebase from '@services/firebase';
+import { useToast } from '@chakra-ui/toast';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
@@ -13,6 +14,7 @@ const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
 
 const getFileContentFromGithub = async(owner:string, repo:string, path: string, user: firebase.User) => {
+
   const content : ContentOfRepositoryApiResponse = await fetch(
     `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, path})}`,
     {
@@ -21,7 +23,12 @@ const getFileContentFromGithub = async(owner:string, repo:string, path: string, 
         'x-id-token': await user.getIdToken(),
       },
     },
-  ).then((r) => r.json());
+  ).then((r) => {
+    if(r.status === 403) {
+      throw new Error(`403:${path}`);
+    }
+    return r.json();
+  });
   if( Array.isArray(content) || !("content" in content) ) {
     // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
     throw new Error(`Content type is not file`);
@@ -69,6 +76,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
   repo,
   user,
 }) => {
+  const toast = useToast();
   const [contentReady,setContentReady] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Why Date.now()? -> disable viewer cache
@@ -87,7 +95,14 @@ export const Previewer: React.FC<PreviewerProps> = ({
         const stylesheetString = Buffer.from(content.content, 'base64').toString()
         await updateCache(stylesheet, stylesheetString)
         const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
-        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, stylesheet, imageOfStyle, user)))
+        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, stylesheet, imageOfStyle, user))).catch(e=>{
+          if(e.message.startsWith('403:')){
+            toast({
+              title: "file size too large in css (Max 1MB) : " + e.message.split(':')[1],
+              status: "error"
+            });
+          }
+        });
       }
       const htmlString = stringify(body);
       await updateCache(basename, htmlString)
@@ -99,7 +114,15 @@ export const Previewer: React.FC<PreviewerProps> = ({
         if( src && !isURL(src) ) imagePaths.push(src)
       })
 
-      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, basename, imagePath, user)))
+      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, basename, imagePath, user))).catch(e=>{
+        if(e.message.startsWith('403:')){
+          toast({
+            title: "file size too large in img (Max 1MB) : " + e.message.split(':')[1],
+            status: "error"
+          });
+        }
+      });
+
       setContentReady(true);
     })()
   }, [body, basename, stylesheet, owner, repo, user]);
