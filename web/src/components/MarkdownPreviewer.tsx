@@ -1,4 +1,4 @@
-import {useRef, useEffect, useMemo} from 'react';
+import {useRef, useEffect, useMemo, useState} from 'react';
 import {stringify} from '@vivliostyle/vfm';
 import path from 'path';
 import mime from 'mime-types'
@@ -69,9 +69,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
   repo,
   user,
 }) => {
+  const [contentReady,setContentReady] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Why Date.now()? -> disable viewer cache
   const viewerURL = useMemo(() => {
+    setContentReady(false);
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, basename)}`
     if(stylesheet) url += `&style=${isURL(stylesheet) ? stylesheet : path.join(VPUBFS_ROOT, stylesheet)}`
     return url
@@ -98,10 +100,9 @@ export const Previewer: React.FC<PreviewerProps> = ({
       })
 
       await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, basename, imagePath, user)))
-
-      iframeRef.current?.contentWindow?.location.reload()
+      setContentReady(true);
     })()
   }, [body, basename, stylesheet, owner, repo, user]);
 
-  return <iframe ref={iframeRef} src={viewerURL} width="100%" height="100%"></iframe>;
+  return <iframe ref={iframeRef} src={contentReady?viewerURL:VIVLIOSTYLE_VIEWER_HTML_URL+'#x=empty.html'} width="100%" height="100%"></iframe>;
 };
