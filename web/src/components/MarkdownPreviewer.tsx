@@ -52,10 +52,12 @@ export const Previewer: React.FC<PreviewerProps> = ({
 }) => {
   const modifiedText = useModifiedTextContext();
   const repository = useRepositoryContext();
+  const [contentReady,setContentReady] = useState<boolean>(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Why Date.now()? -> disable viewer cache
   const viewerURL = useMemo(() => {
+    setContentReady(false);
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, basename)}`
     if(stylesheet) url += `&style=${isURL(stylesheet) ? stylesheet : path.join(VPUBFS_ROOT, stylesheet)}`
     return url
@@ -85,10 +87,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
       })
 
       await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, basename, imagePath, user)))
-
-      iframeRef.current?.contentWindow?.location.reload()
+      console.log('iframe reload');
+      setContentReady(true);
+//      iframeRef.current?.contentWindow?.location.reload()
     })()
   }, [modifiedText,basename, stylesheet, repository, user]);
 
-  return <iframe ref={iframeRef} src={viewerURL} width="100%" height="100%"></iframe>;
+  return <iframe ref={iframeRef} src={contentReady?viewerURL:VIVLIOSTYLE_VIEWER_HTML_URL+'#x=empty.html'} width="100%" height="100%"></iframe>;
 };

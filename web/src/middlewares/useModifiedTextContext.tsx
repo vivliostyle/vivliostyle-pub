@@ -36,7 +36,7 @@ export function ModifiedTextProvider({children}:{children:JSX.Element}){
             await session.update({
               userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
               text: modifiedText,
-              state: 'update',
+              state: 'commit',
             });
             // console.log('update end');
             await fetch('/api/github/commitSession', {

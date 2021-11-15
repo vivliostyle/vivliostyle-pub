@@ -462,7 +462,8 @@ const GitHubOwnerRepo = () => {
               <Previewer
                 basename={currentFile.path.replace(/\.md$/, '.html')}
                 stylesheet={stylesheet}
-                user={user}            />
+                user={user}
+              />
             </UI.Box>
           </UI.Flex>
         ) : (
