@@ -9,6 +9,7 @@ import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import { getFileContentFromGithub } from '@middlewares/frontendFunctions';
 import { TYPE_PREVIEW_TARGET } from 'pages/github/[owner]/[repo]';
+import {parse} from 'scss-parser';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
@@ -74,8 +75,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
       if( stylesheet && !isURL(stylesheet) ){
         const content = await getFileContentFromGithub(repository.owner!,repository.repo!, repository.branch!, stylesheet, user)
         if("content" in content) {
-          const stylesheetString = Buffer.from(content.content, 'base64').toString()
-          await updateCache(stylesheet, stylesheetString)
+          const stylesheetString = content.content; //Buffer.from(content.content, 'base64').toString();
+          console.log('stylesheetString',stylesheetString);
+          const ast = parse(stylesheetString);
+          console.log('ast',ast);
+          await updateCache(stylesheet, stylesheetString);
           const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
           await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!,repository.branch!, stylesheet, imageOfStyle, user)))
           .catch((error)=>{
