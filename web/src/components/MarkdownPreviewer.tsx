@@ -73,7 +73,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
           const stylesheetString = Buffer.from(content.content, 'base64').toString()
           await updateCache(stylesheet, stylesheetString)
           const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
-          await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!,repository.branch!, stylesheet, imageOfStyle, user)))  
+          await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!,repository.branch!, stylesheet, imageOfStyle, user)))
+          .catch((error)=>{
+            console.error(error);
+          });
+    
         }
       }
       const htmlString = stringify(modifiedText.text!);
@@ -87,6 +91,9 @@ export const Previewer: React.FC<PreviewerProps> = ({
       })
 
       await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, repository.branch!, basename, imagePath, user)))
+      .catch((error)=>{
+        console.error(error);
+      });
       console.log('iframe reload');
       setContentReady(true);
     })()
