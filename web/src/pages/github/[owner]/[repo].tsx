@@ -334,7 +334,7 @@ const GitHubOwnerRepo =  () => {
             </UI.Box>)
             :''}
             <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
-              <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} user={user} />
+              <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} branch={branch!} user={user} />
             </UI.Box>
           </UI.Flex>
         ) : (

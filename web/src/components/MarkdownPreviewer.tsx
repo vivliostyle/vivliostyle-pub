@@ -12,9 +12,9 @@ const VPUBFS_ROOT = '/vpubfs';
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
 
-const getFileContentFromGithub = async(owner:string, repo:string, path: string, user: firebase.User) => {
+const getFileContentFromGithub = async(owner:string, repo:string, branch:string, path: string, user: firebase.User) => {
   const content : ContentOfRepositoryApiResponse = await fetch(
-    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, path})}`,
+    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path})}`,
     {
       headers: {
         'content-type': 'application/json',
@@ -45,10 +45,10 @@ async function updateCache(cachePath: string, content: any) {
 
 const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
 
-const updateCacheFromPath = async(owner: string, repo: string, basePath: string, contentRelativePath: string, user: firebase.User) => {
+const updateCacheFromPath = async(owner: string, repo: string, branch:string, basePath: string, contentRelativePath: string, user: firebase.User) => {
   if( isURL(contentRelativePath) ) return;
   const contentPath = path.join(path.dirname(basePath), contentRelativePath)
-  const content = await getFileContentFromGithub(owner, repo, contentPath, user)
+  const content = await getFileContentFromGithub(owner, repo, branch, contentPath, user)
   await updateCache(contentPath, Buffer.from(content.content, 'base64'))
 }
 
@@ -58,6 +58,7 @@ interface PreviewerProps {
   stylesheet?: string;
   owner: string;
   repo: string;
+  branch: string;
   user: firebase.User | null;
 }
 
@@ -67,6 +68,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
   stylesheet,
   owner,
   repo,
+  branch,
   user,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -81,11 +83,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
     if(!user) return
     (async() => {
       if( stylesheet && !isURL(stylesheet) ){
-        const content = await getFileContentFromGithub(owner,repo, stylesheet, user)
+        const content = await getFileContentFromGithub(owner, repo, branch, stylesheet, user)
         const stylesheetString = Buffer.from(content.content, 'base64').toString()
         await updateCache(stylesheet, stylesheetString)
         const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
-        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, stylesheet, imageOfStyle, user)))
+        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, branch, stylesheet, imageOfStyle, user)))
       }
       const htmlString = stringify(body);
       await updateCache(basename, htmlString)
@@ -97,11 +99,11 @@ export const Previewer: React.FC<PreviewerProps> = ({
         if( src && !isURL(src) ) imagePaths.push(src)
       })
 
-      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, basename, imagePath, user)))
+      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, branch, basename, imagePath, user)))
 
       iframeRef.current?.contentWindow?.location.reload()
     })()
-  }, [body, basename, stylesheet, owner, repo, user]);
+  }, [body, basename, stylesheet, owner, repo, branch, user]);
 
   return <iframe ref={iframeRef} src={viewerURL} width="100%" height="100%"></iframe>;
 };
