@@ -1,15 +1,11 @@
 import * as express from 'express';
 import {NextFunction, Request, Response} from 'express';
-//import * as fs from 'fs';
-import * as util from 'util';
-import * as child_process from 'child_process';
 import * as admin from 'firebase-admin';
 import * as uuid from 'uuid'
 
 import {uploadFile} from './cloud-storage';
 import {gitClone} from './git-clone';
-
-const exec = util.promisify(child_process.exec);
+import { execCommanad } from './util'
 
 if (!admin.apps.length) admin.initializeApp();
 const firestore = admin.firestore();
@@ -38,12 +34,6 @@ app.use(allowCrossDomain);
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-const execCommanad = async(cmd: string) => {
-  const {stdout, stderr} = await exec(cmd);
-  console.log('>> execCommanad stdout:', stdout);
-  console.log('>> execCommanad stderr:', stderr);
-}
-
 // 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から PDF をローカルに生成する
 // PDF のパスを返却する
 async function buildFromGithubRepository(owner: string, repo: string) {
@@ -57,7 +47,7 @@ async function buildFromGithubRepository(owner: string, repo: string) {
     console.log('>> Start compile');
     const outputPdfPath = `${cwd}/tmp/pdfs/${processID}.pdf`
     process.chdir(repoDir);
-    await execCommanad(`${cwd}/node_modules/.bin/vivliostyle build --no-sandbox --timeout 3600 --output ${outputPdfPath}`);
+    await execCommanad(`vivliostyle build --no-sandbox --timeout 3600 --verbose --output ${outputPdfPath}`);
     process.chdir(cwd);
     await execCommanad(`rm -rf ${cwd}/tmp/repos/${processID}`);
     return outputPdfPath;

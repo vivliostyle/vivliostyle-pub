@@ -30,10 +30,10 @@ async function updateCache(cachePath: string, content: any) {
 
 const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
 
-const updateCacheFromPath = async(owner: string, repo: string, basePath: string, contentRelativePath: string, user: firebase.User) => {
+const updateCacheFromPath = async(owner: string, repo: string, branch:string, basePath: string, contentRelativePath: string, user: firebase.User) => {
   if( isURL(contentRelativePath) ) return;
   const contentPath = path.join(path.dirname(basePath), contentRelativePath)
-  const content = await getFileContentFromGithub(owner, repo, contentPath, user)
+  const content = await getFileContentFromGithub(owner, repo, branch, contentPath, user)
   if("content" in content){
     await updateCache(contentPath, Buffer.from(content.content, 'base64'))
   }
@@ -68,12 +68,12 @@ export const Previewer: React.FC<PreviewerProps> = ({
     if(!user) return
     (async() => {
       if( stylesheet && !isURL(stylesheet) ){
-        const content = await getFileContentFromGithub(repository.owner!,repository.repo!, stylesheet, user)
+        const content = await getFileContentFromGithub(repository.owner!,repository.repo!, repository.branch!, stylesheet, user)
         if("content" in content) {
           const stylesheetString = Buffer.from(content.content, 'base64').toString()
           await updateCache(stylesheet, stylesheetString)
           const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
-          await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!, stylesheet, imageOfStyle, user)))  
+          await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!,repository.branch!, stylesheet, imageOfStyle, user)))  
         }
       }
       const htmlString = stringify(modifiedText.text!);
@@ -86,10 +86,9 @@ export const Previewer: React.FC<PreviewerProps> = ({
         if( src && !isURL(src) ) imagePaths.push(src)
       })
 
-      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, basename, imagePath, user)))
+      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, repository.branch!, basename, imagePath, user)))
       console.log('iframe reload');
       setContentReady(true);
-//      iframeRef.current?.contentWindow?.location.reload()
     })()
   }, [modifiedText,basename, stylesheet, repository, user]);
 

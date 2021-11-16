@@ -33,7 +33,7 @@ $ docker push gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf
 $ gcloud run deploy vivliostyle-pub-build-pdf \
     --image gcr.io/vivliostyle-81c48/vivliostyle-pub-build-pdf \
     --project vivliostyle-81c48 --region asia-northeast1 \
-    --platform managed --timeout 900 --memory 1Gi
+    --platform managed --timeout 900 --memory 2Gi
 ```
 
 ## Deploy

@@ -120,9 +120,9 @@ export async function deleteFile() {
 
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 
-export async function getFileContentFromGithub(owner:string, repo:string, path: string, user: firebase.User):Promise<ContentOfRepositoryApiResponse> {
+export async function getFileContentFromGithub(owner:string, repo:string, branch:string ,path: string, user: firebase.User):Promise<ContentOfRepositoryApiResponse> {
   const content : ContentOfRepositoryApiResponse = await fetch(
-    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, path})}`,
+    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path})}`,
     {
       headers: {
         'content-type': 'application/json',

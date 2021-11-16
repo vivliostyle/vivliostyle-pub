@@ -301,7 +301,9 @@ const GitHubOwnerRepo = () => {
   }, [filenames, filenamesFilterText]);
 
   useEffect(() => {
-    if (config && config.theme) setStylesheet(config.theme);
+    if(config){
+      setStylesheet(config.theme??'');
+    }
   }, [config]);
 
   const {
@@ -384,7 +386,8 @@ const GitHubOwnerRepo = () => {
                 <UI.Icon name="chevron-down" /> Actions
               </UI.MenuButton>
               <UI.MenuList>
-                <UI.MenuItem onClick={()=>{ setPresentationMode(!isPresentationMode) }}>Presentation Mode</UI.MenuItem>
+                <UI.MenuItem key="presen" onClick={()=>{ setPresentationMode(!isPresentationMode) }}>{isPresentationMode?'✔ ':' '}Presentation Mode</UI.MenuItem>
+                <UI.MenuDivider />
                 <UI.MenuGroup title="Theme">
                   {themes.map((theme) => (
                     <UI.MenuItem
