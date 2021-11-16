@@ -55,7 +55,7 @@ const updateCacheFromPath = async(owner: string, repo: string, basePath: string,
 interface PreviewerProps {
   body: string;
   basename: string;
-  stylesheet?: string|null;
+  stylesheet: string|null;
   owner: string;
   repo: string;
   user: firebase.User | null;
