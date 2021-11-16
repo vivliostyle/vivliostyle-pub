@@ -8,6 +8,7 @@ import { useToast } from '@chakra-ui/toast';
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import { getFileContentFromGithub } from '@middlewares/functions';
+import { TYPE_PREVIEW_TARGET } from 'pages/github/[owner]/[repo]';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
@@ -41,18 +42,19 @@ const updateCacheFromPath = async(owner: string, repo: string, branch:string, ba
 }
 
 interface PreviewerProps {
-  basename: string;
+  target: TYPE_PREVIEW_TARGET;
   stylesheet?: string;
   user: firebase.User | null;
 }
 
 export const Previewer: React.FC<PreviewerProps> = ({
-  basename,
+  target,
   stylesheet,
   user,
 }) => {
+  console.log(target);
   const toast = useToast();
-  const modifiedText = useModifiedTextContext();
+  // const modifiedText = useModifiedTextContext();
   const repository = useRepositoryContext();
   const [contentReady,setContentReady] = useState<boolean>(false);
 
@@ -60,14 +62,14 @@ export const Previewer: React.FC<PreviewerProps> = ({
   // Why Date.now()? -> disable viewer cache
   const viewerURL = useMemo(() => {
     setContentReady(false);
-    let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, basename)}`
+    let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, target.path??'')}`
     if(stylesheet) url += `&style=${isURL(stylesheet) ? stylesheet : path.join(VPUBFS_ROOT, stylesheet)}`
     return url
-  },[basename, stylesheet]);
+  },[target.path, stylesheet]);
 
   useEffect(() => {
-    console.log('rerendering');
-    if(!user) return
+    console.log('rerendering',target.path, target.text,repository,user);
+    if(!user || target.text == null || target.path == null ) return
     (async() => {
       if( stylesheet && !isURL(stylesheet) ){
         const content = await getFileContentFromGithub(repository.owner!,repository.repo!, repository.branch!, stylesheet, user)
@@ -87,8 +89,8 @@ export const Previewer: React.FC<PreviewerProps> = ({
           });
         }
       }
-      const htmlString = stringify(modifiedText.text!);
-      await updateCache(basename, htmlString)
+      const htmlString = stringify(target.text!);
+      await updateCache(target.path!, htmlString)
 
       const imagePaths = [] as string[]
       const parser = new DOMParser();
@@ -97,7 +99,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
         if( src && !isURL(src) ) imagePaths.push(src)
       })
 
-      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, repository.branch!, basename, imagePath, user)))
+      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, repository.branch!, target.path!, imagePath, user)))
       .catch((error)=>{
         if(error.message.startsWith('403:')){
           console.error(error.message);
@@ -111,7 +113,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
       console.log('iframe reload');
       setContentReady(true);
     })()
-  }, [modifiedText,basename, stylesheet, repository, user]);
+  }, [target, stylesheet, repository, user]);
 
   return <iframe ref={iframeRef} src={contentReady?viewerURL:VIVLIOSTYLE_VIEWER_HTML_URL+'#x=empty.html'} width="100%" height="100%"></iframe>;
 };

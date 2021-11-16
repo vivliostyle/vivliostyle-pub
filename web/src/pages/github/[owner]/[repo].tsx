@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useMemo} from 'react';
+import React, {useEffect, useCallback, useState, useMemo, useReducer} from 'react';
 import {useRouter} from 'next/router';
 import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
 
@@ -21,6 +21,7 @@ import { Theme } from 'theme-manager/lib/ThemeManager';
 
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
+import { usePreviewTargetContext } from '@middlewares/usePreviewTarget';
 
 const GitHubAccessToken:string|null = "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";
 
@@ -80,16 +81,41 @@ function useDefferedEffect(
   }, args);
 }
 
+export type TYPE_PREVIEW_TARGET = { 
+  text:string|null;
+  path:string|null;
+};
+
+type ACTION_TYPE = 
+| { type: "changeFile", path:string|null, text:string|null } 
+| { type: "modifyText", text:string|null }
+| { type: "commit"};
+
+// const initialState: TYPE_PREVIEW_TARGET = {
+//   text:null,
+//   path:null
+// }
 
 /**
  * メインコンポーネント
  * @returns 
  */
 const GitHubOwnerRepo = () => {
-
-
   const {user, isPending} = useAuthorizedUser();
   const repository = useRepositoryContext();
+
+//   const reducer = (state:TYPE_PREVIEW_TARGET, action:ACTION_TYPE):TYPE_PREVIEW_TARGET => {
+//     switch (action.type) {
+//       case 'changeFile':
+//         return {...state, path: action.path!.replace(/\.md$/, '.html'), text: action.text};
+//       case 'modifyText':
+//         return {...state, text: action.text};
+//       case 'commit':
+//         return state;
+//     }
+//   }
+//   const [previewTarget, dispatch] = useReducer(reducer, initialState);
+
 
   const router = useRouter();
   const {owner, repo} = router.query;
@@ -115,7 +141,8 @@ const GitHubOwnerRepo = () => {
   const [isPresentationMode,setPresentationMode] = useState<boolean>(false);
   const [themes, setThemes] = useState<Theme[]>([]);
   
-  const modifiedText = useModifiedTextContext();
+  // const modifiedText = useModifiedTextContext();
+  const previewTarget = usePreviewTargetContext();
   
   useEffect(()=>{
     (async () =>{
@@ -187,32 +214,33 @@ const GitHubOwnerRepo = () => {
     });
   }, [session, currentFile]);
 
-  useDefferedEffect(
-    () => {
-      if(modifiedText.text){
-        console.log('onUpdate');
-        if (!session) {
-          // console.log('same text',session ,updatedText, currentFile.text);
-          return;
-        }
-        session
-          .update({
-            userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            text: modifiedText.text,
-            state: 'update',
-          })
-          .then(() => {
-            setStatus('saved');
-          });
-        }
-    },
-    [modifiedText.text],
-    REFRESH_MS,
-  );
+  // useDefferedEffect(
+  //   () => {
+  //     if(modifiedText.text){
+  //       console.log('onUpdate');
+  //       if (!session) {
+  //         // console.log('same text',session ,updatedText, currentFile.text);
+  //         return;
+  //       }
+  //       session
+  //         .update({
+  //           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  //           text: modifiedText.text,
+  //           state: 'update',
+  //         })
+  //         .then(() => {
+  //           setStatus('saved');
+  //         });
+  //       }
+  //   },
+  //   [modifiedText.text],
+  //   REFRESH_MS,
+  // );
 
   const onModified = useCallback((updatedText) => {
     console.log('onModified');
-    modifiedText.set(updatedText);
+    previewTarget.modifyText(updatedText);
+    // modifiedText.set(updatedText);
     setStatus('modified');
     setWarnDialog(true);
   
@@ -317,38 +345,42 @@ const GitHubOwnerRepo = () => {
    * @param path ファイルのパス
    * @returns void
    */
-  const selectFile = (path: string) => {
+  const selectFile = (path: string|null) => {
     // 同じファイルを選択した場合何もしない
-    if (path === currentFile.path || !user) {
+    if (path === previewTarget.path) {
       return;
     }
     // 現在の対象ファイルが未コミットなら警告を表示
     if (
-      status !== 'clean' &&
+    status !== 'clean' &&
       !confirm('ファイルが保存されていません。変更を破棄しますか?')
     ) {
+      // キャンセルなら何もしない
+      return;
+    }
+    if(path == null) {
+      setCurrentFile({text:'',path:'',state:'init'});
       return;
     }
     // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path})
-      .then((file) => {
-        if (file) {
-          // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
-          setCurrentFile(file);
-          modifiedText.set(file.text);
-          setStatus('clean');
-          if (file.session) {
-            setSession(file.session);
-          }
-        } else {
-          // ファイル情報が取得できなかった
-          console.error('file not found');
+    const file = readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path:path})
+    .then((file)=>{
+      if (file) {
+        // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
+        setCurrentFile(file);
+        setStatus('clean');
+        if (file.session) {
+          setSession(file.session);
         }
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  };
+        previewTarget.changeFile(path,file.text);
+      } else {
+        // ファイル情報が取得できなかった
+        console.error('file not found');
+      }
+    }).catch((err)=>{
+      console.error(err);
+    })
+};
 
   return (
     <UI.Box>
@@ -463,7 +495,7 @@ const GitHubOwnerRepo = () => {
             )}
             <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
               <Previewer
-                basename={currentFile.path.replace(/\.md$/, '.html')}
+                target={previewTarget}
                 stylesheet={stylesheet}
                 user={user}
               />
@@ -480,3 +512,4 @@ const GitHubOwnerRepo = () => {
 };
 
 export default GitHubOwnerRepo;
+

@@ -2,14 +2,15 @@ import firebase from "firebase";
 import { createContext,useState, useContext, Dispatch, SetStateAction } from "react";
 
 type valueType = {
+    path: string|null;
     text: string|null;
-    set: (text:string)=>void;
+    set: (text:string,path:string)=>void;
     timestamp: number;
     commit: (
         session:firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | undefined,
         branch:string|undefined,
         user:firebase.User
-        )=>{};
+    )=>{};
 }
 
 const ModifiedTextContext = createContext({} as valueType);
@@ -19,10 +20,13 @@ export function useModifiedTextContext(){
 }
 
 export function ModifiedTextProvider({children}:{children:JSX.Element}){
+    const [path,setPath] = useState<string|null>(null);
     const [modifiedText,setModifiedText] = useState<string|null>(null);
     const [timestamp,setTimestamp] = useState<number>(0);
 
-    const set = (text:string)=>{
+    const set = (text:string,path:string)=>{
+        path=path.replace(/\.md$/, '.html');
+        setPath(path);
         setModifiedText(text);
         setTimestamp(new Date().getTime());
     }
@@ -51,6 +55,7 @@ export function ModifiedTextProvider({children}:{children:JSX.Element}){
     };
 
     const value = {
+        path,
         text:modifiedText,
         set,
         commit,
