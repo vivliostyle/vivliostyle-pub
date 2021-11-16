@@ -18,7 +18,7 @@ import {BranchSelecter} from '@components/BranchSelecter';
 
 const themes = [
   {
-    name: 'Browser Default',
+    name: 'Plain',
     css: null
   },
   {
