@@ -219,8 +219,10 @@ const GitHubOwnerRepo =  () => {
   }, [filenames, filenamesFilterText])
 
   useEffect(() => {
-    if(config && config.theme) setStylesheet(config.theme)
-  }, [config])
+    if(config){
+      setStylesheet(config.theme??'');
+    }
+  }, [config]);
 
   const {
     isOpen:isOpenFileUploadModal,
