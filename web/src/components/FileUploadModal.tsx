@@ -1,9 +1,8 @@
 import React, { useCallback, useState, useRef, useMemo } from 'react';
 import * as UI from './ui';
-import firebase from '@services/firebase';
 import { useToast } from "@chakra-ui/react"
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-
+import { User } from 'firebase/auth';
 
 const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
   const reader = new FileReader()
@@ -20,7 +19,7 @@ export const FileUploadModal = ({
   onOpen,
   onClose,
 }: {
-  user: firebase.User | null;
+  user: User | null;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -59,20 +58,8 @@ export const FileUploadModal = ({
       }
       setBusy(true)
       try {
-        const response = await fetch('/api/github/createOrUpdateFileContents', {
-          method: 'POST',
-          body: JSON.stringify({
-            owner:repository.owner,
-            repo:repository.repo,
-            branch:repository.branch,
-            path: fileName,
-            content: (await getBase64(file))?.toString().split(',')[1] // remove dataURL's prefix
-          }),
-          headers: {
-            'content-type': 'application/json',
-            'x-id-token': await user.getIdToken(),
-          },
-        });
+        const response = await createFile({user, owner:repository.owner!, repo:repository.repo!, branch:repository.branch!, path:fileName}, file);
+        if(!response) { return; }
         if (response.status === 201) {
           toast({
             title: "image uploaded",

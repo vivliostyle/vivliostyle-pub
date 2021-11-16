@@ -7,7 +7,7 @@ import firebase from '@services/firebase';
 import { useToast } from '@chakra-ui/toast';
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { getFileContentFromGithub } from '@middlewares/functions';
+import { getFileContentFromGithub } from '@middlewares/frontendFunctions';
 import { TYPE_PREVIEW_TARGET } from 'pages/github/[owner]/[repo]';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';

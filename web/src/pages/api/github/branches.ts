@@ -5,6 +5,7 @@ import {Endpoints} from '@octokit/types';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
+import { createAppAuth } from '@octokit/auth-app';
 
 export type BranchesApiResponse = {
     branches: Endpoints["GET /repos/{owner}/{repo}/branches"]['response']['data'];
@@ -41,7 +42,8 @@ const branches: NextApiHandler<BranchesApiResponse | null> = async (
 
   const [id, installations] = await Promise.all([
     (async () => {
-      const jwt = githubApp.getSignedJsonWebToken();
+      const appAuthentication = await githubApp({type:"app"});
+      const jwt = appAuthentication.token;
       const octokit = new Octokit({
         auth: `Bearer ${jwt}`,
       });
@@ -59,12 +61,13 @@ const branches: NextApiHandler<BranchesApiResponse | null> = async (
   if (!installations.includes(id)) {
     return res.status(405).send(null);
   }
-
-  const token = await githubApp.getInstallationAccessToken({
-    installationId: id,
-  });
   const octokit = new Octokit({
-    auth: `token ${token}`,
+    authStrategy: createAppAuth,
+    auth: {
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: id,
+    },
   });
   try {
     const { data: branches } = await octokit.repos.listBranches({owner, repo});

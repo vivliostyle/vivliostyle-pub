@@ -2,6 +2,7 @@ import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
+import { createAppAuth } from '@octokit/auth-app';
 
 export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner: string, repo: string, branch: string, path: string, base64edContent: string) => {
   const contentSha = await (async () => {
@@ -37,18 +38,21 @@ const createOrUpdateFileContents: NextApiHandler<null> = async (req, res) => {
 
   // Save index.md
   const installationId = await (async () => {
-    const jwt = githubApp.getSignedJsonWebToken();
+    const appAuthentication = await githubApp({type:"app"});
+    const jwt = appAuthentication.token;
     const octokit = new Octokit({
       auth: `Bearer ${jwt}`,
     });
     const {data} = await octokit.apps.getRepoInstallation({owner, repo});
     return data.id;
   })();
-  const token = await githubApp.getInstallationAccessToken({
-    installationId,
-  });
   const octokit = new Octokit({
-    auth: `token ${token}`,
+    authStrategy: createAppAuth,
+    auth: {
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: installationId,
+    },
   });
   await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, content)
   res.status(201).send(null);

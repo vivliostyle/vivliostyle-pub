@@ -5,6 +5,7 @@ import {stringify} from '@vivliostyle/vfm';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {createOrUpdateFileContentsInternal} from './createOrUpdateFileContents';
+import { createAppAuth } from '@octokit/auth-app';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
   const {sessionId, branch} = req.body;
@@ -38,18 +39,21 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
 
   // Save index.md
   const installationId = await (async () => {
-    const jwt = githubApp.getSignedJsonWebToken();
+    const appAuthentication = await githubApp({type:"app"});
+    const jwt = appAuthentication.token;
     const octokit = new Octokit({
       auth: `Bearer ${jwt}`,
     });
     const {data} = await octokit.apps.getRepoInstallation({owner, repo});
     return data.id;
   })();
-  const token = await githubApp.getInstallationAccessToken({
-    installationId,
-  });
   const octokit = new Octokit({
-    auth: `token ${token}`,
+    authStrategy: createAppAuth,
+    auth: {
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: installationId,
+    },
   });
   await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'))
   await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), Buffer.from(stringify(text), 'utf8').toString('base64'))

@@ -5,6 +5,7 @@ import firebase from '@services/firebase';
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 import type {VivliostyleConfigSchema} from './vivliostyle.config'
 import branches from 'pages/api/github/branches';
+import { getFileContentFromGithub } from './frontendFunctions';
 
 const parseConfig = (configString: string) => {
   // 
@@ -28,6 +29,7 @@ const parseConfig = (configString: string) => {
   // return config;
   // 
 
+  console.log('config',configString);
   const configJsonString = configString
     .replace('module.exports = ', '')
     .replaceAll(/^\s*(.+):/gm, '"$1":')
@@ -53,20 +55,13 @@ export function useVivlioStyleConfig({
   useEffect(() => {
     if (!user || !branch) return
     (async () => {
-      const content : ContentOfRepositoryApiResponse = await fetch(
-        `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path: 'vivliostyle.config.js'})}`,
-        {
-          headers: {
-            'content-type': 'application/json',
-            'x-id-token': await user.getIdToken(),
-          },
-        },
-      ).then((r) => r.json());
+      const content = await getFileContentFromGithub(owner,repo,branch,'vivliostyle.config.js',user);
       if( Array.isArray(content) || !("content" in content) ) {
         // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
         throw new Error(`Content type is not file`);
       }
-      const parsedContent = parseConfig(Buffer.from(content.content, 'base64').toString('utf8'))
+      console.log('config',content);
+      const parsedContent = parseConfig(content.content); //Buffer.from(content.content, 'base64').toString('utf8'))
       setConfig(parsedContent);
     })();
   }, [owner, repo, user, branch]);

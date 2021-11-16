@@ -15,13 +15,14 @@
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
     "@monaco-editor/react": "^4.3.1",
-    "@octokit/app": "^4.2.0",
+    "@octokit/auth-app": "^3.6.1",
+    "@octokit/graphql": "^4.8.0",
     "@octokit/rest": "^18.12.0",
     "@vivliostyle/vfm": "1.0.2",
     "@vivliostyle/viewer": "2.12.0",
     "dotenv": "^10.0.0",
-    "firebase": "^7.15.0",
-    "firebase-admin": "^8.12.1",
+    "firebase": "^9.4.1",
+    "firebase-admin": "^10.0.0",
     "framer-motion": "^5",
     "isomorphic-unfetch": "^3.1.0",
     "mime-types": "^2.1.34",
@@ -55,7 +56,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
+  },  
   "keywords": [],
-  "private": true
+  "private": true,
+  "browser": {
+    "fs": false
+  }
 }

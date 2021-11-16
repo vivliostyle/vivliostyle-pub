@@ -1,5 +1,6 @@
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
-import firebase from 'firebase';
+import { User } from 'firebase/auth';
+// import firebase from 'firebase';
 import { CurrentFile } from 'pages/github/[owner]/[repo]';
 import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
@@ -11,7 +12,7 @@ export const CommitSessionButton = ({
   disabled,
   onDidSaved = () => {},
 }: {
-  user: firebase.User;
+  user: User;
   currentFile: CurrentFile;
   branch: string | undefined;
   disabled?: boolean;

@@ -2,24 +2,28 @@ import React, {useEffect} from 'react';
 import Link from 'next/link';
 import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
 import firebase from '@services/firebase';
+import { getAuth, signInWithRedirect, GithubAuthProvider } from 'firebase/auth';
 import * as UI from './ui';
 
+const provider = new GithubAuthProvider();
+
 const signIn = async () => {
-  const provider = new firebase.auth.GithubAuthProvider();
-  await firebase.auth().signInWithRedirect(provider);
+  const auth = getAuth(firebase);
+  signInWithRedirect(auth, provider);
 };
 
 const signOut = async () => {
-  await firebase.auth().signOut();
+  const auth = getAuth(firebase);
+  await auth.signOut();
 };
 
 const HeaderUserInfo: React.FC = () => {
   const {user, isPending} = useAuthorizedUser();
   useEffect(() => {
     if (user) {
-      console.log(user.providerData);
+      console.log('providerData',user.providerData);
 
-      user.getIdTokenResult(true).then((data) => console.log(data));
+      user.getIdTokenResult(true).then((data) => console.log('idTokenResult',data));
     }
   }, [user]);
   if (isPending) {

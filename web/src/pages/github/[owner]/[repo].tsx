@@ -14,7 +14,7 @@ import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
 import {FileUploadModal} from '@components/FileUploadModal';
 import {BranchSelecter} from '@components/BranchSelecter';
-import {createFile, readFile} from '@middlewares/functions';
+import {readFile} from '@middlewares/frontendFunctions';
 
 import {ThemeManager} from 'theme-manager';
 import { Theme } from 'theme-manager/lib/ThemeManager';
@@ -119,8 +119,11 @@ const GitHubOwnerRepo = () => {
 
   const router = useRouter();
   const {owner, repo} = router.query;
-  repository.setOwner(Array.isArray(owner) ? owner[0] : owner ?? null);
-  repository.setRepo(Array.isArray(repo) ? repo[0] : repo ?? null);
+  useEffect(
+    ()=>{
+      repository.setOwner(Array.isArray(owner) ? owner[0] : owner ?? null);
+      repository.setRepo(Array.isArray(repo) ? repo[0] : repo ?? null);
+    },[owner, repo, repository]);
   const [currentFile, setCurrentFile] = useState<CurrentFile>({
     text: '',
     path: '',
@@ -175,44 +178,44 @@ const GitHubOwnerRepo = () => {
   }, [user, isPending, router]);
 
   // set text
-  useEffect(() => {
-    if (!session) {
-      return;
-    }
-    // console.log('setOnSnapshot', session, currentFile);
-    return session.onSnapshot((doc) => {
-      const data = doc.data();
-      if(data?.path !== currentFile.path) {
-        return;
-      }
-      // console.log(
-      //   'session(' + session.id + ').onSnapshot(state:',
-      //   data?.state,
-      //   ' path:',
-      //   data?.path,
-      //   ', hasPendingWrites:',
-      //   doc.metadata.hasPendingWrites,
-      //   ')',
-      // );
-      if (data?.state === 'update') { // update content
-        setStatus('saved');
-      } else if (data?.state === 'commit') { // commit file
-        setStatus('clean');
-      }
+  // useEffect(() => {
+  //   if (!session) {
+  //     return;
+  //   }
+  //   // console.log('setOnSnapshot', session, currentFile);
+  //   return session.onSnapshot((doc) => {
+  //     const data = doc.data();
+  //     if(data?.path !== currentFile.path) {
+  //       return;
+  //     }
+  //     // console.log(
+  //     //   'session(' + session.id + ').onSnapshot(state:',
+  //     //   data?.state,
+  //     //   ' path:',
+  //     //   data?.path,
+  //     //   ', hasPendingWrites:',
+  //     //   doc.metadata.hasPendingWrites,
+  //     //   ')',
+  //     // );
+  //     if (data?.state === 'update') { // update content
+  //       setStatus('saved');
+  //     } else if (data?.state === 'commit') { // commit file
+  //       setStatus('clean');
+  //     }
 
-      if (
-        !data?.text ||
-        data.text === currentFile.text ||
-        doc.metadata.hasPendingWrites
-      ) {
-        return;
-      }
-      // console.log('setText');
-      // setCurrentFile({...currentFile, text: data.text});
-      //      setText(data.text);
-      // setStatus('clean');
-    });
-  }, [session, currentFile]);
+  //     if (
+  //       !data?.text ||
+  //       data.text === currentFile.text ||
+  //       doc.metadata.hasPendingWrites
+  //     ) {
+  //       return;
+  //     }
+  //     // console.log('setText');
+  //     // setCurrentFile({...currentFile, text: data.text});
+  //     //      setText(data.text);
+  //     // setStatus('clean');
+  //   });
+  // }, [session, currentFile]);
 
   // useDefferedEffect(
   //   () => {

@@ -4,6 +4,7 @@ import {Octokit} from '@octokit/rest';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
+import { createAppAuth } from '@octokit/auth-app';
 
 export interface GithubRequestSessionApiResponse {
   id: string;
@@ -37,7 +38,8 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
 
   const [id, installations] = await Promise.all([
     (async () => {
-      const jwt = githubApp.getSignedJsonWebToken();
+      const appAuthentication = await githubApp({type:"app"});
+      const jwt = appAuthentication.token;
       const octokit = new Octokit({
         auth: `Bearer ${jwt}`,
       });
@@ -57,11 +59,13 @@ const requestSession: NextApiHandler<GithubRequestSessionApiResponse | null> = a
   }
 
   // Get index.md from repo
-  const token = await githubApp.getInstallationAccessToken({
-    installationId: id,
-  });
   const octokit = new Octokit({
-    auth: `token ${token}`,
+    authStrategy: createAppAuth,
+    auth: {
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: id,
+    },
   });
   let content = '';
   try {

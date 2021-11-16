@@ -1,59 +1,26 @@
-import firebase from 'firebase';
 import {GithubRequestSessionApiResponse} from 'pages/api/github/selectFile';
 import {CurrentFile} from 'pages/github/[owner]/[repo]';
+import { User } from "firebase/auth";
+import useSWR from 'swr';
+import {GithubReposApiResponse} from '../pages/api/github/repos';
+import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
+import firebase, { db } from '@services/firebase';
+import { collection, doc, getDoc } from 'firebase/firestore';
+
 
 type RepositoryPath = {
-  user: firebase.User | null;
+  user: User | null;
   owner: string | undefined;
   repo: string | undefined;
   branch: string | undefined;
   path: string;
 };
 
-const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
-  const reader = new FileReader()
-  return new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file)
-  })
-}
-
-export async function createFile({
-  user,
-  owner,
-  repo,
-  branch,
-  path,
-}: RepositoryPath,data:File): Promise<CurrentFile | null> {
-  if (!(user && owner && repo && branch && path)) {
-    return null;
-  }
-  try {
-    const result = await fetch('/api/github/createOrUpdateFileContents', {
-      method: 'POST',
-      body: JSON.stringify({
-        owner,
-        repo,
-        branch,
-        path: path,
-        content: (await getBase64(data))?.toString().split(',')[1] // remove dataURL's prefixr
-      }),
-      headers: {
-        'content-type': 'application/json',
-        'x-id-token': await user.getIdToken(),
-      },
-    });
-    console.log(result.status);
-  } catch (error) {
-    console.error(error);
-  }
-
-  
-
-  return null;
-}
-
+/**
+ * 
+ * @param param0 
+ * @returns 
+ */
 export async function readFile({
   user,
   owner,
@@ -87,14 +54,18 @@ export async function readFile({
     }
   });
 
-  const session = await firebase
-    .firestore()
-    .collection('users')
-    .doc(user.uid)
-    .collection('sessions')
-    .doc(id);
+  
+  const sessionRef = doc(db,'users',user.uid,'sessions',id);
+  const session = await getDoc(sessionRef);
 
-  const data = (await session.get()).data();
+  // const session = await firebase
+  //   .firestore()
+  //   .collection('users')
+  //   .doc(user.uid)
+  //   .collection('sessions')
+  //   .doc(id);
+
+  const data = session.data();
   if (!data) {
     return null;
   }
@@ -118,9 +89,8 @@ export async function deleteFile() {
 
 }
 
-import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 
-export async function getFileContentFromGithub(owner:string, repo:string, branch:string ,path: string, user: firebase.User):Promise<ContentOfRepositoryApiResponse> {
+export async function getFileContentFromGithub(owner:string, repo:string, branch:string ,path: string, user: User):Promise<ContentOfRepositoryApiResponse> {
   const content : ContentOfRepositoryApiResponse = await fetch(
     `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path})}`,
     {
@@ -140,4 +110,21 @@ export async function getFileContentFromGithub(owner:string, repo:string, branch
     throw new Error(`Content type is not file`);
   }
   return content
+}
+
+const fetcher = (url: string, idToken: string) =>
+  fetch(url, {
+    headers: {
+      'x-id-token': idToken,
+    },
+  }).then((r) => r.json());
+  
+export function GetRepsitoryList(idToken:string|null){
+  return useSWR<GithubReposApiResponse>(
+    idToken ? ['/api/github/repos', idToken] : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    },
+  );
 }

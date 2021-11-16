@@ -1,19 +1,23 @@
 import {NextApiHandler} from 'next';
 import {Octokit} from '@octokit/rest';
-import {Endpoints} from '@octokit/types';
 
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
+import { createAppAuth } from '@octokit/auth-app';
+import { graphql } from '@octokit/graphql';
 
-export type ContentOfRepositoryApiResponse = Endpoints["GET /repos/{owner}/{repo}/contents/{path}"]['response']['data']
+export type ContentOfRepositoryApiResponse =  {
+  content:string;
+  encoding:string;
+  oid:string;
+}
 
 const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null> = async (
   req,
   res,
 ) => {
-  const {owner, repo, path, branch} = req.query;
-  console.log("contentOfRepository:",path);
+  const {owner, repo, path, branch, oid} = req.query;
   if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path) || Array.isArray(branch)) {
     console.log("validation error")
     return res.status(400).send(null);
@@ -39,7 +43,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
 
   const [id, installations] = await Promise.all([
     (async () => {
-      const jwt = githubApp.getSignedJsonWebToken();
+      const appAuthentication = await githubApp({type:"app"});
+      const jwt = appAuthentication.token;
       const octokit = new Octokit({
         auth: `Bearer ${jwt}`,
       });
@@ -57,17 +62,53 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   if (!installations.includes(id)) {
     return res.status(405).send(null);
   }
-
-  const token = await githubApp.getInstallationAccessToken({
-    installationId: id,
-  });
+  
   const octokit = new Octokit({
-    auth: `token ${token}`,
+    authStrategy: createAppAuth,
+    auth: {
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: id,
+    },
   });
   try {
-    const { data } = await octokit.repos.getContent({owner, repo, path, ref: branch});
-    const content = Array.isArray(data)? data[0] : data
-    return res.send(data)
+    const auth = createAppAuth({
+      appId: +process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: id,
+    });
+    const graphqlWithAuth = graphql.defaults({
+      request: {
+        hook: auth.hook,
+      },
+    });
+    const  {repository} = await graphqlWithAuth(`
+      {
+        repository(owner: "${owner}", name: "${repo}") {
+          content:object(expression: "${branch}:${path}") {
+            ... on Blob {
+              abbreviatedOid,
+              byteSize,
+              commitResourcePath
+              commitUrl,
+              isBinary,
+              isTruncated,
+              oid,
+              text,
+            }
+          }
+        }
+      }
+    `);
+    if(oid == repository.content.oid) {
+      res.status(200).json({content:'',encoding:'',oid:repository.content.oid});
+    }else if(repository.content.isBinary) {
+      const blob = await octokit.git.getBlob({owner,repo,file_sha: repository.content.oid});
+      res.status(200).json({content:blob.data.content,encoding:blob.data.encoding,oid:repository.content.oid});
+    }else{
+      const text = repository.content.text as string;
+      res.json({content:text,encoding:'utf-8',oid:repository.content.oid});
+    }
   } catch (error) {
     const e = error as any;
     return res.status(e.status).send(null);

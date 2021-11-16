@@ -1,4 +1,9 @@
-import firebase from "firebase";
+// import firebase from "firebase";
+//import admin from 'firebase';
+
+import firebase from "@services/firebase";
+import { User } from "firebase/auth";
+import { DocumentData, DocumentReference } from "firebase/firestore";
 import { createContext,useState, useContext, Dispatch, SetStateAction } from "react";
 
 type valueType = {
@@ -7,9 +12,9 @@ type valueType = {
     set: (text:string,path:string)=>void;
     timestamp: number;
     commit: (
-        session:firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | undefined,
+        session:DocumentReference<DocumentData> | undefined,
         branch:string|undefined,
-        user:firebase.User
+        user:User
     )=>{};
 }
 
@@ -32,16 +37,16 @@ export function ModifiedTextProvider({children}:{children:JSX.Element}){
     }
 
     const commit = async (
-        session:firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | undefined,
+        session:DocumentReference<DocumentData> | undefined,
         branch:string|undefined,
-        user:firebase.User) => {
+        user:User) => {
         if(session && modifiedText != null){
             // console.log('update begin',modifiedText);
-            await session.update({
-              userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              text: modifiedText,
-              state: 'commit',
-            });
+            // await session.update({
+            //   userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            //   text: modifiedText,
+            //   state: 'commit',
+            // });
             // console.log('update end');
             await fetch('/api/github/commitSession', {
               method: 'PUT',
