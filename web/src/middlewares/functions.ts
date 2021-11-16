@@ -129,7 +129,12 @@ export async function getFileContentFromGithub(owner:string, repo:string, branch
         'x-id-token': await user.getIdToken(),
       },
     },
-  ).then((r) => r.json());
+  ).then((r) =>{ 
+    if(r.status === 403) {
+      throw new Error(`403:${path}`);
+    }
+    return r.json();
+  });
   if( Array.isArray(content) || !("content" in content) ) {
     // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
     throw new Error(`Content type is not file`);

@@ -4,6 +4,7 @@ import path from 'path';
 import mime from 'mime-types'
 
 import firebase from '@services/firebase';
+import { useToast } from '@chakra-ui/toast';
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import { getFileContentFromGithub } from '@middlewares/functions';
@@ -50,6 +51,7 @@ export const Previewer: React.FC<PreviewerProps> = ({
   stylesheet,
   user,
 }) => {
+  const toast = useToast();
   const modifiedText = useModifiedTextContext();
   const repository = useRepositoryContext();
   const [contentReady,setContentReady] = useState<boolean>(false);
@@ -75,9 +77,14 @@ export const Previewer: React.FC<PreviewerProps> = ({
           const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
           await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(repository.owner!, repository.repo!,repository.branch!, stylesheet, imageOfStyle, user)))
           .catch((error)=>{
-            console.error(error);
+            if(error.message.startsWith('403:')){
+              console.error(error);
+              toast({
+                title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
+                status: "error"
+              });
+            }
           });
-    
         }
       }
       const htmlString = stringify(modifiedText.text!);
@@ -92,7 +99,14 @@ export const Previewer: React.FC<PreviewerProps> = ({
 
       await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(repository.owner!, repository.repo!, repository.branch!, basename, imagePath, user)))
       .catch((error)=>{
-        console.error(error);
+        if(error.message.startsWith('403:')){
+          console.error(error.message);
+          toast({
+            title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
+            status: "error"
+          });
+        }
+
       });
       console.log('iframe reload');
       setContentReady(true);

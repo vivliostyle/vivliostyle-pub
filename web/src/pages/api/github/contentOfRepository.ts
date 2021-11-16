@@ -69,7 +69,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     const content = Array.isArray(data)? data[0] : data
     return res.send(data)
   } catch (error) {
-    throw error
+    const e = error as any;
+    return res.status(e.status).send(null);
   }
 };
 
