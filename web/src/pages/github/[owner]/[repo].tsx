@@ -18,6 +18,10 @@ import {BranchSelecter} from '@components/BranchSelecter';
 
 const themes = [
   {
+    name: 'Plain',
+    css: null
+  },
+  {
     name: '縦書き小説',
     css:
       'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
@@ -88,7 +92,7 @@ const GitHubOwnerRepo =  () => {
   const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
     'init',
   );
-  const [stylesheet, setStylesheet] = useState<string>(themes[2].css);
+  const [stylesheet, setStylesheet] = useState<string|null>(themes[0].css);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
@@ -189,7 +193,7 @@ const GitHubOwnerRepo =  () => {
       });
   }
 
-  function onThemeSelected(themeURL: string) {
+  function onThemeSelected(themeURL: string|null) {
     setStylesheet(themeURL);
   }
 
@@ -277,7 +281,7 @@ const GitHubOwnerRepo =  () => {
                       key={theme.name}
                       onClick={() => onThemeSelected(theme.css)}
                     >
-                      {theme.name}
+                      {theme.css == stylesheet?'✔ ':' '}{theme.name}
                     </UI.MenuItem>
                   ))}
                 </UI.MenuGroup>

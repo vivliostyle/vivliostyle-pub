@@ -55,7 +55,7 @@ const updateCacheFromPath = async(owner: string, repo: string, branch:string, ba
 interface PreviewerProps {
   body: string;
   basename: string;
-  stylesheet?: string;
+  stylesheet: string|null;
   owner: string;
   repo: string;
   branch: string;
