@@ -6,7 +6,11 @@ import {GithubReposApiResponse} from '../pages/api/github/repos';
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 import firebase, { db } from '@services/firebase';
 import { collection, doc, getDoc } from 'firebase/firestore';
+import path from 'path';
+import mime from 'mime-types';
 
+const VPUBFS_CACHE_NAME = 'vpubfs';
+const VPUBFS_ROOT = '/vpubfs';
 
 type RepositoryPath = {
   user: User | null;
@@ -127,4 +131,29 @@ export function GetRepsitoryList(idToken:string|null){
       revalidateOnFocus: false,
     },
   );
+}
+
+export async function updateCache(cachePath: string, content: any) {
+  const filePath = path.join(VPUBFS_ROOT, cachePath);
+  const cache = await caches.open(VPUBFS_CACHE_NAME);
+  const contentType = mime.lookup(filePath)
+  console.log(`updateCache : ${filePath}`)
+  const headers = new Headers();
+  headers.append('content-type', `${contentType.toString()}`);
+  await cache.delete(filePath)
+  await cache.put(
+    filePath,
+    new Response(content, { headers }),
+  );
+}
+
+const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
+
+export const updateCacheFromPath = async(owner: string, repo: string, branch:string, basePath: string, contentRelativePath: string, user: User) => {
+  if( isURL(contentRelativePath) ) return;
+  const contentPath = path.join(path.dirname(basePath), contentRelativePath)
+  const content = await getFileContentFromGithub(owner, repo, branch, contentPath, user)
+  if("content" in content){
+    await updateCache(contentPath, Buffer.from(content.content, 'base64'))
+  }
 }

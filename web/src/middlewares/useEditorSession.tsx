@@ -3,6 +3,8 @@ import fetch from 'isomorphic-unfetch';
 
 import firebase from '@services/firebase';
 import {GithubRequestSessionApiResponse} from '../pages/api/github/requestSession';
+import { User } from 'firebase/auth';
+import { DocumentReference } from 'firebase/firestore';
 
 export function useEditorSession({
   owner,
@@ -14,10 +16,10 @@ export function useEditorSession({
   owner: string;
   repo: string;
   branch: string | undefined;
-  user: firebase.User | null;
+  user: User | null;
   path: string;
 }) {
-  const [session, setSession] = useState<firebase.firestore.DocumentReference | null>(null);
+  const [session, setSession] = useState<DocumentReference | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {

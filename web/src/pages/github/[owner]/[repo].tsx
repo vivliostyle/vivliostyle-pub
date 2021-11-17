@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useMemo, useReducer} from 'react';
+import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
 import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
 
@@ -19,9 +19,9 @@ import {readFile} from '@middlewares/frontendFunctions';
 import {ThemeManager} from 'theme-manager';
 import { Theme } from 'theme-manager/lib/ThemeManager';
 
-import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { usePreviewTargetContext } from '@middlewares/usePreviewTarget';
+import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
+import { DocumentData, DocumentReference } from 'firebase/firestore';
 
 const GitHubAccessToken:string|null = "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";
 
@@ -130,7 +130,7 @@ const GitHubOwnerRepo = () => {
     state: 'init',
   });
   const [session, setSession] =
-    useState<firebase.firestore.DocumentReference<firebase.firestore.DocumentData> | null>(
+    useState<DocumentReference<DocumentData> | null>(
       null,
     );
 
@@ -145,7 +145,7 @@ const GitHubOwnerRepo = () => {
   const [themes, setThemes] = useState<Theme[]>([]);
   
   // const modifiedText = useModifiedTextContext();
-  const previewTarget = usePreviewTargetContext();
+  const previewSource = usePreviewSourceContext();
   
   useEffect(()=>{
     (async () =>{
@@ -242,7 +242,7 @@ const GitHubOwnerRepo = () => {
 
   const onModified = useCallback((updatedText) => {
     console.log('onModified');
-    previewTarget.modifyText(updatedText);
+    previewSource.modifyText(updatedText);
     // modifiedText.set(updatedText);
     setStatus('modified');
     setWarnDialog(true);
@@ -302,6 +302,7 @@ const GitHubOwnerRepo = () => {
         vpubfsPath,
         new Response(theme.files[theme.style], { headers }),
       );
+      previewSource.changeTheme(stylesheetPath);
       setStylesheet(stylesheetPath);
     })();
   }
@@ -350,23 +351,23 @@ const GitHubOwnerRepo = () => {
    */
   const selectFile = (path: string|null) => {
     // 同じファイルを選択した場合何もしない
-    if (path === previewTarget.path) {
+    if (path === previewSource.path) {
       return;
     }
     // 現在の対象ファイルが未コミットなら警告を表示
-    if (
-    status !== 'clean' &&
-      !confirm('ファイルが保存されていません。変更を破棄しますか?')
-    ) {
-      // キャンセルなら何もしない
-      return;
-    }
+    // if (
+    // status !== 'clean' &&
+    //   !confirm('ファイルが保存されていません。変更を破棄しますか?')
+    // ) {
+    //   // キャンセルなら何もしない
+    //   return;
+    // }
     if(path == null) {
       setCurrentFile({text:'',path:'',state:'init'});
       return;
     }
     // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    const file = readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path:path})
+    readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path:path})
     .then((file)=>{
       if (file) {
         // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
@@ -375,7 +376,7 @@ const GitHubOwnerRepo = () => {
         if (file.session) {
           setSession(file.session);
         }
-        previewTarget.changeFile(path,file.text);
+        previewSource.changeFile(path,file.text);
       } else {
         // ファイル情報が取得できなかった
         console.error('file not found');
@@ -498,7 +499,7 @@ const GitHubOwnerRepo = () => {
             )}
             <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
               <Previewer
-                target={previewTarget}
+                target={previewSource}
                 stylesheet={stylesheet}
                 user={user}
               />

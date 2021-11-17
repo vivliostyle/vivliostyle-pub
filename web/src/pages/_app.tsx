@@ -3,7 +3,7 @@ import { AppProps } from 'next/app';
 import { ChakraProvider, CSSReset } from '@chakra-ui/react';
 // import { ModifiedTextProvider } from '@middlewares/useModifiedTextContext';
 import { RepositoryContextProvider } from '@middlewares/useRepositoryContext';
-import { PreviewTargetContextProvider } from '@middlewares/usePreviewTarget';
+import { PreviewSourceContextProvider } from '@middlewares/usePreviewSourceContext';
 
 
 const MyApp = ({ Component, pageProps }: AppProps) => (
@@ -11,9 +11,9 @@ const MyApp = ({ Component, pageProps }: AppProps) => (
     <CSSReset />
     <RepositoryContextProvider>
     {/* <ModifiedTextProvider> */}
-      <PreviewTargetContextProvider>
+      <PreviewSourceContextProvider>
     <Component {...pageProps} />
-    </PreviewTargetContextProvider>
+    </PreviewSourceContextProvider>
     {/* </ModifiedTextProvider> */}
     </RepositoryContextProvider>
   </ChakraProvider>

@@ -4,15 +4,6 @@ import { useToast } from "@chakra-ui/react"
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import { User } from 'firebase/auth';
 
-const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
-  const reader = new FileReader()
-  return new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file)
-  })
-}
-
 export const FileUploadModal = ({
   user,
   isOpen,
