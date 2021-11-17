@@ -9,7 +9,7 @@ const apps = getApps();
 let firebaseApp:FirebaseApp|undefined;
 
 if(!apps.length) {
-  console.log('config',firebaseConfig);
+  // console.log('config',firebaseConfig);
   firebaseApp = initializeApp(firebaseConfig);
 } else {
   firebaseApp = apps[0];
