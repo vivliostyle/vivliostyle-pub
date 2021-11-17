@@ -2,28 +2,26 @@ import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
 import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
 
-import firebase from '@services/firebase';
-import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
-import {useVivlioStyleConfig} from '@middlewares/useVivliostyleConfig';
 
 import * as UI from '@components/ui';
-import {Header} from '@components/Header';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 import {CommitSessionButton} from '@components/CommitSessionButton';
 import {FileUploadModal} from '@components/FileUploadModal';
 import {BranchSelecter} from '@components/BranchSelecter';
-import {readFile} from '@middlewares/frontendFunctions';
 
 import {ThemeManager} from 'theme-manager';
-import { Theme } from 'theme-manager/lib/ThemeManager';
+import {Theme} from 'theme-manager/lib/ThemeManager';
 
-import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
-import { DocumentData, DocumentReference } from 'firebase/firestore';
+import {FileState, RepositoryContextProvider} from '@middlewares/useRepositoryContext';
+import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
+import {DocumentData, DocumentReference} from 'firebase/firestore';
+import {useAppContext} from '@middlewares/useAppContext';
+import {ProjectExplorer} from '@components/ProjectExplorer';
 
-const GitHubAccessToken:string|null = "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";
+const GitHubAccessToken: string | null =
+  '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';
 
 const themeManager = new ThemeManager(GitHubAccessToken);
 
@@ -35,13 +33,6 @@ interface BuildRecord {
     stylesheet: string;
   };
 }
-type FileState = 'init' | 'clean' | 'modified' | 'saved';
-export type CurrentFile = {
-  text: string;
-  state: FileState;
-  path: string;
-  session?: firebase.firestore.DocumentReference;
-};
 
 function useBuildStatus(
   buildID: string | null,
@@ -49,110 +40,75 @@ function useBuildStatus(
 ) {
   useEffect(() => {
     if (!buildID) return;
-    const unsubscribe = firebase
-      .firestore()
-      .collection('builds')
-      .doc(buildID)
-      .onSnapshot(function (doc) {
-        const {url} = doc.data() as BuildRecord;
-        console.log('Current data: ', doc.data());
-        if (!url) return;
-        unsubscribe();
-        if (onBuildFinished) onBuildFinished(url);
-      });
-    return unsubscribe;
+    // const unsubscribe = firebase
+    //   .firestore()
+    //   .collection('builds')
+    //   .doc(buildID)
+    //   .onSnapshot(function (doc) {
+    //     const {url} = doc.data() as BuildRecord;
+    //     console.log('Current data: ', doc.data());
+    //     if (!url) return;
+    //     unsubscribe();
+    //     if (onBuildFinished) onBuildFinished(url);
+    //   });
+    // return unsubscribe;
   }, [buildID, onBuildFinished]);
 }
 
 /**
  * 遅延処理
  */
-const REFRESH_MS = 2000;
-function useDefferedEffect(
-  fn: () => void,
-  args: React.DependencyList,
-  duration: number,
-) {
-  useEffect(() => {
-    const timer = setTimeout(() => fn(), duration);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, args);
-}
-
-export type TYPE_PREVIEW_TARGET = { 
-  text:string|null;
-  path:string|null;
-};
-
-type ACTION_TYPE = 
-| { type: "changeFile", path:string|null, text:string|null } 
-| { type: "modifyText", text:string|null }
-| { type: "commit"};
-
-// const initialState: TYPE_PREVIEW_TARGET = {
-//   text:null,
-//   path:null
+// const REFRESH_MS = 2000;
+// function useDefferedEffect(
+//   fn: () => void,
+//   args: React.DependencyList,
+//   duration: number,
+// ) {
+//   useEffect(() => {
+//     const timer = setTimeout(() => fn(), duration);
+//     return () => {
+//       clearTimeout(timer);
+//     };
+//   }, args);
 // }
 
 /**
  * メインコンポーネント
- * @returns 
+ * @returns
  */
 const GitHubOwnerRepo = () => {
-  const {user, isPending} = useAuthorizedUser();
-  const repository = useRepositoryContext();
-
-//   const reducer = (state:TYPE_PREVIEW_TARGET, action:ACTION_TYPE):TYPE_PREVIEW_TARGET => {
-//     switch (action.type) {
-//       case 'changeFile':
-//         return {...state, path: action.path!.replace(/\.md$/, '.html'), text: action.text};
-//       case 'modifyText':
-//         return {...state, text: action.text};
-//       case 'commit':
-//         return state;
-//     }
-//   }
-//   const [previewTarget, dispatch] = useReducer(reducer, initialState);
-
-
+  const app = useAppContext();
   const router = useRouter();
   const {owner, repo} = router.query;
-  useEffect(
-    ()=>{
-      repository.setOwner(Array.isArray(owner) ? owner[0] : owner ?? null);
-      repository.setRepo(Array.isArray(repo) ? repo[0] : repo ?? null);
-    },[owner, repo, repository]);
-  const [currentFile, setCurrentFile] = useState<CurrentFile>({
-    text: '',
-    path: '',
-    state: 'init',
-  });
-  const [session, setSession] =
-    useState<DocumentReference<DocumentData> | null>(
-      null,
-    );
+  const [ownerRepo, setOwnerRepo] = useState<{owner: string; repo: string}>();
+  useEffect(() => {
+    if (app.user) {
+      const ownerStr = Array.isArray(owner) ? owner[0] : owner ?? null;
+      const repoStr = Array.isArray(repo) ? repo[0] : repo ?? null;
+      setOwnerRepo({owner: ownerStr!, repo: repoStr!});
+    }
+  }, [app.user, owner, repo]);
 
-  // const [text, setText] = useState('');
+  // const [session, setSession] =
+  //   useState<DocumentReference<DocumentData> | null>(null);
+
   const [status, setStatus] = useState<FileState>('init');
-  const [stylesheet, setStylesheet] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
-  const [isPresentationMode,setPresentationMode] = useState<boolean>(false);
+  const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
   const [themes, setThemes] = useState<Theme[]>([]);
-  
-  // const modifiedText = useModifiedTextContext();
+
+
   const previewSource = usePreviewSourceContext();
-  
-  useEffect(()=>{
-    (async () =>{
+
+  useEffect(() => {
+    (async () => {
       const themeList = await themeManager.searchFromNpm();
       setThemes(themeList);
     })();
-  },[user]);
+  }, [app.user]);
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -172,10 +128,10 @@ const GitHubOwnerRepo = () => {
 
   // check login
   useEffect(() => {
-    if (!user && !isPending) {
+    if (!app.user) {
       router.replace('/');
     }
-  }, [user, isPending, router]);
+  }, [app.user, app.isPending, router]);
 
   // set text
   // useEffect(() => {
@@ -240,14 +196,16 @@ const GitHubOwnerRepo = () => {
   //   REFRESH_MS,
   // );
 
-  const onModified = useCallback((updatedText) => {
-    console.log('onModified');
-    previewSource.modifyText(updatedText);
-    // modifiedText.set(updatedText);
-    setStatus('modified');
-    setWarnDialog(true);
-  
-  }, [setWarnDialog]);
+  const onModified = useCallback(
+    (updatedText) => {
+      console.log('onModified');
+      previewSource.modifyText(updatedText);
+      // modifiedText.set(updatedText);
+      setStatus('modified');
+      setWarnDialog(true);
+    },
+    [previewSource, setWarnDialog],
+  );
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
@@ -258,85 +216,46 @@ const GitHubOwnerRepo = () => {
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);
 
-    const buildPDF = firebase.functions().httpsCallable('buildPDF');
-    buildPDF({owner, repo, stylesheet})
-      .then((result) => {
-        console.log(result);
-        const buildID = result.data.buildID;
-        setBuildID(buildID);
-        toast({
-          title: 'Build started',
-          description: 'Your build has been started',
-          status: 'success',
-          duration: 5000,
-          isClosable: false,
-        });
-      })
-      .catch((err) => {
-        toast({
-          title: err.message,
-          description: err.details,
-          status: 'error',
-          duration: 9000,
-          isClosable: true,
-        });
-      });
+    // const buildPDF = firebase.functions().httpsCallable('buildPDF');
+    // buildPDF({owner, repo, stylesheet})
+    //   .then((result:any) => {
+    //     console.log(result);
+    //     const buildID = result.data.buildID;
+    //     setBuildID(buildID);
+    //     toast({
+    //       title: 'Build started',
+    //       description: 'Your build has been started',
+    //       status: 'success',
+    //       duration: 5000,
+    //       isClosable: false,
+    //     });
+    //   })
+    //   .catch((err:any) => {
+    //     toast({
+    //       title: err.message,
+    //       description: err.details,
+    //       status: 'error',
+    //       duration: 9000,
+    //       isClosable: true,
+    //     });
+    //   });
   }
 
   /**
    * スタイルシートが変更された
-   * @param theme 
+   * @param theme
    */
   function onThemeSelected(theme: Theme) {
-    const VPUBFS_CACHE_NAME = 'vpubfs';
-    const VPUBFS_ROOT = '/vpubfs';
-    (async()=>{
-      const cache = await caches.open(VPUBFS_CACHE_NAME);
-      const file:File = new File([theme.files[theme.style]],theme.style);
-      const headers = new Headers();
-      headers.append('content-type', 'text/css');
-      const stylesheetPath = `${theme.name}/${theme.style}`;
-      const vpubfsPath = `${VPUBFS_ROOT}/${stylesheetPath}`;
-      await cache.delete(new Request(vpubfsPath));
-      await cache.put(
-        vpubfsPath,
-        new Response(theme.files[theme.style], { headers }),
-      );
-      previewSource.changeTheme(stylesheetPath);
-      setStylesheet(stylesheetPath);
-    })();
+    previewSource.changeTheme(theme);
   }
 
-  const config = useVivlioStyleConfig({
-    user,
-    owner: repository.owner!,
-    repo: repository.repo!,
-    branch: repository.branch!,
-  });
-  const filenames = useMemo(() => {
-    if (!config || !config.entry) return [];
-    const ret = [] as string[];
-    if (Array.isArray(config.entry)) {
-      config.entry.forEach((e) => {
-        if (typeof e == 'string') ret.push(e);
-        else if ('path' in e) ret.push(e.path);
-      });
-    } else {
-      if (typeof config.entry == 'string') ret.push(config.entry);
-      else if ('path' in config.entry) ret.push(config.entry.path);
-    }
-    return ret;
-  }, [config]);
-  const [filenamesFilterText, setFilenamesFilterText] = useState('');
-  const filterdFilenames = useMemo(() => {
-    return filenames.filter((f) => f.includes(filenamesFilterText));
-  }, [filenames, filenamesFilterText]);
 
-  useEffect(() => {
-    if(config){
-      setStylesheet(config.theme??'');
-    }
-  }, [config]);
+
+  // useEffect(() => {
+  //   if (config) {
+  //     setStylesheet(config.theme ?? '');
+  //   }
+  // }, [config]);
 
   const {
     isOpen: isOpenFileUploadModal,
@@ -344,176 +263,120 @@ const GitHubOwnerRepo = () => {
     onClose: onCloseFileUploadModal,
   } = useDisclosure();
 
-  /**
-   * ファイルリストでファイルが選択された
-   * @param path ファイルのパス
-   * @returns void
-   */
-  const selectFile = (path: string|null) => {
-    // 同じファイルを選択した場合何もしない
-    if (path === previewSource.path) {
-      return;
-    }
-    // 現在の対象ファイルが未コミットなら警告を表示
-    // if (
-    // status !== 'clean' &&
-    //   !confirm('ファイルが保存されていません。変更を破棄しますか?')
-    // ) {
-    //   // キャンセルなら何もしない
-    //   return;
-    // }
-    if(path == null) {
-      setCurrentFile({text:'',path:'',state:'init'});
-      return;
-    }
-    // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    readFile({user, owner: repository.owner!, repo: repository.repo!, branch:repository.branch!, path:path})
-    .then((file)=>{
-      if (file) {
-        // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
-        setCurrentFile(file);
-        setStatus('clean');
-        if (file.session) {
-          setSession(file.session);
-        }
-        previewSource.changeFile(path,file.text);
-      } else {
-        // ファイル情報が取得できなかった
-        console.error('file not found');
-      }
-    }).catch((err)=>{
-      console.error(err);
-    })
-};
-
   return (
     <UI.Box>
-      <Header />
-      <UI.Flex
-        w="100%"
-        h={12}
-        borderBottomWidth={1}
-        borderBottomColor="gray.300"
+      {ownerRepo ? (
+      <RepositoryContextProvider
+        owner={ownerRepo!.owner}
+        repo={ownerRepo!.repo}
       >
-        <UI.Flex w="100%" px={8} justify="space-between" align="center">
-          <UI.Flex align="center">
-            {owner} / {repo} /
-            <UI.Box w="180px" px="4">
-              <BranchSelecter
-                user={user}
-              />
-            </UI.Box>
-            {/* {status === 'saved' && <UI.Text>Document updated : </UI.Text>} */}
-            {user && session?.id && (
-                <div>
-                <CommitSessionButton
-                {...{user, currentFile, onDidSaved, branch:repository.branch!}}
-                disabled={!(status == 'saved' || status == 'modified')}
-                />
-                {status}
-                </div>
-            )}
-            {/* {stylesheet} */}
-          </UI.Flex>
-          <UI.Flex align="center">
-            {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
-            <UI.Menu>
-              <UI.MenuButton as={UI.Button}>
-                <UI.Icon name="chevron-down" /> Actions
-              </UI.MenuButton>
-              <UI.MenuList>
-                <UI.MenuItem key="presen" onClick={()=>{ setPresentationMode(!isPresentationMode) }}>{isPresentationMode?'✔ ':' '}Presentation Mode</UI.MenuItem>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Theme">
-                  {themes.map((theme) => (
+        <>
+          <UI.Flex
+            w="100%"
+            h={12}
+            borderBottomWidth={1}
+            borderBottomColor="gray.300"
+          >
+            <UI.Flex w="100%" px={8} justify="space-between" align="center">
+              <UI.Flex align="center">
+                {owner} / {repo} /
+                <UI.Box w="180px" px="4">
+                  <BranchSelecter />
+                </UI.Box>
+                {/* {status === 'saved' && <UI.Text>Document updated : </UI.Text>} */}
+                {app.user /*&& session?.id*/ && (
+                  <div>
+                    <CommitSessionButton
+                      {...{onDidSaved}}
+                      disabled={!(status == 'saved' || status == 'modified')}
+                    />
+                    {status}
+                  </div>
+                )}
+                {/* {stylesheet} */}
+              </UI.Flex>
+              <UI.Flex align="center">
+                {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
+                <UI.Menu>
+                  <UI.MenuButton as={UI.Button}>
+                    <UI.Icon name="chevron-down" /> Actions
+                  </UI.MenuButton>
+                  <UI.MenuList>
                     <UI.MenuItem
-                      key={theme.name}
-                      onClick={() => onThemeSelected(theme)}
+                      key="presen"
+                      onClick={() => {
+                        setPresentationMode(!isPresentationMode);
+                      }}
                     >
-                      {theme.description}
+                      {isPresentationMode ? '✔ ' : ' '}Presentation Mode
                     </UI.MenuItem>
-                  ))}
-                </UI.MenuGroup>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Add Files">
-                  <UI.MenuItem onClick={onOpenFileUploadModal}>
-                    Add Image
-                  </UI.MenuItem>
-                  <FileUploadModal
-                    user={user}
-                    isOpen={isOpenFileUploadModal}
-                    onOpen={onOpenFileUploadModal}
-                    onClose={onCloseFileUploadModal}
-                  />
-                </UI.MenuGroup>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Export">
-                  <UI.MenuItem onClick={onBuildPDFButtonClicked}>
-                    PDF
-                  </UI.MenuItem>
-                </UI.MenuGroup>
-              </UI.MenuList>
-            </UI.Menu>
+                    <UI.MenuDivider />
+                    <UI.MenuGroup title="Theme">
+                      {themes.map((theme) => (
+                        <UI.MenuItem
+                          key={theme.name}
+                          onClick={() => onThemeSelected(theme)}
+                        >
+                          {theme.description}
+                        </UI.MenuItem>
+                      ))}
+                    </UI.MenuGroup>
+                    <UI.MenuDivider />
+                    <UI.MenuGroup title="Add Files">
+                      <UI.MenuItem onClick={onOpenFileUploadModal}>
+                        Add Image
+                      </UI.MenuItem>
+                      <FileUploadModal
+                        user={app.user}
+                        isOpen={isOpenFileUploadModal}
+                        onOpen={onOpenFileUploadModal}
+                        onClose={onCloseFileUploadModal}
+                      />
+                    </UI.MenuGroup>
+                    <UI.MenuDivider />
+                    <UI.MenuGroup title="Export">
+                      <UI.MenuItem onClick={onBuildPDFButtonClicked}>
+                        PDF
+                      </UI.MenuItem>
+                    </UI.MenuGroup>
+                  </UI.MenuList>
+                </UI.Menu>
+              </UI.Flex>
+            </UI.Flex>
           </UI.Flex>
-        </UI.Flex>
-      </UI.Flex>
-      <UI.Flex w="100vw" h={isPresentationMode ? 'calc(100vh - 115px)' : ''}>
-        { isPresentationMode ? '': (
-          <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
-          <UI.Input
-            placeholder="search file"
-            value={filenamesFilterText}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setFilenamesFilterText(event.target.value);
-            }}
-          />
-          <UI.Box h="calc(100vh - 200px)" overflowY="auto">
-            {filterdFilenames.map((path) => (
-              <UI.Container
-                p={0}
-                key={path}
-                onClick={() => selectFile(path)}
-                cursor="default"
-              >
-                <UI.Text
-                  mt={3}
-                  fontSize="sm"
-                  fontWeight={path == currentFile.path ? 'bold' : 'normal'}
+          <UI.Flex
+            w="100vw"
+            h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
+          >
+            {isPresentationMode ? '' : <ProjectExplorer />}
+            {status !== 'init' ? (
+              <UI.Flex flex="1">
+                {isPresentationMode ? (
+                  ''
+                ) : (
+                  <UI.Box flex="1">
+                    <MarkdownEditor
+                      {...{onModified}}
+                    />
+                  </UI.Box>
+                )}
+                <UI.Box
+                  width={isPresentationMode ? '100%' : '40%'}
+                  overflow="scroll"
                 >
-                  {path}
-                </UI.Text>
+                  <Previewer />
+                </UI.Box>
+              </UI.Flex>
+            ) : (
+              <UI.Container flex="1">
+                <UI.Text mt={6}>Loading</UI.Text>
               </UI.Container>
-            ))}
-          </UI.Box>
-        </UI.Box>
-        )}
-        {!isPending && status !== 'init' ? (
-          <UI.Flex flex="1">
-            { isPresentationMode ? '': (
-            <UI.Box flex="1">
-              <MarkdownEditor
-                currentFile={currentFile}
-                {...{onModified}}
-              />
-            </UI.Box>
             )}
-            <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
-              <Previewer
-                target={previewSource}
-                stylesheet={stylesheet}
-                user={user}
-              />
-            </UI.Box>
           </UI.Flex>
-        ) : (
-          <UI.Container flex="1">
-            <UI.Text mt={6}>Loading</UI.Text>
-          </UI.Container>
-        )}
-      </UI.Flex>
+        </>
+      </RepositoryContextProvider>):null}
     </UI.Box>
   );
 };
 
 export default GitHubOwnerRepo;
-

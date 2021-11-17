@@ -1,48 +1,27 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import Link from 'next/link';
-import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
-import firebase from '@services/firebase';
-import { getAuth, signInWithRedirect, GithubAuthProvider } from 'firebase/auth';
 import * as UI from './ui';
+import { useAppContext } from '@middlewares/useAppContext';
 
-const provider = new GithubAuthProvider();
-
-const signIn = async () => {
-  const auth = getAuth(firebase);
-  signInWithRedirect(auth, provider);
-};
-
-const signOut = async () => {
-  const auth = getAuth(firebase);
-  await auth.signOut();
-};
 
 const HeaderUserInfo: React.FC = () => {
-  const {user, isPending} = useAuthorizedUser();
-  useEffect(() => {
-    if (user) {
-      console.log('providerData',user.providerData);
-
-      user.getIdTokenResult(true).then((data) => console.log('idTokenResult',data));
-    }
-  }, [user]);
-  if (isPending) {
-    return null;
-  }
+  const app = useAppContext();
+  console.log('user',app.user);
   return (
     <>
-      {user && <UI.Text mr={2}>logged in as {user.displayName}</UI.Text>}
-      {user && (
+      {app.user ? (
+        <>
+        <UI.Text mr={2}>logged in as {app.user.displayName}</UI.Text>
         <UI.Button
           variant="outline"
           colorScheme="blackAlpha"
-          onClick={signOut}
+          onClick={app.signOut}
         >
           Logout
         </UI.Button>
-      )}
-      {!user && (
-        <UI.Button variant="outline" colorScheme="blackAlpha" onClick={signIn}>
+        </>
+      ) : (
+        <UI.Button variant="outline" colorScheme="blackAlpha" onClick={app.signIn}>
           Login
         </UI.Button>
       )}
@@ -50,7 +29,9 @@ const HeaderUserInfo: React.FC = () => {
   );
 };
 
-export const Header: React.FC = () => (
+export const Header: React.FC = () => {
+  console.log('Header');
+  return (
   <UI.Flex w="100%" h={16} backgroundColor="gray.200">
     <UI.Container w="100%" justify="space-between" align="center">
       <Link href="/">
@@ -64,3 +45,4 @@ export const Header: React.FC = () => (
     </UI.Container>
   </UI.Flex>
 );
+};

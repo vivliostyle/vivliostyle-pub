@@ -1,30 +1,25 @@
+import { useAppContext } from '@middlewares/useAppContext';
 import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
-import { User } from 'firebase/auth';
-// import firebase from 'firebase';
-import { CurrentFile } from 'pages/github/[owner]/[repo]';
+import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
 
 export const CommitSessionButton = ({
-  user,
-  currentFile,
-  branch,
   disabled,
   onDidSaved = () => {},
 }: {
-  user: User;
-  currentFile: CurrentFile;
-  branch: string | undefined;
   disabled?: boolean;
   onDidSaved?: () => void;
 }) => {
+  const app = useAppContext();
+  const repository = useRepositoryContext();
   const modifiedText = useModifiedTextContext();
   const [busy, setBusy] = useState(false);
   const onClick = useCallback(() => {
     (async () => {
       setBusy(true);
       try {
-        await modifiedText.commit(currentFile.session,branch,user);
+        await modifiedText.commit(repository.currentFile?.session,repository.currentBranch!,app.user!);
         console.log('commit end');
         onDidSaved();
       } catch (error) {
@@ -33,7 +28,7 @@ export const CommitSessionButton = ({
         setBusy(false);
       }
     })();
-  }, [user, currentFile, branch, onDidSaved, modifiedText]);
+  }, [modifiedText, repository.currentFile?.session, repository.currentBranch, app.user, onDidSaved]);
 
   return (
     <UI.Button

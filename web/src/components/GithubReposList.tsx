@@ -1,20 +1,19 @@
 import React, {useState, useEffect} from 'react';
 import Link from 'next/link';
-import fetch from 'isomorphic-unfetch';
 import * as UI from './ui';
-import { User } from 'firebase/auth';
 import { GetRepsitoryList } from '@middlewares/frontendFunctions';
+import { useAppContext } from '@middlewares/useAppContext';
 
-
-
-export const GithubReposList: React.FC<{user: User}> = ({user}) => {
+export const GithubReposList: React.FC<{}> = ({}) => {
+  const app = useAppContext();
   const [idToken, setIdToken] = useState<string | null>(null);
   useEffect(() => {
-    user
+    if(!app.user) {return;}
+    app.user
       .getIdToken(true)
       .then(setIdToken)
       .catch(() => setIdToken(null));
-  }, [user]);
+  }, [app.user]);
   const {data, isValidating} = GetRepsitoryList(idToken);
   if (!data) {
     return isValidating ? (

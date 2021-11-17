@@ -1,21 +1,17 @@
 import React from 'react';
-import { AppProps } from 'next/app';
-import { ChakraProvider, CSSReset } from '@chakra-ui/react';
-// import { ModifiedTextProvider } from '@middlewares/useModifiedTextContext';
-import { RepositoryContextProvider } from '@middlewares/useRepositoryContext';
-import { PreviewSourceContextProvider } from '@middlewares/usePreviewSourceContext';
+import {AppProps} from 'next/app';
+import {ChakraProvider, CSSReset} from '@chakra-ui/react';
+import {PreviewSourceContextProvider} from '@middlewares/usePreviewSourceContext';
+import {AppContextProvider} from '@middlewares/useAppContext';
 
-
-const MyApp = ({ Component, pageProps }: AppProps) => (
+const MyApp = ({Component, pageProps}: AppProps) => (
   <ChakraProvider>
     <CSSReset />
-    <RepositoryContextProvider>
-    {/* <ModifiedTextProvider> */}
+    <AppContextProvider>
       <PreviewSourceContextProvider>
-    <Component {...pageProps} />
-    </PreviewSourceContextProvider>
-    {/* </ModifiedTextProvider> */}
-    </RepositoryContextProvider>
+        <Component {...pageProps} />
+      </PreviewSourceContextProvider>
+    </AppContextProvider>
   </ChakraProvider>
 );
 

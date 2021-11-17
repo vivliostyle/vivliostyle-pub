@@ -1,4 +1,4 @@
-import {createContext, useState, useContext, useReducer, Dispatch} from 'react';
+import {createContext, useState, useContext, useReducer, Dispatch, useEffect} from 'react';
 import {stringify} from '@vivliostyle/vfm';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
@@ -7,9 +7,10 @@ import {
   updateCache,
   updateCacheFromPath,
 } from './frontendFunctions';
-import {useAuthorizedUser} from './useAuthorizedUser';
 import {useRepositoryContext} from './useRepositoryContext';
 import path from 'path';
+import {useAppContext} from './useAppContext';
+import {Theme} from 'theme-manager';
 
 const VPUBFS_ROOT = '/vpubfs';
 
@@ -29,10 +30,10 @@ export type PreviewSource = {
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
   theme: string | null;
-  stylePath: string  | null; // viewer.jsのstyle= に渡すパス
+  stylePath: string | null; // viewer.jsのstyle= に渡すパス
   // パブリック メソッドに相当
   changeFile: (path: string | null, text: string | null) => void;
-  changeTheme: (text: string | null) => void;
+  changeTheme: (text: Theme | null) => void;
   modifyText: (text: string | null) => void;
   commit: (
     session: DocumentReference<DocumentData> | undefined,
@@ -41,7 +42,12 @@ export type PreviewSource = {
 };
 
 type Actions =
-  | {type: 'changeFileCallback'; path: string | null; vPubPath:string|null; text: string | null}
+  | {
+      type: 'changeFileCallback';
+      path: string | null;
+      vPubPath: string | null;
+      text: string | null;
+    }
   | {type: 'changeThemeCallback'; theme: string | null}
   | {type: 'modifyText'; text: string | null}
   | {
@@ -71,9 +77,8 @@ export function PreviewSourceContextProvider({
   children: JSX.Element;
 }) {
   let dispatcher: Dispatch<Actions> | undefined;
-
+  const app = useAppContext();
   const repository = useRepositoryContext();
-  const {user, isPending} = useAuthorizedUser();
 
   /**
    * ファイルをリポジトリにコミットする
@@ -91,24 +96,20 @@ export function PreviewSourceContextProvider({
    */
   const changeFile = (filePath: string | null, text: string | null) => {
     // TODO: ファイル未選択や空ファイルへの対応
-    const {path:srcPath, text:resultText} = transpile(filePath!, text!);
-    const vPubPath = path.join(VPUBFS_ROOT, srcPath??'');
-    dispatch({type: 'changeFileCallback', path: filePath,vPubPath: vPubPath, text: resultText});
+    transpile(filePath!, text!);
   };
   /**
    * 対象となるテーマを切り替える
    * TODO: CSS単体ファイルだけではなく、テーマオブジェクトを扱えるようにする。
    * @param theme
    */
-  const changeTheme = (theme: string | null) => {
-    console.log('changeTheme', theme, user);
+  const changeTheme = (theme: Theme | null) => {
+    console.log('changeTheme', theme, app.user);
     if (theme) {
-      processTheme(theme);
+      processTheme(theme.files[0]);
     } else {
       // TODO: テーマのリセット
     }
-    // この時点では状態は変化しない。
-    // 全ての準備が完了したらchangeThemeCallbackを呼び出す
   };
   /**
    * テキストを更新する
@@ -119,14 +120,16 @@ export function PreviewSourceContextProvider({
   };
 
   /**
-   *
+   * 初期値
    */
   const [state] = useState<PreviewSource>({
+    // properties
     path: null,
     vpubPath: null,
     text: null,
     theme: null,
     stylePath: null,
+    // methods
     changeFile: changeFile,
     changeTheme: changeTheme,
     modifyText: modifyText,
@@ -176,26 +179,23 @@ export function PreviewSourceContextProvider({
    * @param text
    * @returns {path, text}
    */
-  const transpile = (
-    path: string,
-    text: string,
-  ): {path: string; text: string} => {
-    if (path && text && path.endsWith('.md')) {
-      path = path.replace(/\.md$/, '.html');
+  const transpile = (srcPath: string, text: string): void => {
+    if (srcPath && text && srcPath.endsWith('.md')) {
+      srcPath = srcPath.replace(/\.md$/, '.html');
       text = stringify(text);
     }
-    console.log('transpiled', path, '\n'/*, text*/);
-    if (path.endsWith('.html')) {
+    console.log('transpiled', path, '\n' /*, text*/);
+    if (srcPath.endsWith('.html')) {
       const imagePaths = pickupHtmlResources(text);
       Promise.all(
         imagePaths.map((imagePath) =>
           updateCacheFromPath(
             repository.owner!,
             repository.repo!,
-            repository.branch!,
-            path!,
+            repository.currentBranch!,
+            srcPath!,
             imagePath,
-            user!,
+            app.user!,
           ),
         ),
       ).catch((error) => {
@@ -209,23 +209,51 @@ export function PreviewSourceContextProvider({
       });
       console.log('imagePaths', imagePaths);
     }
-    updateCache(path, text).then(() => {});
+    updateCache(srcPath, text).then(() => {});
+    const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
+    // 準備が終わったら状態を変化させる
+    if (dispatcher) {
+      dispatch({
+        type: 'changeFileCallback',
+        path: srcPath,
+        vPubPath: vPubPath,
+        text: text,
+      });
+    }
+  };
 
-    return {path, text};
+  const fetchTheme = () => {
+    const VPUBFS_CACHE_NAME = 'vpubfs';
+    const VPUBFS_ROOT = '/vpubfs';
+    (async () => {
+      // const cache = await caches.open(VPUBFS_CACHE_NAME);
+      // const file: File = new File([theme.files[theme.style]], theme.style);
+      // const headers = new Headers();
+      // headers.append('content-type', 'text/css');
+      // const stylesheetPath = `${theme.name}/${theme.style}`;
+      // const vpubfsPath = `${VPUBFS_ROOT}/${stylesheetPath}`;
+      // await cache.delete(new Request(vpubfsPath));
+      // await cache.put(
+      //   vpubfsPath,
+      //   new Response(theme.files[theme.style], {headers}),
+      // );
+      // previewSource.changeTheme(stylesheetPath);
+      // setStylesheet(stylesheetPath);
+    })();
   };
 
   /**
    * テーマの準備
    */
   const processTheme = (path: string) => {
-    if (user && path && !isURL(path)) {
+    if (app.user && path && !isURL(path)) {
       (async () => {
         const content = await getFileContentFromGithub(
           repository.owner!,
           repository.repo!,
-          repository.branch!,
+          repository.currentBranch!,
           path,
-          user,
+          app.user!,
         );
         if ('content' in content) {
           const stylesheet = content.content;
@@ -236,10 +264,10 @@ export function PreviewSourceContextProvider({
               updateCacheFromPath(
                 repository.owner!,
                 repository.repo!,
-                repository.branch!,
+                repository.currentBranch!,
                 stylesheet,
                 imageOfStyle,
-                user,
+                app.user!,
               ),
             ),
           ).catch((error) => {
@@ -252,8 +280,6 @@ export function PreviewSourceContextProvider({
             }
           });
         }
-        pickupCSSResources(path);
-
         // 準備が終わったら状態を変化させる
         if (dispatcher) {
           dispatcher({type: 'changeThemeCallback', theme: path});
@@ -270,32 +296,36 @@ export function PreviewSourceContextProvider({
    */
   const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
-      case 'changeFileCallback':
+      case 'changeFileCallback': // ドキュメントの準備が完了
         console.log('changeFileCallback');
         return {
           ...state,
-          path:action.path,
-          vpubPath:action.vPubPath,
-          text:action.text,
+          path: action.path,
+          vpubPath: action.vPubPath,
+          text: action.text,
         };
       case 'changeThemeCallback': // テーマの準備が完了
         console.log('changeThemeCallback', action.theme);
-        let stylePath:string='';
-        if(action.theme){
-          stylePath = isURL(action.theme) ? action.theme : path.join(VPUBFS_ROOT, action.theme);
+        let stylePath: string = '';
+        if (action.theme) {
+          stylePath = isURL(action.theme)
+            ? action.theme
+            : path.join(VPUBFS_ROOT, action.theme);
         }
-        return {...state, theme: action.theme!,stylePath};
-      case 'modifyText':  // テキストが変更された
+        return {...state, theme: action.theme!, stylePath};
+      case 'modifyText': // テキストが変更された
         return {...state, text: action.text};
-      case 'commit':
+      case 'commit': // コミット
         commit(action.session!, action.branch);
         return state;
     }
   };
 
   const [previewTarget, dispatch] = useReducer(reducer, state);
-  dispatcher = dispatch;
-
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    dispatcher = dispatch;
+  }, [dispatch]);
   return (
     <PreviewSourceContext.Provider value={previewTarget}>
       {children}
