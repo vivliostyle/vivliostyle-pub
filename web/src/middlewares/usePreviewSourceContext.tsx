@@ -13,15 +13,24 @@ import path from 'path';
 
 const VPUBFS_ROOT = '/vpubfs';
 
+/**
+ * URLか判定
+ * @param value
+ * @returns
+ */
+const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
+/**
+ * モデルクラスのインターフェースに相当
+ */
 export type PreviewSource = {
-  // プロパティ
+  // Read Onlyプロパティに相当
   path: string | null;
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
   theme: string | null;
   stylePath: string  | null; // viewer.jsのstyle= に渡すパス
-  // メソッド
+  // パブリック メソッドに相当
   changeFile: (path: string | null, text: string | null) => void;
   changeTheme: (text: string | null) => void;
   modifyText: (text: string | null) => void;
@@ -32,8 +41,7 @@ export type PreviewSource = {
 };
 
 type Actions =
-  | {type: 'changeFile'; path: string | null; text: string | null}
-  | {type: 'changeTheme'; theme: string | null}
+  | {type: 'changeFileCallback'; path: string | null; vPubPath:string|null; text: string | null}
   | {type: 'changeThemeCallback'; theme: string | null}
   | {type: 'modifyText'; text: string | null}
   | {
@@ -81,8 +89,11 @@ export function PreviewSourceContextProvider({
    * @param path
    * @param text
    */
-  const changeFile = (path: string | null, text: string | null) => {
-    dispatch({type: 'changeFile', path: path, text: text});
+  const changeFile = (filePath: string | null, text: string | null) => {
+    // TODO: ファイル未選択や空ファイルへの対応
+    const {path:srcPath, text:resultText} = transpile(filePath!, text!);
+    const vPubPath = path.join(VPUBFS_ROOT, srcPath??'');
+    dispatch({type: 'changeFileCallback', path: filePath,vPubPath: vPubPath, text: resultText});
   };
   /**
    * 対象となるテーマを切り替える
@@ -90,7 +101,14 @@ export function PreviewSourceContextProvider({
    * @param theme
    */
   const changeTheme = (theme: string | null) => {
-    dispatch({type: 'changeTheme', theme});
+    console.log('changeTheme', theme, user);
+    if (theme) {
+      processTheme(theme);
+    } else {
+      // TODO: テーマのリセット
+    }
+    // この時点では状態は変化しない。
+    // 全ての準備が完了したらchangeThemeCallbackを呼び出す
   };
   /**
    * テキストを更新する
@@ -114,13 +132,6 @@ export function PreviewSourceContextProvider({
     modifyText: modifyText,
     commit: commit,
   });
-
-  /**
-   * URLか判定
-   * @param value
-   * @returns
-   */
-  const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
   /**
    * HTMLからアプリケーションキャッシュの対象になるファイルのリストアップ
@@ -252,41 +263,29 @@ export function PreviewSourceContextProvider({
   };
 
   /**
-   *
+   * 処理のディスパッチ
    * @param state
    * @param action
    * @returns
    */
   const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
-      case 'changeFile':
-        console.log('changeFile');
-        const {path:srcPath, text} = transpile(action.path!, action.text!);
-        
+      case 'changeFileCallback':
+        console.log('changeFileCallback');
         return {
           ...state,
-          path:srcPath,
-          vpubPath:path.join(VPUBFS_ROOT, srcPath??''),
-          text,
+          path:action.path,
+          vpubPath:action.vPubPath,
+          text:action.text,
         };
-      case 'changeTheme':
-        console.log('changeTheme', action.theme, user);
-        if (action.theme) {
-          processTheme(action.theme);
-        } else {
-          // TODO: テーマのリセット
-        }
-        // この時点では状態は変化しない。
-        // 全ての準備が完了したらchangeThemeCallbackを呼び出す
-        return state;
-      case 'changeThemeCallback':
+      case 'changeThemeCallback': // テーマの準備が完了
         console.log('changeThemeCallback', action.theme);
         let stylePath:string='';
         if(action.theme){
           stylePath = isURL(action.theme) ? action.theme : path.join(VPUBFS_ROOT, action.theme);
         }
         return {...state, theme: action.theme!,stylePath};
-      case 'modifyText':
+      case 'modifyText':  // テキストが変更された
         return {...state, text: action.text};
       case 'commit':
         commit(action.session!, action.branch);
