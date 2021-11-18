@@ -1,4 +1,4 @@
-import {createContext, useContext, useReducer} from 'react';
+import {createContext, useCallback, useContext, useReducer} from 'react';
 
 type LogEntry = {
   timestamp: number;
@@ -25,21 +25,22 @@ export function useLogContext() {
 }
 
 export function LogContextProvider({children}: {children: JSX.Element}) {
-  const createEntry = (type: string, message: string): LogEntry => {
-    return {type, message, timestamp: Date.now()};
-  };
 
-  const info = (message: string) => {
+  const createEntry = useCallback((type: "info"|"error"|"success"|"warning", message: string): LogEntry => {
+    return {type, message, timestamp: Date.now()};
+  },[]);
+
+  const info = useCallback((message: string) => {
     if (dispatch) {
       dispatch({type: 'logging', entry: createEntry('info', message)});
     }
-  };
+  },[createEntry]);
 
-  const error = (message: string) => {
+  const error = useCallback( (message: string) => {
     if (dispatch) {
       dispatch({type: 'logging', entry: createEntry('error', message)});
     }
-  };
+  },[createEntry]);
 
   const state = {
     info,
