@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useMemo} from 'react';
+import React, {useEffect, useCallback, useState} from 'react';
 import {useRouter} from 'next/router';
 import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
 
@@ -7,23 +7,16 @@ import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 import * as UI from '@components/ui';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
-import {CommitSessionButton} from '@components/CommitSessionButton';
-import {FileUploadModal} from '@components/FileUploadModal';
-import {BranchSelecter} from '@components/BranchSelecter';
 
-import {ThemeManager} from 'theme-manager';
-import {Theme} from 'theme-manager/lib/ThemeManager';
-
-import {FileState, RepositoryContextProvider} from '@middlewares/useRepositoryContext';
+import {
+  FileState,
+  RepositoryContextProvider,
+} from '@middlewares/useRepositoryContext';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {useAppContext} from '@middlewares/useAppContext';
 import {ProjectExplorer} from '@components/ProjectExplorer';
-
-const GitHubAccessToken: string | null =
-  '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';
-
-const themeManager = new ThemeManager(GitHubAccessToken);
+import {MenuBar} from '@components/MenuBar';
 
 interface BuildRecord {
   url: string | null;
@@ -77,6 +70,7 @@ function useBuildStatus(
  * @returns
  */
 const GitHubOwnerRepo = () => {
+  console.log('GitHubOwnerRepo');
   const app = useAppContext();
   const router = useRouter();
   const {owner, repo} = router.query;
@@ -98,17 +92,8 @@ const GitHubOwnerRepo = () => {
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
-  const [themes, setThemes] = useState<Theme[]>([]);
-
 
   const previewSource = usePreviewSourceContext();
-
-  useEffect(() => {
-    (async () => {
-      const themeList = await themeManager.searchFromNpm();
-      setThemes(themeList);
-    })();
-  }, [app.user]);
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -207,12 +192,6 @@ const GitHubOwnerRepo = () => {
     [previewSource, setWarnDialog],
   );
 
-  const onDidSaved = useCallback(() => {
-    console.log('onDidSaved');
-    setStatus('clean');
-    setWarnDialog(false);
-  }, [setWarnDialog]);
-
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);
 
@@ -241,140 +220,65 @@ const GitHubOwnerRepo = () => {
     //   });
   }
 
-  /**
-   * スタイルシートが変更された
-   * @param theme
-   */
-  function onThemeSelected(theme: Theme) {
-    previewSource.changeTheme(theme);
-  }
-
-
-
   // useEffect(() => {
   //   if (config) {
   //     setStylesheet(config.theme ?? '');
   //   }
   // }, [config]);
 
-  const {
-    isOpen: isOpenFileUploadModal,
-    onOpen: onOpenFileUploadModal,
-    onClose: onCloseFileUploadModal,
-  } = useDisclosure();
-
   return (
     <UI.Box>
       {ownerRepo ? (
-      <RepositoryContextProvider
-        owner={ownerRepo!.owner}
-        repo={ownerRepo!.repo}
-      >
-        <>
-          <UI.Flex
-            w="100%"
-            h={12}
-            borderBottomWidth={1}
-            borderBottomColor="gray.300"
-          >
-            <UI.Flex w="100%" px={8} justify="space-between" align="center">
-              <UI.Flex align="center">
-                {owner} / {repo} /
-                <UI.Box w="180px" px="4">
-                  <BranchSelecter />
-                </UI.Box>
-                {/* {status === 'saved' && <UI.Text>Document updated : </UI.Text>} */}
-                {app.user /*&& session?.id*/ && (
-                  <div>
-                    <CommitSessionButton
-                      {...{onDidSaved}}
-                      disabled={!(status == 'saved' || status == 'modified')}
-                    />
-                    {status}
-                  </div>
-                )}
-                {/* {stylesheet} */}
-              </UI.Flex>
-              <UI.Flex align="center">
-                {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
-                <UI.Menu>
-                  <UI.MenuButton as={UI.Button}>
-                    <UI.Icon name="chevron-down" /> Actions
-                  </UI.MenuButton>
-                  <UI.MenuList>
-                    <UI.MenuItem
-                      key="presen"
-                      onClick={() => {
-                        setPresentationMode(!isPresentationMode);
-                      }}
-                    >
-                      {isPresentationMode ? '✔ ' : ' '}Presentation Mode
-                    </UI.MenuItem>
-                    <UI.MenuDivider />
-                    <UI.MenuGroup title="Theme">
-                      {themes.map((theme) => (
-                        <UI.MenuItem
-                          key={theme.name}
-                          onClick={() => onThemeSelected(theme)}
-                        >
-                          {theme.description}
-                        </UI.MenuItem>
-                      ))}
-                    </UI.MenuGroup>
-                    <UI.MenuDivider />
-                    <UI.MenuGroup title="Add Files">
-                      <UI.MenuItem onClick={onOpenFileUploadModal}>
-                        Add Image
-                      </UI.MenuItem>
-                      <FileUploadModal
-                        user={app.user}
-                        isOpen={isOpenFileUploadModal}
-                        onOpen={onOpenFileUploadModal}
-                        onClose={onCloseFileUploadModal}
-                      />
-                    </UI.MenuGroup>
-                    <UI.MenuDivider />
-                    <UI.MenuGroup title="Export">
-                      <UI.MenuItem onClick={onBuildPDFButtonClicked}>
-                        PDF
-                      </UI.MenuItem>
-                    </UI.MenuGroup>
-                  </UI.MenuList>
-                </UI.Menu>
-              </UI.Flex>
+        <RepositoryContextProvider
+          owner={ownerRepo!.owner}
+          repo={ownerRepo!.repo}
+        >
+          <>
+            <UI.Flex
+              w="100%"
+              h={12}
+              borderBottomWidth={1}
+              borderBottomColor="gray.300"
+            >
+              <MenuBar
+                isProcessing={isProcessing}
+                isPresentationMode={isPresentationMode}
+                setPresentationMode={setPresentationMode}
+                setStatus={setStatus}
+                setWarnDialog={setWarnDialog}
+                onBuildPDFButtonClicked={onBuildPDFButtonClicked}                
+              />
             </UI.Flex>
-          </UI.Flex>
-          <UI.Flex
-            w="100vw"
-            h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
-          >
-            {isPresentationMode ? '' : <ProjectExplorer />}
-            {status !== 'init' ? (
-              <UI.Flex flex="1">
-                {isPresentationMode ? (
-                  ''
-                ) : (
-                  <UI.Box flex="1">
-                    <MarkdownEditor
-                      {...{onModified}}
-                    />
+            <UI.Flex
+              w="100vw"
+              h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
+            >
+              {isPresentationMode ? '' : <ProjectExplorer />}
+              {status !== 'init' ? (
+                <UI.Flex flex="1">
+                  {isPresentationMode ? (
+                    ''
+                  ) : (
+                    <UI.Box flex="1">
+                      <MarkdownEditor {...{onModified}} />
+                    </UI.Box>
+                  )}
+                  <UI.Box
+                    width={isPresentationMode ? '100%' : '40%'}
+                    overflow="scroll"
+                  >
+                    <Previewer />
                   </UI.Box>
-                )}
-                <UI.Box
-                  width={isPresentationMode ? '100%' : '40%'}
-                  overflow="scroll"
-                >
-                  <Previewer />
-                </UI.Box>
-              </UI.Flex>
-            ) : (
-              <UI.Container flex="1">
-                <UI.Text mt={6}>Loading</UI.Text>
-              </UI.Container>
-            )}
-          </UI.Flex>
-        </>
-      </RepositoryContextProvider>):null}
+                </UI.Flex>
+              ) : (
+                <UI.Container flex="1">
+                  <UI.Text mt={6}>Loading</UI.Text>
+                </UI.Container>
+              )}
+            </UI.Flex>
+          </>
+        </RepositoryContextProvider>
+      ) : null}
     </UI.Box>
   );
 };

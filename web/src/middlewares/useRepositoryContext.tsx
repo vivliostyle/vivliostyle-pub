@@ -1,6 +1,7 @@
 import {User} from '@firebase/auth';
 import {DocumentReference} from 'firebase/firestore';
 import {BranchesApiResponse} from 'pages/api/github/branches';
+import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {
   createContext,
   Dispatch,
@@ -50,7 +51,8 @@ type Actions =
       branches: string[];
       defaultBranch: string;
     }
-  | {type: 'selectBranch'; branch: string};
+  | {type: 'selectBranch'; branch: string}
+  | {type: 'setFiles'; files: string[]};
 
 export function RepositoryContextProvider({
   children,
@@ -107,19 +109,37 @@ export function RepositoryContextProvider({
     return config;
   };
 
-  const fetchFiles = async (): Promise<string[]> => {
-    // if (!config || !config.entry) return [];
-    const ret = [] as string[];
-    // if (Array.isArray(config.entry)) {
-    //     config.entry.forEach((e) => {
-    //     if (typeof e == 'string') ret.push(e);
-    //     else if ('path' in e) ret.push(e.path);
-    //     });
-    // } else {
-    //     if (typeof config.entry == 'string') ret.push(config.entry);
-    //     else if ('path' in config.entry) ret.push(config.entry.path);
-    // }
-    return ret;
+  /**
+   * ブランチに存在する全てのファイル名を取得
+   */
+  const fetchFiles = async (
+    user: User,
+    owner: string,
+    repo: string,
+    branch: string,
+  ): Promise<string[]> => {
+    console.log(user, owner, repo, branch);
+      try {
+        const resp = await fetch(
+          `/api/github/tree?${new URLSearchParams({owner, repo, branch})}`,
+          {
+            method: 'GET',
+            headers: {
+              'x-id-token': await user.getIdToken(),
+            },
+          },
+        );
+        const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
+        // console.log('data', data.tree);
+        const files = data.tree.map((tree) => {
+          return tree.path!;
+        });
+        // console.log('files',files);
+        return files;
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
   };
 
   /**
@@ -207,7 +227,15 @@ export function RepositoryContextProvider({
           currentBranch: action.defaultBranch,
         };
       case 'selectBranch':
-        return state;
+        fetchFiles(app.user!, state.owner!, state.repo!, action.branch!).then((files)=>{
+          if (dispatch) {
+            dispatch({type: 'setFiles', files});
+          }
+        }).catch((e)=>console.error(e));
+        return {...state, currentBranch: action.branch};
+      case 'setFiles':
+        console.log('setFiles',action.files);
+        return {...state, files: action.files};
     }
   };
 
@@ -216,19 +244,6 @@ export function RepositoryContextProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     dispatcher = dispatch;
   }, [dispatch]);
-
-  // const [owner,setOwner] = useState<string|null>(null);
-  // const [repo, setRepo] = useState<string|null>(null);
-  // const [branch, setBranch] = useState<string|null>(null);
-
-  // const value = {
-  //     owner,
-  //     setOwner,
-  //     repo,
-  //     setRepo,
-  //     branch,
-  //     setBranch
-  // }
 
   return (
     <RepositoryContext.Provider value={repository}>
