@@ -52,7 +52,8 @@ type Actions =
       defaultBranch: string;
       files: FileEntry[];
     }
-  | {type: 'selectBranch'; branch: string; files: FileEntry[]}
+  | {type: 'selectBranch'; branch: string; }
+  | {type: 'selectBranchCallback'; branch: string; files: FileEntry[]}
   | {type: 'selectTree'; tree: '..' | FileEntry}
   | {type: 'selectTreeCallback'; tree: FileEntry[]; files: FileEntry[]}
   | {type: 'setFiles'; files: FileEntry[]}
@@ -94,6 +95,7 @@ export function RepositoryContextProvider({
     tree_sha: string,
   ): Promise<FileEntry[]> => {
     console.log('fetchFiles', owner, repo, branch);
+    if(!owner || !repo || !branch) { return []; }
     try {
       const token = await user.getIdToken();
       const resp = await fetch(
@@ -124,28 +126,23 @@ export function RepositoryContextProvider({
   };
 
   /**
-   *
+   * ブランチの選択
    * @param branch
    */
   const selectBranch = (branch: string) => {
-    if (!state.owner || !state.repo || branch) {
+    console.log('selectBranch',branch);
+    if (!owner || !repo || !branch) {
       return;
     }
-    // TODO: ブランチに属するファイル一覧を取得する
-    fetchFiles(app.user!, state.owner!, state.repo!, branch, '')
-      .then((files) => {
-        if (dispatch) {
-          dispatch({type: 'selectBranch', branch, files});
-        }
-      })
-      .catch((e) => console.error(e));
+    if(dispatch) {
+      dispatch({type:'selectBranch', branch});
+    }
   };
   /**
-   *
+   * フォルダを開く
    * @param tree
    */
   const selectTree = (tree: '..' | FileEntry) => {
-    // TODO: ブランチに属するファイル一覧を取得する
     console.log('selectTree', tree);
     if (dispatch) {
       dispatch({type: 'selectTree', tree});
@@ -200,6 +197,15 @@ export function RepositoryContextProvider({
           files: action.files,
         };
       case 'selectBranch':
+        fetchFiles(app.user!, state.owner!, state.repo!, action.branch, '')
+        .then((files) => {
+          if (dispatch) {
+            dispatch({type: 'selectBranchCallback', branch: action.branch, files});
+          }
+        })
+        .catch((e) => console.error(e));
+        return state;
+      case 'selectBranchCallback':
         // TODO: ブランチ毎のカレントディレクトリを保持する
         return {
           ...state,
@@ -299,6 +305,9 @@ export function RepositoryContextProvider({
 
   const [repository, dispatch] = useReducer(reducer, state);
 
+  /**
+   * 
+   */
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const selectRepository = useCallback(
     (owner: string, repo: string) => {
