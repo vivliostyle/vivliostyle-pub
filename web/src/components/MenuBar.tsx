@@ -42,17 +42,17 @@ export function MenuBar({
   const [themes, setThemes] = useState<Theme[]>([]);
 
   useEffect(() => {
-    (async () => {
-      const themeList = await themeManager.searchFromNpm();
+    if(!app.user){return;}
+    themeManager.searchFromNpm().then((themeList)=>{
       setThemes(themeList);
-    })();
+    });
   }, [app.user]);
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
     setStatus('clean');
     setWarnDialog(false);
-  }, [setWarnDialog]);
+  }, [setStatus, setWarnDialog]);
 
   const {
     isOpen: isOpenFileUploadModal,

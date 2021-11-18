@@ -74,6 +74,7 @@ export function RepositoryContextProvider({
 
   const selectRepository = useCallback(
     (owner: string, repo: string) => {
+      if(!app.user) {return;}
       console.log('selectRepostiory',owner,repo);
       (async () => {
         const {branches, defaultBranch} = await fetchBranches(
@@ -123,12 +124,13 @@ export function RepositoryContextProvider({
   ): Promise<string[]> => {
     console.log(user, owner, repo, branch);
       try {
+        const token = await user.getIdToken();
         const resp = await fetch(
           `/api/github/tree?${new URLSearchParams({owner, repo, branch})}`,
           {
             method: 'GET',
             headers: {
-              'x-id-token': await user.getIdToken(),
+              'x-id-token': token,
             },
           },
         );
@@ -231,6 +233,7 @@ export function RepositoryContextProvider({
           currentBranch: action.defaultBranch,
         };
       case 'selectBranch':
+        if(!state.owner || !state.repo || !action.branch){ return state; } 
         fetchFiles(app.user!, state.owner!, state.repo!, action.branch!).then((files)=>{
           if (dispatch) {
             dispatch({type: 'setFiles', files});
@@ -269,12 +272,13 @@ const fetchBranches = async (
   defaultBranch: string;
 }> => {
   try {
+    const token = await user.getIdToken();
     const resp = await fetch(
       `/api/github/branches?${new URLSearchParams({owner, repo})}`,
       {
         method: 'GET',
         headers: {
-          'x-id-token': await user.getIdToken(),
+          'x-id-token': token,
         },
       },
     );
