@@ -193,7 +193,8 @@ const GitHubOwnerRepo = () => {
             <UI.Box
               height={'calc(100vh - 4rem)'}
               // backgroundColor={'rgba(0,1,0,0.8)'}
-            >{/* Wrapper  サイズ固定*/}
+            >
+              {/* Wrapper  サイズ固定*/}
               <MenuBar
                 status={status}
                 isProcessing={isProcessing}
@@ -203,33 +204,53 @@ const GitHubOwnerRepo = () => {
                 setWarnDialog={setWarnDialog}
                 onBuildPDFButtonClicked={onBuildPDFButtonClicked}
               />
-              <UI.Box height={'calc(100vh - 8rem)'} backgroundColor={"pink"} borderTop={'solid 2px gray'}> {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
-                <ReflexContainer orientation="horizontal" windowResizeAware={true}>
+              <UI.Box
+                height={'calc(100vh - 8rem)'}
+                backgroundColor={'pink'}
+                borderTop={'solid 2px gray'}
+              >
+                {' '}
+                {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
+                <ReflexContainer
+                  orientation="horizontal"
+                  windowResizeAware={true}
+                >
                   <ReflexElement className="top-pane" flex={1.0}>
-                    <ReflexContainer orientation="vertical" windowResizeAware={true}>
-                      <ReflexElement className="left-pane" flex={0.15} minSize={150}>
-                        <UI.Box
-                          height={'100%'}
-                          backgroundColor="white"
-                          overflow={'hidden'}
+                    <ReflexContainer
+                      orientation="vertical"
+                      windowResizeAware={true}
+                    >
+                      {isPresentationMode ? null : (
+                        <ReflexElement
+                          className="left-pane"
+                          flex={0.15}
+                          minSize={150}
                         >
-                          <ProjectExplorer />
-                        </UI.Box>
-                      </ReflexElement>
-                      <ReflexSplitter />
-                      <ReflexElement className="middle-pane">
-                        <UI.Box
-                          height={'100%'}
-                          // height={'calc(100vh - 7em)'}
-                          backgroundColor="lightblue"
-                        >
-                          <MarkdownEditor {...{onModified}} />
-                        </UI.Box>
-                      </ReflexElement>
-                      <ReflexSplitter />
+                          <UI.Box
+                            height={'100%'}
+                            backgroundColor="white"
+                            overflow={'hidden'}
+                          >
+                            <ProjectExplorer />
+                          </UI.Box>
+                        </ReflexElement>
+                      )}
+                      {isPresentationMode ? null : <ReflexSplitter />}
+                      {isPresentationMode ? null : (
+                        <ReflexElement className="middle-pane">
+                          <UI.Box
+                            height={'100%'}
+                            // height={'calc(100vh - 7em)'}
+                            backgroundColor="lightblue"
+                          >
+                            <MarkdownEditor {...{onModified}} />
+                          </UI.Box>
+                        </ReflexElement>
+                      )}
+                      {isPresentationMode ? null : <ReflexSplitter />}
                       <ReflexElement className="right-pane">
                         <UI.Box height={'100%'}>
-                        <Previewer />
+                          <Previewer />
                         </UI.Box>
                       </ReflexElement>
                     </ReflexContainer>
@@ -241,8 +262,8 @@ const GitHubOwnerRepo = () => {
                     <LogView />
                   </ReflexElement>
                 </ReflexContainer>
-
-              {/* Main */}</UI.Box>
+                {/* Main */}
+              </UI.Box>
               <UI.Box
                 color={'white'}
                 width={'100vw'}
@@ -250,10 +271,13 @@ const GitHubOwnerRepo = () => {
                 backgroundColor={'gray'}
                 paddingLeft={10}
                 fontSize={'0.5rem'}
-              > {/* footer */}
+              >
+                {' '}
+                {/* footer */}
                 Vivliostyle Pub ver.0.0.0
               </UI.Box>
-            {/* Wrapper */}</UI.Box>
+              {/* Wrapper */}
+            </UI.Box>
           </PreviewSourceContextProvider>
         </RepositoryContextProvider>
       ) : null}
