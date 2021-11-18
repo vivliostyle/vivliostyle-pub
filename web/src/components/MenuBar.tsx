@@ -85,7 +85,6 @@ export function MenuBar({
             {status}
           </div>
         )}
-        {/* {stylesheet} */}
       </UI.Flex>
       <UI.Flex align="center">
         {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
