@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState} from 'react';
+import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {useRouter} from 'next/router';
 import {useToast, RenderProps} from '@chakra-ui/react';
 
@@ -53,18 +53,17 @@ function useBuildStatus(
  * @returns
  */
 const GitHubOwnerRepo = () => {
-  console.log('GitHubOwnerRepo');
   const app = useAppContext();
   const router = useRouter();
-  const {owner, repo} = router.query;
-  const [ownerRepo, setOwnerRepo] = useState<{owner: string; repo: string}>();
-  useEffect(() => {
+  const {owner, repo} = useMemo(() => {
     if (app.user) {
-      const ownerStr = Array.isArray(owner) ? owner[0] : owner ?? null;
-      const repoStr = Array.isArray(repo) ? repo[0] : repo ?? null;
-      setOwnerRepo({owner: ownerStr!, repo: repoStr!});
+      const owner = Array.isArray(router.query.owner) ? router.query.owner[0] : router.query.owner ?? null;
+      const repo = Array.isArray(router.query.repo) ? router.query.repo[0] : router.query.repo ?? null;
+      return {owner, repo: repo};
     }
-  }, [app.user, owner, repo]);
+    return {};
+  }, [app.user, router.query]);
+  console.log('GitHubOwnerRepo',app.isPending,owner,repo);
 
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
@@ -180,11 +179,11 @@ const GitHubOwnerRepo = () => {
   }
 
   return (
-    <UI.Box>
-      {ownerRepo ? (
+      <UI.Box>
+    {owner && owner != '' && repo && repo !='' ? (
         <RepositoryContextProvider
-          owner={ownerRepo!.owner}
-          repo={ownerRepo!.repo}
+          owner={owner}
+          repo={repo}
         >
           <>
             <UI.Flex
@@ -230,9 +229,9 @@ const GitHubOwnerRepo = () => {
             </UI.Flex>
           </>
         </RepositoryContextProvider>
-      ) : null}
+    ) : null}
     </UI.Box>
-  );
+    );
 };
 
 export default GitHubOwnerRepo;

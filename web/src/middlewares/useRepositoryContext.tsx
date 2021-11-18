@@ -4,7 +4,6 @@ import {BranchesApiResponse} from 'pages/api/github/branches';
 import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {
   createContext,
-  Dispatch,
   useCallback,
   useContext,
   useEffect,
@@ -24,18 +23,16 @@ export type CurrentFile = {
 
 type Repository = {
   owner: string | null;
-  setOwner: () => void;
   repo: string | null;
-  setRepo: () => void;
   currentBranch: string | null;
   currentFile: CurrentFile | null;
   currentConfig: CoreProps | null;
   currentTree: FileEntry[];
   branches: string[];
   files: FileEntry[];
-  selectRepository: (owner: string, repo: string) => void;
+  // selectRepository: (owner: string, repo: string) => void;
   selectBranch: (branch: string) => void;
-  selectTree: (tree: '..'|FileEntry)=>void;
+  selectTree: (tree: '..' | FileEntry) => void;
   selectFile: (path: string | null) => void;
 };
 
@@ -46,12 +43,12 @@ export function useRepositoryContext() {
 }
 
 export type FileEntry = {
-  mode:string;
+  mode: string;
   path: string;
   sha: string;
   type: string;
   url: string;
-}
+};
 
 type Actions =
   | {
@@ -60,11 +57,12 @@ type Actions =
       repo: string;
       branches: string[];
       defaultBranch: string;
+      files: FileEntry[];
     }
-  | {type: 'selectBranch'; branch: string}
-  | {type: 'selectTree'; tree: '..'|FileEntry}
+  | {type: 'selectBranch'; branch: string, files: FileEntry[]}
+  | {type: 'selectTree'; tree: '..' | FileEntry}
+  | {type: 'selectTreeCallback'; tree: FileEntry[]; files: FileEntry[]}
   | {type: 'setFiles'; files: FileEntry[]};
-
 
 export function RepositoryContextProvider({
   children,
@@ -75,44 +73,13 @@ export function RepositoryContextProvider({
   owner: string;
   repo: string;
 }) {
+  console.log('repositoryContext');
   const app = useAppContext();
-  let dispatcher: Dispatch<Actions> | undefined;
+  // let dispatcher: Dispatch<Actions> | undefined;
 
 
 
-  const setOwner = () => {};
 
-  const setRepo = () => {};
-
-  const selectRepository = useCallback(
-    (owner: string, repo: string) => {
-      if(!app.user) {return;}
-      console.log('selectRepostiory',owner,repo);
-      (async () => {
-        const {branches, defaultBranch} = await fetchBranches(
-          app.user!,
-          owner,
-          repo,
-        );
-        if (dispatcher) {
-          // デフォルトブランチを選択
-          dispatcher({
-            type: 'selectRepository',
-            owner,
-            repo,
-            branches,
-            defaultBranch: defaultBranch,
-          });
-        }
-      })();
-    },
-    [app.user, dispatcher],
-  );
-
-  useEffect(() => {
-    if (!owner || !repo) return;
-    selectRepository(owner, repo);
-  }, [owner, repo, selectRepository]);
 
   const config = async () => {
     // const config = useVivlioStyleConfig({
@@ -133,31 +100,36 @@ export function RepositoryContextProvider({
     owner: string,
     repo: string,
     branch: string,
-    tree_sha: string
+    tree_sha: string,
   ): Promise<FileEntry[]> => {
-    console.log(user, owner, repo, branch);
-      try {
-        const token = await user.getIdToken();
-        const resp = await fetch(
-          `/api/github/tree?${new URLSearchParams({owner, repo, branch, tree_sha})}`,
-          {
-            method: 'GET',
-            headers: {
-              'x-id-token': token,
-            },
+    console.log('fetchFiles', owner, repo, branch);
+    try {
+      const token = await user.getIdToken();
+      const resp = await fetch(
+        `/api/github/tree?${new URLSearchParams({
+          owner,
+          repo,
+          branch,
+          tree_sha,
+        })}`,
+        {
+          method: 'GET',
+          headers: {
+            'x-id-token': token,
           },
-        );
-        const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-        console.log('data', data.tree);
-        const files = data.tree.map((tree) => {
-          return tree as FileEntry;
-        });
-        // console.log('files',files);
-        return files;
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
+        },
+      );
+      const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
+      console.log('data', data.tree);
+      const files = data.tree.map((tree) => {
+        return tree as FileEntry;
+      });
+      // console.log('files',files);
+      return files;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   };
 
   /**
@@ -165,19 +137,28 @@ export function RepositoryContextProvider({
    * @param branch
    */
   const selectBranch = (branch: string) => {
-    // TODO: ブランチに属するファイル一覧を取得する
-    if (dispatcher) {
-      dispatcher({type: 'selectBranch', branch});
+    if (!state.owner || !state.repo || branch) {
+      return;
     }
+    // TODO: ブランチに属するファイル一覧を取得する
+    fetchFiles(app.user!, state.owner!, state.repo!, branch, '')
+    .then((files) => {
+      if (dispatch) {
+        dispatch({type: 'selectBranch', branch, files});
+      }
+    })
+    .catch((e) => console.error(e));
+
   };
   /**
    *
    * @param tree
    */
-   const selectTree = (tree: '..'|FileEntry) => {
+  const selectTree = (tree: '..' | FileEntry) => {
     // TODO: ブランチに属するファイル一覧を取得する
-    if (dispatcher) {
-      dispatcher({type: 'selectTree', tree});
+    console.log('selectTree', tree);
+    if (dispatch) {
+      dispatch({type: 'selectTree', tree});
     }
   };
   /**
@@ -237,9 +218,6 @@ export function RepositoryContextProvider({
     currentTree: [],
     currentFile: null,
     currentConfig: null,
-    setOwner,
-    setRepo,
-    selectRepository,
     selectBranch,
     selectTree,
     selectFile,
@@ -248,51 +226,82 @@ export function RepositoryContextProvider({
   const reducer = (state: Repository, action: Actions): Repository => {
     switch (action.type) {
       case 'selectRepository':
-        selectBranch(action.defaultBranch);
+        // selectBranch(action.defaultBranch);
         return {
           ...state,
           owner: action.owner,
           repo: action.repo,
           branches: action.branches,
           currentBranch: action.defaultBranch,
+          files: action.files
         };
       case 'selectBranch':
-        if(!state.owner || !state.repo || !action.branch){ return state; } 
-        fetchFiles(app.user!, state.owner!, state.repo!, action.branch!, '').then((files)=>{
-          if (dispatch) {
-            dispatch({type: 'setFiles', files});
-          }
-        }).catch((e)=>console.error(e));
         // TODO: ブランチ毎のカレントディレクトリを保持する
-        return {...state, currentBranch: action.branch, currentTree: []};
+        return {...state, currentBranch: action.branch, currentTree: [],files: action.files};
       case 'selectTree':
-        console.log('selectTree',action.tree);
-        if(action.tree == '..') {
-          state.currentTree.pop();
-        }else{
-          state.currentTree.push(action.tree as unknown as FileEntry);
-        }
-        fetchFiles(app.user!, state.owner!, state.repo!, state.currentBranch!, action.tree.sha).then((files)=>{
-          if (dispatch) {
-            dispatch({type: 'setFiles', files});
+        console.log('selectTreeAction');
+        const tree = [...state.currentTree];
+        if (action.tree == '..') {
+          if (tree.length == 0) {
+            return state;
           }
-        }).catch((e)=>console.error(e));
-      return {...state, currentTree: [...state.currentTree]};
+          tree.pop();
+        } else {
+          tree.push(action.tree as unknown as FileEntry);
+        }
+        const tree_sha = tree.length == 0 ? '' : tree.slice(-1)[0].sha;
+        fetchFiles(
+          app.user!,
+          state.owner!,
+          state.repo!,
+          state.currentBranch!,
+          tree_sha,
+        )
+          .then((files) => {
+            console.log('success');
+            dispatch({type: 'selectTreeCallback', tree, files});
+          })
+          .catch((e) => console.error(e));
+        console.log('selectTreeAction2');
+        return state;
+      case 'selectTreeCallback':
+        console.log('callback', action);
+        return {...state, currentTree: action.tree, files: action.files};
       case 'setFiles':
-        console.log('setFiles',action.files);
+        console.log('setFiles', action.files);
         return {...state, files: action.files};
     }
   };
 
   const [repository, dispatch] = useReducer(reducer, state);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    dispatcher = dispatch;
-  }, [dispatch]);
 
-  useEffect(()=>{
-    selectRepository(owner,repo);
-  },[owner, repo, selectRepository]);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const selectRepository = useCallback(
+      (owner: string, repo: string) => {
+        if(!app.user || app.isPending) {return null;}
+        console.log('selectRepostiory', owner, repo);
+        (async () => {
+          const {branches, defaultBranch} = await fetchBranches(
+            app.user!,
+            owner,
+            repo,
+          );
+          fetchFiles(app.user!, owner, repo, defaultBranch, '')
+          .then((files) => {
+            if (dispatch) {
+              dispatch({type: 'selectRepository', owner, repo, branches, defaultBranch, files});
+            }
+          })
+          .catch((e) => console.error(e));    
+        })();
+      },
+      [app.isPending, app.user],
+    );
+
+  useEffect(() => {
+    if(!app.user || app.isPending) {return;}
+    selectRepository(owner, repo);
+  }, [app.isPending, app.user, owner, repo, selectRepository]);
 
   return (
     <RepositoryContext.Provider value={repository}>
@@ -309,6 +318,7 @@ const fetchBranches = async (
   branches: string[];
   defaultBranch: string;
 }> => {
+  if(!user || !owner || !repo) { return {branches:[],defaultBranch:''}; }
   try {
     const token = await user.getIdToken();
     const resp = await fetch(
