@@ -11,7 +11,7 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
   req,
   res,
 ) => {
-  const { owner, repo, barnch } = req.query;
+  const { owner, repo, branch } = req.query;
   if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo)) {
     console.log("validation error")
     return res.status(400).send(null);
@@ -37,9 +37,10 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
     auth: `token ${decrypted}`,
   });
   const tree = await (async ()=>{
-      const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits`, { owner, repo, per_page: 1 }); 
-      console.log('last commit sha:',ret.data[0].sha);
-      const tree_sha = ret.data[0].sha;
+      const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, { owner, repo, per_page: 1 }); 
+      console.log('ret',ret);
+      console.log('last commit sha:',ret.data.sha);
+      const tree_sha = ret.data.sha;
       const tree = await octokit.git.getTree({ owner, repo, tree_sha },);
       return (tree.data as unknown) as CommitsOfRepositoryApiResponse;
     })()
