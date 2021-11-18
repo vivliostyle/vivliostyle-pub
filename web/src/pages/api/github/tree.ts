@@ -1,19 +1,20 @@
-import { NextApiHandler } from 'next';
-import { Endpoints } from '@octokit/types';
-import { Octokit } from '@octokit/rest';
+import {NextApiHandler} from 'next';
+import {Endpoints} from '@octokit/types';
+import {Octokit} from '@octokit/rest';
 
 import firebaseAdmin from '@services/firebaseAdmin';
-import { decrypt } from '@utils/encryption';
+import {decrypt} from '@utils/encryption';
 
-export type CommitsOfRepositoryApiResponse = Endpoints["GET /repos/{owner}/{repo}/git/trees/{tree_sha}"]['response']['data']
+export type CommitsOfRepositoryApiResponse =
+  Endpoints['GET /repos/{owner}/{repo}/git/trees/{tree_sha}']['response']['data'];
 
 const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
   req,
   res,
 ) => {
-  const { owner, repo, branch } = req.query;
-  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo)) {
-    console.log("validation error")
+  const {owner, repo, branch, tree_sha} = req.query;
+  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(tree_sha)) {
+    console.log('validation error');
     return res.status(400).send(null);
   }
   const idToken = req.headers['x-id-token'];
@@ -36,16 +37,15 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
   const octokit = new Octokit({
     auth: `token ${decrypted}`,
   });
-  const tree = await (async ()=>{
-      const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, { owner, repo, per_page: 1 }); 
-      // console.log('ret',ret);
-      // console.log('last commit sha:',ret.data.sha);
-      const tree_sha = ret.data.sha;
-      const tree = await octokit.git.getTree({ owner, repo, tree_sha },);
-      return (tree.data as unknown) as CommitsOfRepositoryApiResponse;
-    })()
-    // console.log('tree', tree);
-    res.send(tree);
+
+  let sha:string = tree_sha;
+  if( sha.length != 40  ) { /* ハッシュ値の桁数でなければルートディレクトリのファイルを取得する */
+    const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, {owner, repo, per_page: 1});
+    sha = ret.data.sha;
+  }
+  const tree = await octokit.git.getTree({owner, repo, tree_sha:sha});
+  const files = tree.data as unknown as CommitsOfRepositoryApiResponse;
+  res.send(files);
 };
 
 export default commits;

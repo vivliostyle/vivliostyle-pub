@@ -1,18 +1,38 @@
 import {useEffect, useState} from 'react';
-import {useRepositoryContext} from '@middlewares/useRepositoryContext';
+import {FileEntry, useRepositoryContext} from '@middlewares/useRepositoryContext';
 import * as UI from '@components/ui';
 
 export function ProjectExplorer() {
   console.log('Explorer');
   const repository = useRepositoryContext();
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
-  const [files,setFiles] = useState<string[]>([]);
+  const [files,setFiles] = useState<FileEntry[]>([]);
+  const [currentDir,setCurrentDir] = useState<string>('');
 
   useEffect(() => {
     console.log('proj.files',repository.files);
-    setFiles( repository.files.filter((f) => f.includes(filenamesFilterText)));
+      const filteredFiles = repository.files.filter((f) => f.path.includes(filenamesFilterText));
+    setFiles( filteredFiles );
   }, [repository.files, filenamesFilterText]);
   
+  useEffect(()=>{
+    let path = repository.currentTree.map(f=>f.path).join('/');
+    if(path.length > 15) { path = '...'+path.slice(-15); } 
+    setCurrentDir(path);
+  },[repository.currentTree]);
+
+  const onClick = (file:FileEntry)=>{
+    if(file.type == 'blob') {
+      repository.selectFile(file.path);
+    }else if(file.type == 'tree') {
+      repository.selectTree(file);
+    }
+  }
+
+  const upTree =()=>{
+    repository.selectTree('..');
+  }
+
   return (
     <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
       <UI.Input
@@ -22,21 +42,27 @@ export function ProjectExplorer() {
           setFilenamesFilterText(event.target.value);
         }}
       />
-
+      <UI.Box>
+        {currentDir}/
+        <hr />
+      </UI.Box>
       <UI.Box h="calc(100vh - 200px)" overflowY="auto">
-        {files.map((path) => (
+          <UI.Container p={0} onClick={upTree} cursor="default">
+            <UI.Text mt={3} fontSize="sm">..</UI.Text>
+          </UI.Container>
+        {files.map((file) => (
           <UI.Container
             p={0}
-            key={path}
-            onClick={() => repository.selectFile(path)}
+            key={file.path}
+            onClick={()=>{onClick(file);}}
             cursor="default"
           >
             <UI.Text
               mt={3}
               fontSize="sm"
-              fontWeight={path == repository.currentFile?.path ? 'bold' : 'normal'}
+              fontWeight={file.path == repository.currentFile?.path ? 'bold' : 'normal'}
             >
-              {path}
+              {file.path}{file.type=='tree'?' /':''}
             </UI.Text>
           </UI.Container>
         ))}

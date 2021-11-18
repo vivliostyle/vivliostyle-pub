@@ -30,10 +30,12 @@ type Repository = {
   currentBranch: string | null;
   currentFile: CurrentFile | null;
   currentConfig: CoreProps | null;
+  currentTree: FileEntry[];
   branches: string[];
-  files: string[];
+  files: FileEntry[];
   selectRepository: (owner: string, repo: string) => void;
   selectBranch: (branch: string) => void;
+  selectTree: (tree: '..'|FileEntry)=>void;
   selectFile: (path: string | null) => void;
 };
 
@@ -41,6 +43,14 @@ const RepositoryContext = createContext({} as Repository);
 
 export function useRepositoryContext() {
   return useContext(RepositoryContext);
+}
+
+export type FileEntry = {
+  mode:string;
+  path: string;
+  sha: string;
+  type: string;
+  url: string;
 }
 
 type Actions =
@@ -52,7 +62,9 @@ type Actions =
       defaultBranch: string;
     }
   | {type: 'selectBranch'; branch: string}
-  | {type: 'setFiles'; files: string[]};
+  | {type: 'selectTree'; tree: '..'|FileEntry}
+  | {type: 'setFiles'; files: FileEntry[]};
+
 
 export function RepositoryContextProvider({
   children,
@@ -121,12 +133,13 @@ export function RepositoryContextProvider({
     owner: string,
     repo: string,
     branch: string,
-  ): Promise<string[]> => {
+    tree_sha: string
+  ): Promise<FileEntry[]> => {
     console.log(user, owner, repo, branch);
       try {
         const token = await user.getIdToken();
         const resp = await fetch(
-          `/api/github/tree?${new URLSearchParams({owner, repo, branch})}`,
+          `/api/github/tree?${new URLSearchParams({owner, repo, branch, tree_sha})}`,
           {
             method: 'GET',
             headers: {
@@ -135,9 +148,9 @@ export function RepositoryContextProvider({
           },
         );
         const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-        // console.log('data', data.tree);
+        console.log('data', data.tree);
         const files = data.tree.map((tree) => {
-          return tree.path!;
+          return tree as FileEntry;
         });
         // console.log('files',files);
         return files;
@@ -157,7 +170,16 @@ export function RepositoryContextProvider({
       dispatcher({type: 'selectBranch', branch});
     }
   };
-
+  /**
+   *
+   * @param tree
+   */
+   const selectTree = (tree: '..'|FileEntry) => {
+    // TODO: ブランチに属するファイル一覧を取得する
+    if (dispatcher) {
+      dispatcher({type: 'selectTree', tree});
+    }
+  };
   /**
    * 編集対象のファイルを選択する
    * @param path
@@ -212,12 +234,14 @@ export function RepositoryContextProvider({
     branches: [],
     files: [],
     currentBranch: null,
+    currentTree: [],
     currentFile: null,
     currentConfig: null,
     setOwner,
     setRepo,
     selectRepository,
     selectBranch,
+    selectTree,
     selectFile,
   } as Repository;
 
@@ -234,12 +258,26 @@ export function RepositoryContextProvider({
         };
       case 'selectBranch':
         if(!state.owner || !state.repo || !action.branch){ return state; } 
-        fetchFiles(app.user!, state.owner!, state.repo!, action.branch!).then((files)=>{
+        fetchFiles(app.user!, state.owner!, state.repo!, action.branch!, '').then((files)=>{
           if (dispatch) {
             dispatch({type: 'setFiles', files});
           }
         }).catch((e)=>console.error(e));
-        return {...state, currentBranch: action.branch};
+        // TODO: ブランチ毎のカレントディレクトリを保持する
+        return {...state, currentBranch: action.branch, currentTree: []};
+      case 'selectTree':
+        console.log('selectTree',action.tree);
+        if(action.tree == '..') {
+          state.currentTree.pop();
+        }else{
+          state.currentTree.push(action.tree as unknown as FileEntry);
+        }
+        fetchFiles(app.user!, state.owner!, state.repo!, state.currentBranch!, action.tree.sha).then((files)=>{
+          if (dispatch) {
+            dispatch({type: 'setFiles', files});
+          }
+        }).catch((e)=>console.error(e));
+      return {...state, currentTree: [...state.currentTree]};
       case 'setFiles':
         console.log('setFiles',action.files);
         return {...state, files: action.files};
