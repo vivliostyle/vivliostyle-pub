@@ -38,8 +38,8 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
   });
   const tree = await (async ()=>{
       const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, { owner, repo, per_page: 1 }); 
-      console.log('ret',ret);
-      console.log('last commit sha:',ret.data.sha);
+      // console.log('ret',ret);
+      // console.log('last commit sha:',ret.data.sha);
       const tree_sha = ret.data.sha;
       const tree = await octokit.git.getTree({ owner, repo, tree_sha },);
       return (tree.data as unknown) as CommitsOfRepositoryApiResponse;

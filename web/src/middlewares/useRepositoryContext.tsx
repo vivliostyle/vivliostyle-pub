@@ -66,12 +66,15 @@ export function RepositoryContextProvider({
   const app = useAppContext();
   let dispatcher: Dispatch<Actions> | undefined;
 
+
+
   const setOwner = () => {};
 
   const setRepo = () => {};
 
   const selectRepository = useCallback(
     (owner: string, repo: string) => {
+      console.log('selectRepostiory',owner,repo);
       (async () => {
         const {branches, defaultBranch} = await fetchBranches(
           app.user!,
@@ -219,6 +222,7 @@ export function RepositoryContextProvider({
   const reducer = (state: Repository, action: Actions): Repository => {
     switch (action.type) {
       case 'selectRepository':
+        selectBranch(action.defaultBranch);
         return {
           ...state,
           owner: action.owner,
@@ -244,6 +248,10 @@ export function RepositoryContextProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     dispatcher = dispatch;
   }, [dispatch]);
+
+  useEffect(()=>{
+    selectRepository(owner,repo);
+  },[owner, repo, selectRepository]);
 
   return (
     <RepositoryContext.Provider value={repository}>
