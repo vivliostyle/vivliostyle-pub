@@ -21,6 +21,50 @@ const VPUBFS_ROOT = '/vpubfs';
  */
 const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
+
+/**
+ * 遅延処理
+ */
+// const REFRESH_MS = 2000;
+// function useDefferedEffect(
+//   fn: () => void,
+//   args: React.DependencyList,
+//   duration: number,
+// ) {
+//   useEffect(() => {
+//     const timer = setTimeout(() => fn(), duration);
+//     return () => {
+//       clearTimeout(timer);
+//     };
+//   }, args);
+// }
+
+/**
+ * 遅延処理
+ */
+  // useDefferedEffect(
+  //   () => {
+  //     if(modifiedText.text){
+  //       console.log('onUpdate');
+  //       if (!session) {
+  //         // console.log('same text',session ,updatedText, currentFile.text);
+  //         return;
+  //       }
+  //       session
+  //         .update({
+  //           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  //           text: modifiedText.text,
+  //           state: 'update',
+  //         })
+  //         .then(() => {
+  //           setStatus('saved');
+  //         });
+  //       }
+  //   },
+  //   [modifiedText.text],
+  //   REFRESH_MS,
+  // );
+
 /**
  * モデルクラスのインターフェースに相当
  */

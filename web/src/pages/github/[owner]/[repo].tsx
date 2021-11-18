@@ -1,6 +1,6 @@
 import React, {useEffect, useCallback, useState} from 'react';
 import {useRouter} from 'next/router';
-import {useToast, RenderProps, useDisclosure} from '@chakra-ui/react';
+import {useToast, RenderProps} from '@chakra-ui/react';
 
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 
@@ -47,23 +47,6 @@ function useBuildStatus(
     // return unsubscribe;
   }, [buildID, onBuildFinished]);
 }
-
-/**
- * 遅延処理
- */
-// const REFRESH_MS = 2000;
-// function useDefferedEffect(
-//   fn: () => void,
-//   args: React.DependencyList,
-//   duration: number,
-// ) {
-//   useEffect(() => {
-//     const timer = setTimeout(() => fn(), duration);
-//     return () => {
-//       clearTimeout(timer);
-//     };
-//   }, args);
-// }
 
 /**
  * メインコンポーネント
@@ -158,34 +141,10 @@ const GitHubOwnerRepo = () => {
   //   });
   // }, [session, currentFile]);
 
-  // useDefferedEffect(
-  //   () => {
-  //     if(modifiedText.text){
-  //       console.log('onUpdate');
-  //       if (!session) {
-  //         // console.log('same text',session ,updatedText, currentFile.text);
-  //         return;
-  //       }
-  //       session
-  //         .update({
-  //           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-  //           text: modifiedText.text,
-  //           state: 'update',
-  //         })
-  //         .then(() => {
-  //           setStatus('saved');
-  //         });
-  //       }
-  //   },
-  //   [modifiedText.text],
-  //   REFRESH_MS,
-  // );
-
   const onModified = useCallback(
     (updatedText) => {
       console.log('onModified');
       previewSource.modifyText(updatedText);
-      // modifiedText.set(updatedText);
       setStatus('modified');
       setWarnDialog(true);
     },
@@ -220,12 +179,6 @@ const GitHubOwnerRepo = () => {
     //   });
   }
 
-  // useEffect(() => {
-  //   if (config) {
-  //     setStylesheet(config.theme ?? '');
-  //   }
-  // }, [config]);
-
   return (
     <UI.Box>
       {ownerRepo ? (
@@ -241,24 +194,23 @@ const GitHubOwnerRepo = () => {
               borderBottomColor="gray.300"
             >
               <MenuBar
+                status={status}
                 isProcessing={isProcessing}
                 isPresentationMode={isPresentationMode}
                 setPresentationMode={setPresentationMode}
                 setStatus={setStatus}
                 setWarnDialog={setWarnDialog}
-                onBuildPDFButtonClicked={onBuildPDFButtonClicked}                
+                onBuildPDFButtonClicked={onBuildPDFButtonClicked}
               />
             </UI.Flex>
             <UI.Flex
               w="100vw"
               h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
             >
-              {isPresentationMode ? '' : <ProjectExplorer />}
+              {isPresentationMode ? null : <ProjectExplorer />}
               {status !== 'init' ? (
                 <UI.Flex flex="1">
-                  {isPresentationMode ? (
-                    ''
-                  ) : (
+                  {isPresentationMode ? null : (
                     <UI.Box flex="1">
                       <MarkdownEditor {...{onModified}} />
                     </UI.Box>

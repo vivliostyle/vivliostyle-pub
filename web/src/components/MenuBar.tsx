@@ -16,13 +16,15 @@ const GitHubAccessToken: string | null =
 const themeManager = new ThemeManager(GitHubAccessToken);
 
 export function MenuBar({
-    isProcessing,
+  status,
+  isProcessing,
     isPresentationMode,
     setPresentationMode,
     setStatus,
     setWarnDialog,
     onBuildPDFButtonClicked
 }:{
+    status:FileState;
     isProcessing:boolean;
     isPresentationMode:boolean;
     setPresentationMode:Dispatch<React.SetStateAction<boolean>>;
