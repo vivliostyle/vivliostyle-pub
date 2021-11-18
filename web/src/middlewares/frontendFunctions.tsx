@@ -1,16 +1,34 @@
 import {GithubRequestSessionApiResponse} from 'pages/api/github/selectFile';
-import {CurrentFile} from 'pages/github/[owner]/[repo]';
 import { User } from "firebase/auth";
 import useSWR from 'swr';
 import {GithubReposApiResponse} from '../pages/api/github/repos';
 import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
 import firebase, { db } from '@services/firebase';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, DocumentReference, getDoc } from 'firebase/firestore';
 import path from 'path';
 import mime from 'mime-types';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 const VPUBFS_ROOT = '/vpubfs';
+
+export function isEditableFile(path:string) {
+  const ext = path.split('.').splice(-1)[0].toLowerCase();
+  return (ext == 'md' || ext == 'html' || ext == 'css' || ext == 'js');
+}
+
+export function isImageFile(path:string) {
+  const ext = path.split('.').splice(-1)[0].toLowerCase();
+  return (ext == 'png' || ext == 'jpeg' || ext == 'jpg' || ext == 'gif' || ext == 'svg');
+}
+
+export type FileState = 'init' | 'clean' | 'modified' | 'saved';
+export type CurrentFile = {
+  text: string;
+  state: FileState;
+  path: string;
+  sha: string;
+  session?: DocumentReference;
+};
 
 type RepositoryPath = {
   user: User | null;

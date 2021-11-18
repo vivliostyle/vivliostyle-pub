@@ -9,7 +9,6 @@ import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 
 import {
-  FileState,
   RepositoryContextProvider,
 } from '@middlewares/useRepositoryContext';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
@@ -17,6 +16,7 @@ import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {useAppContext} from '@middlewares/useAppContext';
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
+import { FileState } from '@middlewares/frontendFunctions';
 
 interface BuildRecord {
   url: string | null;
@@ -207,7 +207,6 @@ const GitHubOwnerRepo = () => {
               h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
             >
               {isPresentationMode ? null : <ProjectExplorer />}
-              {status !== 'init' ? (
                 <UI.Flex flex="1">
                   {isPresentationMode ? null : (
                     <UI.Box flex="1">
@@ -221,11 +220,6 @@ const GitHubOwnerRepo = () => {
                     <Previewer />
                   </UI.Box>
                 </UI.Flex>
-              ) : (
-                <UI.Container flex="1">
-                  <UI.Text mt={6}>Loading</UI.Text>
-                </UI.Container>
-              )}
             </UI.Flex>
           </>
         </RepositoryContextProvider>

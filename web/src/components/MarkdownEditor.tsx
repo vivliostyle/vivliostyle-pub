@@ -1,16 +1,24 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { CurrentFile } from 'pages/github/[owner]/[repo]';
+import { useRepositoryContext } from '@middlewares/useRepositoryContext';
+import { isEditableFile } from '@middlewares/frontendFunctions';
 
 export const MarkdownEditor = ({
-  currentFile = undefined,
   onModified = () => {},
 }: {
-  currentFile?:CurrentFile;
   onModified?: (value: string) => void;
 }) => {
+  console.log('Editor');
+  const repository = useRepositoryContext();
 
-  let text = currentFile?.text;
+  const text = useMemo(()=>{
+    if(repository.currentFile && isEditableFile(repository.currentFile.path)) {
+        console.log('editable',repository.currentFile.path);
+        return repository.currentFile?.text;
+    }else{
+        return '';
+    }
+  },[repository.currentFile]);
 
   const onChange = (value:string|undefined,event:any)=>{
     if(value) {
@@ -23,7 +31,7 @@ export const MarkdownEditor = ({
     <Editor
       height="100%"
       language="markdown"
-      path={currentFile?.path}
+      path={repository.currentFile?.path}
       options={{
         minimap: {enabled: false},
         wordWrap: 'on',

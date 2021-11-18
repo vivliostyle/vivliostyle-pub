@@ -21,7 +21,7 @@ export function ProjectExplorer() {
   const onClick = (file:FileEntry)=>{
     console.log('proj.onclick',file);
     if(file.type == 'blob') {
-      repository.selectFile(file.path);
+      repository.selectFile(file);
     }else if(file.type == 'tree') {
       repository.selectTree(file);
     }

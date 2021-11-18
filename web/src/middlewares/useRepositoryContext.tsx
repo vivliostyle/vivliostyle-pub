@@ -9,17 +9,10 @@ import {
   useEffect,
   useReducer,
 } from 'react';
+import {CurrentFile, isEditableFile, readFile} from './frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {useVivlioStyleConfig} from './useVivliostyleConfig';
 import {CoreProps} from './vivliostyle.config';
-
-export type FileState = 'init' | 'clean' | 'modified' | 'saved';
-export type CurrentFile = {
-  text: string;
-  state: FileState;
-  path: string;
-  session?: DocumentReference;
-};
 
 type Repository = {
   owner: string | null;
@@ -30,10 +23,9 @@ type Repository = {
   currentTree: FileEntry[];
   branches: string[];
   files: FileEntry[];
-  // selectRepository: (owner: string, repo: string) => void;
   selectBranch: (branch: string) => void;
   selectTree: (tree: '..' | FileEntry) => void;
-  selectFile: (path: string | null) => void;
+  selectFile: (path: FileEntry | null) => void;
 };
 
 const RepositoryContext = createContext({} as Repository);
@@ -59,10 +51,12 @@ type Actions =
       defaultBranch: string;
       files: FileEntry[];
     }
-  | {type: 'selectBranch'; branch: string, files: FileEntry[]}
+  | {type: 'selectBranch'; branch: string; files: FileEntry[]}
   | {type: 'selectTree'; tree: '..' | FileEntry}
   | {type: 'selectTreeCallback'; tree: FileEntry[]; files: FileEntry[]}
-  | {type: 'setFiles'; files: FileEntry[]};
+  | {type: 'setFiles'; files: FileEntry[]}
+  | {type: 'selectFile'; file: FileEntry | null}
+  | {type: 'selectFileCallback'; file: CurrentFile | null};
 
 export function RepositoryContextProvider({
   children,
@@ -73,13 +67,8 @@ export function RepositoryContextProvider({
   owner: string;
   repo: string;
 }) {
-  console.log('repositoryContext');
+  console.log('repositoryContext', owner, repo);
   const app = useAppContext();
-  // let dispatcher: Dispatch<Actions> | undefined;
-
-
-
-
 
   const config = async () => {
     // const config = useVivlioStyleConfig({
@@ -142,13 +131,12 @@ export function RepositoryContextProvider({
     }
     // TODO: ブランチに属するファイル一覧を取得する
     fetchFiles(app.user!, state.owner!, state.repo!, branch, '')
-    .then((files) => {
-      if (dispatch) {
-        dispatch({type: 'selectBranch', branch, files});
-      }
-    })
-    .catch((e) => console.error(e));
-
+      .then((files) => {
+        if (dispatch) {
+          dispatch({type: 'selectBranch', branch, files});
+        }
+      })
+      .catch((e) => console.error(e));
   };
   /**
    *
@@ -165,11 +153,12 @@ export function RepositoryContextProvider({
    * 編集対象のファイルを選択する
    * @param path
    */
-  const selectFile = (path: string | null) => {
-    // 同じファイルを選択した場合何もしない
-    // if (path === previewSource.path) {
-    //   return;
-    // }
+  const selectFile = (file: FileEntry | null) => {
+    console.log('selectFile', file);
+    if (dispatch) {
+      dispatch({type: 'selectFile', file});
+    }
+
     // // 現在の対象ファイルが未コミットなら警告を表示
     // // if (
     // // status !== 'clean' &&
@@ -178,35 +167,8 @@ export function RepositoryContextProvider({
     // //   // キャンセルなら何もしない
     // //   return;
     // // }
-    // if (path == null) {
-    //   setCurrentFile({text: '', path: '', state: 'init'});
-    //   return;
-    // }
+
     // // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-    // readFile({
-    //   user: app.user,
-    //   owner: ownerRepo!.owner,
-    //   repo: ownerRepo!.repo!,
-    //   branch: repository.branch!,
-    //   path: path,
-    // })
-    //   .then((file) => {
-    //     if (file) {
-    //       // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
-    //       setCurrentFile(file);
-    //       setStatus('clean');
-    //       if (file.session) {
-    //         setSession(file.session);
-    //       }
-    //       previewSource.changeFile(path, file.text);
-    //     } else {
-    //       // ファイル情報が取得できなかった
-    //       console.error('file not found');
-    //     }
-    //   })
-    //   .catch((err) => {
-    //     console.error(err);
-    //   });
   };
 
   const state = {
@@ -233,11 +195,16 @@ export function RepositoryContextProvider({
           repo: action.repo,
           branches: action.branches,
           currentBranch: action.defaultBranch,
-          files: action.files
+          files: action.files,
         };
       case 'selectBranch':
         // TODO: ブランチ毎のカレントディレクトリを保持する
-        return {...state, currentBranch: action.branch, currentTree: [],files: action.files};
+        return {
+          ...state,
+          currentBranch: action.branch,
+          currentTree: [],
+          files: action.files,
+        };
       case 'selectTree':
         console.log('selectTreeAction');
         const tree = [...state.currentTree];
@@ -270,36 +237,101 @@ export function RepositoryContextProvider({
       case 'setFiles':
         console.log('setFiles', action.files);
         return {...state, files: action.files};
+      case 'selectFile':
+        console.log('selectFileAction', action);
+        // 同じファイルを選択した場合何もしない
+        if (
+          (action.file == null && state.currentFile == null) ||
+          action.file?.sha === state.currentFile?.sha
+        ) {
+          return state;
+        }
+        if (action.file == null) {
+          // 選択解除
+          return {...state, currentFile: null};
+        }
+        if (!isEditableFile(action.file.path)) {
+          // 画像などのエディタで編集不可能なファイル
+          // TODO: 画像ビューワー
+          return {
+            ...state,
+            currentFile: {
+              path: action.file.path,
+              text: '',
+              state: 'init',
+              sha: action.file.sha,
+            },
+          };
+        }
+        readFile({
+          user: app.user,
+          owner: state.owner!,
+          repo: state.repo!,
+          branch: state.currentBranch!,
+          path: action.file.path, // TODO: サブディレクトリに対応
+        })
+          .then((file) => {
+            dispatch({type: 'selectFileCallback', file});
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+        return state;
+      case 'selectFileCallback':
+        console.log('selectFileCallback', action.file);
+        if (action.file) {
+          // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
+          if (action.file.session) {
+            // setSession(file.session);
+          }
+          // previewSource.changeFile(path, file.text);
+          return {...state, currentFile: action.file};
+        } else {
+          // ファイル情報が取得できなかった
+          console.error('file not found');
+          return state;
+        }
     }
   };
 
   const [repository, dispatch] = useReducer(reducer, state);
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const selectRepository = useCallback(
-      (owner: string, repo: string) => {
-        if(!app.user || app.isPending) {return null;}
-        console.log('selectRepostiory', owner, repo);
-        (async () => {
-          const {branches, defaultBranch} = await fetchBranches(
-            app.user!,
-            owner,
-            repo,
-          );
-          fetchFiles(app.user!, owner, repo, defaultBranch, '')
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const selectRepository = useCallback(
+    (owner: string, repo: string) => {
+      if (!app.user || app.isPending) {
+        return null;
+      }
+      console.log('selectRepostiory', owner, repo);
+      (async () => {
+        const {branches, defaultBranch} = await fetchBranches(
+          app.user!,
+          owner,
+          repo,
+        );
+        fetchFiles(app.user!, owner, repo, defaultBranch, '')
           .then((files) => {
             if (dispatch) {
-              dispatch({type: 'selectRepository', owner, repo, branches, defaultBranch, files});
+              dispatch({
+                type: 'selectRepository',
+                owner,
+                repo,
+                branches,
+                defaultBranch,
+                files,
+              });
             }
           })
-          .catch((e) => console.error(e));    
-        })();
-      },
-      [app.isPending, app.user],
-    );
+          .catch((e) => console.error(e));
+      })();
+    },
+    [app.isPending, app.user],
+  );
 
   useEffect(() => {
-    if(!app.user || app.isPending) {return;}
+    if (!app.user || app.isPending) {
+      return;
+    }
     selectRepository(owner, repo);
   }, [app.isPending, app.user, owner, repo, selectRepository]);
 
@@ -318,7 +350,9 @@ const fetchBranches = async (
   branches: string[];
   defaultBranch: string;
 }> => {
-  if(!user || !owner || !repo) { return {branches:[],defaultBranch:''}; }
+  if (!user || !owner || !repo) {
+    return {branches: [], defaultBranch: ''};
+  }
   try {
     const token = await user.getIdToken();
     const resp = await fetch(
