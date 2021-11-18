@@ -1,4 +1,6 @@
 import React, {useEffect, useCallback, useState, useMemo} from 'react';
+import {ReflexContainer, ReflexSplitter, ReflexElement} from 'react-reflex';
+
 import {useRouter} from 'next/router';
 import {useToast, RenderProps} from '@chakra-ui/react';
 
@@ -8,15 +10,17 @@ import * as UI from '@components/ui';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 
-import {
-  RepositoryContextProvider,
-} from '@middlewares/useRepositoryContext';
-import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
+import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {useAppContext} from '@middlewares/useAppContext';
+import {PreviewSourceContextProvider} from '@middlewares/usePreviewSourceContext';
+
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
-import { FileState } from '@middlewares/frontendFunctions';
+import {FileState} from '@middlewares/frontendFunctions';
+import {useLogContext} from '@middlewares/useLogContext';
+import {LogView} from '@components/LogView';
+import {values} from 'lodash';
 
 interface BuildRecord {
   url: string | null;
@@ -53,17 +57,22 @@ function useBuildStatus(
  * @returns
  */
 const GitHubOwnerRepo = () => {
+  const log = useLogContext();
   const app = useAppContext();
   const router = useRouter();
   const {owner, repo} = useMemo(() => {
     if (app.user) {
-      const owner = Array.isArray(router.query.owner) ? router.query.owner[0] : router.query.owner ?? null;
-      const repo = Array.isArray(router.query.repo) ? router.query.repo[0] : router.query.repo ?? null;
+      const owner = Array.isArray(router.query.owner)
+        ? router.query.owner[0]
+        : router.query.owner ?? null;
+      const repo = Array.isArray(router.query.repo)
+        ? router.query.repo[0]
+        : router.query.repo ?? null;
       return {owner, repo: repo};
     }
     return {};
   }, [app.user, router.query]);
-  console.log('GitHubOwnerRepo',app.isPending,owner,repo);
+  console.log('GitHubOwnerRepo', app.isPending, owner, repo);
 
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
@@ -74,8 +83,6 @@ const GitHubOwnerRepo = () => {
   const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
-
-  const previewSource = usePreviewSourceContext();
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -142,12 +149,12 @@ const GitHubOwnerRepo = () => {
 
   const onModified = useCallback(
     (updatedText) => {
+      log.error('modified');
       console.log('onModified');
-      previewSource.modifyText(updatedText);
       setStatus('modified');
       setWarnDialog(true);
     },
-    [previewSource, setWarnDialog],
+    [setWarnDialog],
   );
 
   function onBuildPDFButtonClicked() {
@@ -179,19 +186,14 @@ const GitHubOwnerRepo = () => {
   }
 
   return (
-      <UI.Box>
-    {owner && owner != '' && repo && repo !='' ? (
-        <RepositoryContextProvider
-          owner={owner}
-          repo={repo}
-        >
-          <>
-            <UI.Flex
-              w="100%"
-              h={12}
-              borderBottomWidth={1}
-              borderBottomColor="gray.300"
-            >
+    <UI.Box h={'calc(100vh - 4rem)'} backgroundColor={'white'}>
+      {owner && owner != '' && repo && repo != '' ? (
+        <RepositoryContextProvider owner={owner} repo={repo}>
+          <PreviewSourceContextProvider>
+            <UI.Box
+              height={'calc(100vh - 4rem)'}
+              // backgroundColor={'rgba(0,1,0,0.8)'}
+            >{/* Wrapper  サイズ固定*/}
               <MenuBar
                 status={status}
                 isProcessing={isProcessing}
@@ -201,31 +203,62 @@ const GitHubOwnerRepo = () => {
                 setWarnDialog={setWarnDialog}
                 onBuildPDFButtonClicked={onBuildPDFButtonClicked}
               />
-            </UI.Flex>
-            <UI.Flex
-              w="100vw"
-              h={isPresentationMode ? 'calc(100vh - 115px)' : ''}
-            >
-              {isPresentationMode ? null : <ProjectExplorer />}
-                <UI.Flex flex="1">
-                  {isPresentationMode ? null : (
-                    <UI.Box flex="1">
-                      <MarkdownEditor {...{onModified}} />
-                    </UI.Box>
-                  )}
-                  <UI.Box
-                    width={isPresentationMode ? '100%' : '40%'}
-                    overflow="scroll"
-                  >
-                    <Previewer />
-                  </UI.Box>
-                </UI.Flex>
-            </UI.Flex>
-          </>
+              <UI.Box height={'calc(100vh - 8rem)'} backgroundColor={"pink"} borderTop={'solid 2px gray'}> {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
+                <ReflexContainer orientation="horizontal" windowResizeAware={true}>
+                  <ReflexElement className="top-pane" flex={1.0}>
+                    <ReflexContainer orientation="vertical" windowResizeAware={true}>
+                      <ReflexElement className="left-pane" flex={0.15} minSize={150}>
+                        <UI.Box
+                          height={'100%'}
+                          backgroundColor="white"
+                          overflow={'hidden'}
+                        >
+                          <ProjectExplorer />
+                        </UI.Box>
+                      </ReflexElement>
+                      <ReflexSplitter />
+                      <ReflexElement className="middle-pane">
+                        <UI.Box
+                          height={'100%'}
+                          // height={'calc(100vh - 7em)'}
+                          backgroundColor="lightblue"
+                        >
+                          <MarkdownEditor {...{onModified}} />
+                        </UI.Box>
+                      </ReflexElement>
+                      <ReflexSplitter />
+                      <ReflexElement className="right-pane">
+                        <UI.Box height={'100%'}>
+                        <Previewer />
+                        </UI.Box>
+                      </ReflexElement>
+                    </ReflexContainer>
+                  </ReflexElement>
+
+                  <ReflexSplitter />
+
+                  <ReflexElement className="bottom-pane" minSize={0} flex={0}>
+                    <LogView />
+                  </ReflexElement>
+                </ReflexContainer>
+
+              {/* Main */}</UI.Box>
+              <UI.Box
+                color={'white'}
+                width={'100vw'}
+                height={'1rem'}
+                backgroundColor={'gray'}
+                paddingLeft={10}
+                fontSize={'0.5rem'}
+              > {/* footer */}
+                Vivliostyle Pub ver.0.0.0
+              </UI.Box>
+            {/* Wrapper */}</UI.Box>
+          </PreviewSourceContextProvider>
         </RepositoryContextProvider>
-    ) : null}
+      ) : null}
     </UI.Box>
-    );
+  );
 };
 
 export default GitHubOwnerRepo;

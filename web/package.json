@@ -31,6 +31,8 @@
     "next": "^12.0.4",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-reflex": "^4.0.3",
+    "react-split-pane": "^2.0.3",
     "scss-parser": "^1.0.5",
     "swr": "^1.0.1",
     "theme-manager": "https://github.com/AyumuTakai/thememanager.git"

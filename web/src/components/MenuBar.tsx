@@ -4,7 +4,6 @@ import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
 import {
-  FileState,
   useRepositoryContext,
 } from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
@@ -12,6 +11,7 @@ import {useAppContext} from '@middlewares/useAppContext';
 import {Theme, ThemeManager} from 'theme-manager';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
+import { FileState } from '@middlewares/frontendFunctions';
 
 const GitHubAccessToken: string | null =
   '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';
@@ -69,7 +69,7 @@ export function MenuBar({
   }
 
   return (
-    <UI.Flex w="100%" px={8} justify="space-between" align="center">
+    <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
       <UI.Flex align="center">
         {repository.owner} / {repository.repo} /
         <UI.Box w="180px" px="4">

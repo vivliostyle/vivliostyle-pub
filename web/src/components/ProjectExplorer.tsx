@@ -1,19 +1,24 @@
 import {useMemo, useState} from 'react';
 import {FileEntry, useRepositoryContext} from '@middlewares/useRepositoryContext';
 import * as UI from '@components/ui';
+import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
 
 export function ProjectExplorer() {
   console.log('Explorer');
   const repository = useRepositoryContext();
+  const previewSource = usePreviewSourceContext();
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
 
+  // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
     console.log('proj.files',repository.files);
     return repository.files.filter((f) => f.path.includes(filenamesFilterText));
   }, [repository.files, filenamesFilterText]);
   
+  // 表示用のカレントディレクトリ
   const currentDir = useMemo(()=>{
     let path = repository.currentTree.map(f=>f.path).join('/');
+    // 流すぎるパスは省略
     if(path.length > 15) { path = '...'+path.slice(-15); } 
     return path;
   },[repository.currentTree]);
@@ -32,7 +37,7 @@ export function ProjectExplorer() {
   }
 
   return (
-    <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
+    <UI.Box w={'100%'} resize="horizontal" p={1}>
       <UI.Input
         placeholder="search file"
         value={filenamesFilterText}
@@ -44,7 +49,8 @@ export function ProjectExplorer() {
         {currentDir}/
         <hr />
       </UI.Box>
-      <UI.Box h="calc(100vh - 200px)" overflowY="auto">
+      <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
+        <UI.Box height={'100vh'} overflowY="scroll" backgroundColor="white">
         {repository.currentTree.length > 0?(
           <UI.Container p={0} onClick={upTree} cursor="default">
             <UI.Text mt={3} fontSize="sm">..</UI.Text>
@@ -52,13 +58,13 @@ export function ProjectExplorer() {
         ):null}
         {filteredFiles.map((file) => (
           <UI.Container
-            p={0}
+            paddingInlineStart={1}
             key={file.path}
             onClick={()=>{onClick(file);}}
-            cursor="default"
+            cursor="pointer"
           >
             <UI.Text
-              mt={3}
+              mt={1}
               fontSize="sm"
               fontWeight={file.path == repository.currentFile?.path ? 'bold' : 'normal'}
             >
@@ -66,6 +72,7 @@ export function ProjectExplorer() {
             </UI.Text>
           </UI.Container>
         ))}
+        </UI.Box>
       </UI.Box>
     </UI.Box>
   );

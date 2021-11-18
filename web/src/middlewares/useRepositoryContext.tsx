@@ -11,6 +11,7 @@ import {
 } from 'react';
 import {CurrentFile, isEditableFile, readFile} from './frontendFunctions';
 import {useAppContext} from './useAppContext';
+import { useLogContext } from './useLogContext';
 import {useVivlioStyleConfig} from './useVivliostyleConfig';
 import {CoreProps} from './vivliostyle.config';
 
@@ -68,6 +69,7 @@ export function RepositoryContextProvider({
   repo: string;
 }) {
   console.log('repositoryContext', owner, repo);
+  const log = useLogContext();
   const app = useAppContext();
 
   const config = async () => {
@@ -253,6 +255,7 @@ export function RepositoryContextProvider({
         if (!isEditableFile(action.file.path)) {
           // 画像などのエディタで編集不可能なファイル
           // TODO: 画像ビューワー
+          log.error('編集できないファイル形式です : '+ action.file.path);
           return {
             ...state,
             currentFile: {

@@ -1,4 +1,4 @@
-import {createContext, useState, useContext, useReducer, Dispatch, useEffect} from 'react';
+import {createContext, useState, useContext, useReducer, Dispatch, useEffect, useMemo} from 'react';
 import {stringify} from '@vivliostyle/vfm';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
@@ -104,7 +104,7 @@ const PreviewSourceContext = createContext({} as PreviewSource);
 
 /**
  * PreviewSourceContextを使用したいコンポーネントで呼び出すこと
- * @returns PreviewSourceContentオブジェクト
+ * @returns PreviewSourceContextオブジェクト
  */
 export function usePreviewSourceContext() {
   return useContext(PreviewSourceContext);
@@ -160,6 +160,7 @@ export function PreviewSourceContextProvider({
    * @param text
    */
   const modifyText = (text: string | null) => {
+    console.log('modifieText',text);
     dispatch({type: 'modifyText', text});
   };
 
@@ -366,10 +367,7 @@ export function PreviewSourceContextProvider({
   };
 
   const [previewTarget, dispatch] = useReducer(reducer, state);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    dispatcher = dispatch;
-  }, [dispatch]);
+
   return (
     <PreviewSourceContext.Provider value={previewTarget}>
       {children}

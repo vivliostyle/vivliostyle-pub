@@ -1,6 +1,5 @@
 import React from 'react';
 import * as UI from '@components/ui';
-import {Header} from '@components/Header';
 import {GithubReposList} from '@components/GithubReposList';
 import {GithubAppsButtonGroup} from '@components/GithubAppsButtonGroup';
 import { useAppContext } from '@middlewares/useAppContext';
