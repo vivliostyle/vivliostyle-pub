@@ -212,7 +212,6 @@ const GitHubOwnerRepo = () => {
                 backgroundColor={'pink'}
                 borderTop={'solid 2px gray'}
               >
-                {' '}
                 {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
                 <ReflexContainer
                   orientation="horizontal"
@@ -275,7 +274,6 @@ const GitHubOwnerRepo = () => {
                 paddingLeft={10}
                 fontSize={'0.5rem'}
               >
-                {' '}
                 {/* footer */}
                 Vivliostyle Pub ver.0.0.0
               </UI.Box>
