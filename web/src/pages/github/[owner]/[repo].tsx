@@ -2,7 +2,7 @@ import React, {useEffect, useCallback, useState, useMemo} from 'react';
 import {ReflexContainer, ReflexSplitter, ReflexElement} from 'react-reflex';
 
 import {useRouter} from 'next/router';
-import {useToast, RenderProps} from '@chakra-ui/react';
+import {RenderProps} from '@chakra-ui/react';
 
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 
@@ -20,7 +20,6 @@ import {MenuBar} from '@components/MenuBar';
 import {FileState} from '@middlewares/frontendFunctions';
 import {useLogContext} from '@middlewares/useLogContext';
 import {LogView} from '@components/LogView';
-import {values} from 'lodash';
 
 interface BuildRecord {
   url: string | null;
@@ -60,6 +59,14 @@ const GitHubOwnerRepo = () => {
   const log = useLogContext();
   const app = useAppContext();
   const router = useRouter();
+
+  // check login
+  useEffect(() => {
+    if (!app.user) {
+      router.replace('/');
+    }
+  }, [app.user, app.isPending, router]);
+
   const {owner, repo} = useMemo(() => {
     if (app.user) {
       const owner = Array.isArray(router.query.owner)
@@ -80,7 +87,7 @@ const GitHubOwnerRepo = () => {
   const [status, setStatus] = useState<FileState>('init');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
-  const toast = useToast();
+  // const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
 
@@ -93,19 +100,15 @@ const GitHubOwnerRepo = () => {
         </UI.Link>
       </UI.Box>
     );
-    toast({
-      duration: 9000,
-      isClosable: true,
-      render: ViewPDFToast,
-    });
+    log.info('View PDF'); // TODO リンクにする
+    // toast({
+    //   duration: 9000,
+    //   isClosable: true,
+    //   render: ViewPDFToast,
+    // });
   });
 
-  // check login
-  useEffect(() => {
-    if (!app.user) {
-      router.replace('/');
-    }
-  }, [app.user, app.isPending, router]);
+
 
   // set text
   // useEffect(() => {

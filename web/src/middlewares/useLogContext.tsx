@@ -51,11 +51,12 @@ export function LogContextProvider({children}: {children: JSX.Element}) {
   const reducer = (state: Log, action: Actions): Log => {
     switch (action.type) {
       case 'logging':
-        return {...state, entries: [action.entry, ...state.entries]};
-    }
+          console.log(action.entry);
+          return state; //{...state, entries: [action.entry, ...state.entries]};
+      }
   };
 
-  const [log, dispatch] = useReducer(reducer, state);
+  const [log, dispatch] = useReducer(reducer!, state);
 
   return <LogContext.Provider value={log}>{children}</LogContext.Provider>;
 }
