@@ -1,17 +1,17 @@
 import * as UI from '@components/ui';
-import {useLogContext} from '@middlewares/useLogContext';
-import { useEffect, useRef } from 'react';
+import {useLogBufferContext} from '@middlewares/useLogContext';
+import { useEffect } from 'react';
 
-export function LogView() {
-  const log = useLogContext();
-
-  const bottomRef = useRef<HTMLDivElement>(null);
-
+export function LogView({onError}:{onError:(num:number)=>void}) {
+  const log = useLogBufferContext();
+  useEffect(()=>{
+    onError(log.length);    
+  },[log.length]);
   return (
     <UI.Box w="100%" h="100%" overflow="scroll" p={5} backgroundColor="lightgray">
       <UI.Stack spacing={3}>
-        {log.entries.map((entry) => (
-          <UI.Alert status={entry.type} key={entry.timestamp}>
+        {log.map((entry) => (
+          <UI.Alert status={entry.type} key={entry.key}>
             <UI.AlertIcon />
             [{new Date(entry.timestamp).toISOString()}]:{entry.message}
           </UI.Alert>

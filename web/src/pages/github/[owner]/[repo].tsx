@@ -150,7 +150,7 @@ const GitHubOwnerRepo = () => {
 
   const onModified = useCallback(
     (updatedText) => {
-      log.error('modified');
+      log.info('modified');
       console.log('onModified');
       setStatus('modified');
       setWarnDialog(true);
@@ -186,8 +186,14 @@ const GitHubOwnerRepo = () => {
     //   });
   }
 
+
+  const onError = (num:number)=>{
+    console.log('onError',num);
+    // TODO: ログが追加されたらLogViewを表示する。 手動で大きさを変えたあとでも対応できるようにする。
+  }
+
   return (
-    <UI.Box h={'calc(100vh - 4rem)'} backgroundColor={'white'}>
+    <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <RepositoryContextProvider owner={owner} repo={repo}>
           <PreviewSourceContextProvider>
@@ -207,8 +213,7 @@ const GitHubOwnerRepo = () => {
               />
               <UI.Box
                 height={'calc(100vh - 8rem)'}
-                backgroundColor={'pink'}
-                borderTop={'solid 2px gray'}
+                borderTop={'solid 1px gray'}
               >
                 {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
                 <ReflexContainer
@@ -240,8 +245,6 @@ const GitHubOwnerRepo = () => {
                         <ReflexElement className="middle-pane">
                           <UI.Box
                             height={'100%'}
-                            // height={'calc(100vh - 7em)'}
-                            backgroundColor="lightblue"
                           >
                             <MarkdownEditor {...{onModified}} />
                           </UI.Box>
@@ -259,7 +262,7 @@ const GitHubOwnerRepo = () => {
                   <ReflexSplitter />
 
                   <ReflexElement className="bottom-pane" minSize={0} flex={0}>
-                    <LogView />
+                    <LogView onError={onError}/>
                   </ReflexElement>
                 </ReflexContainer>
                 {/* Main */}
