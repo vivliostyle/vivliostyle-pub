@@ -1,9 +1,19 @@
-import {createContext, useState, useContext, useReducer, Dispatch, useEffect, useMemo} from 'react';
+import {
+  createContext,
+  useState,
+  useContext,
+  useReducer,
+  Dispatch,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import {stringify} from '@vivliostyle/vfm';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
 import {
   getFileContentFromGithub,
+  isEditableFile,
   updateCache,
   updateCacheFromPath,
 } from './frontendFunctions';
@@ -11,6 +21,7 @@ import {useRepositoryContext} from './useRepositoryContext';
 import path from 'path';
 import {useAppContext} from './useAppContext';
 import {Theme} from 'theme-manager';
+import repos from 'pages/api/github/repos';
 
 const VPUBFS_ROOT = '/vpubfs';
 
@@ -20,7 +31,6 @@ const VPUBFS_ROOT = '/vpubfs';
  * @returns
  */
 const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
-
 
 /**
  * 遅延処理
@@ -42,28 +52,28 @@ const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 /**
  * 遅延処理
  */
-  // useDefferedEffect(
-  //   () => {
-  //     if(modifiedText.text){
-  //       console.log('onUpdate');
-  //       if (!session) {
-  //         // console.log('same text',session ,updatedText, currentFile.text);
-  //         return;
-  //       }
-  //       session
-  //         .update({
-  //           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-  //           text: modifiedText.text,
-  //           state: 'update',
-  //         })
-  //         .then(() => {
-  //           setStatus('saved');
-  //         });
-  //       }
-  //   },
-  //   [modifiedText.text],
-  //   REFRESH_MS,
-  // );
+// useDefferedEffect(
+//   () => {
+//     if(modifiedText.text){
+//       console.log('onUpdate');
+//       if (!session) {
+//         // console.log('same text',session ,updatedText, currentFile.text);
+//         return;
+//       }
+//       session
+//         .update({
+//           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+//           text: modifiedText.text,
+//           state: 'update',
+//         })
+//         .then(() => {
+//           setStatus('saved');
+//         });
+//       }
+//   },
+//   [modifiedText.text],
+//   REFRESH_MS,
+// );
 
 /**
  * モデルクラスのインターフェースに相当
@@ -160,7 +170,7 @@ export function PreviewSourceContextProvider({
    * @param text
    */
   const modifyText = (text: string | null) => {
-    console.log('modifieText',text);
+    console.log('modifieText', text);
     dispatch({type: 'modifyText', text});
   };
 
@@ -224,48 +234,70 @@ export function PreviewSourceContextProvider({
    * @param text
    * @returns {path, text}
    */
-  const transpile = (srcPath: string, text: string): void => {
-    if (srcPath && text && srcPath.endsWith('.md')) {
-      srcPath = srcPath.replace(/\.md$/, '.html');
-      text = stringify(text);
-    }
-    console.log('transpiled', path, '\n' /*, text*/);
-    if (srcPath.endsWith('.html')) {
-      const imagePaths = pickupHtmlResources(text);
-      Promise.all(
-        imagePaths.map((imagePath) =>
-          updateCacheFromPath(
-            repository.owner!,
-            repository.repo!,
-            repository.currentBranch!,
-            srcPath!,
-            imagePath,
-            app.user!,
+  const transpile = useCallback(
+    (srcPath: string, text: string): void => {
+      if (srcPath && text && srcPath.endsWith('.md')) {
+        srcPath = srcPath.replace(/\.md$/, '.html');
+        text = stringify(text);
+      }
+      console.log('transpiled', srcPath, '\n' /*, text*/);
+      if (srcPath.endsWith('.html')) {
+        const imagePaths = pickupHtmlResources(text);
+        Promise.all(
+          imagePaths.map((imagePath) =>
+            updateCacheFromPath(
+              repository.owner!,
+              repository.repo!,
+              repository.currentBranch!,
+              srcPath!,
+              imagePath,
+              app.user!,
+            ),
           ),
-        ),
-      ).catch((error) => {
-        if (error.message.startsWith('403:')) {
-          console.error(error.message);
-          // toast({
-          //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
-          //   status: "error"
-          // });
-        }
-      });
-      console.log('imagePaths', imagePaths);
-    }
-    updateCache(srcPath, text).then(() => {});
-    const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
-    // 準備が終わったら状態を変化させる
-    if (dispatcher) {
+        ).catch((error) => {
+          if (error.message.startsWith('403:')) {
+            console.error(error.message);
+            // toast({
+            //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
+            //   status: "error"
+            // });
+          }
+        });
+        console.log('imagePaths', imagePaths);
+      }
+      updateCache(srcPath, text).then(() => {});
+      const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
+      // 準備が終わったら状態を変化させる
+      console.log('call dispatcher', dispatcher);
       dispatch({
         type: 'changeFileCallback',
         path: srcPath,
         vPubPath: vPubPath,
         text: text,
       });
+    },
+    [
+      app.user,
+      dispatcher,
+      repository.currentBranch,
+      repository.owner,
+      repository.repo,
+    ],
+  );
+
+  /**
+   * エディタの更新チェック
+   */
+  useEffect(() => {
+    console.log('編集対象が変更された', repository.currentFile);
+    if (
+      repository.currentFile?.path &&
+      isEditableFile(repository.currentFile?.path)
+    ) {
+      console.log('編集対象ファイルは編集可能');
+      transpile(repository.currentFile.path, repository.currentFile.text);
     }
-  };
+  }, [repository.currentFile, transpile]);
 
   const fetchTheme = () => {
     const VPUBFS_CACHE_NAME = 'vpubfs';
@@ -342,7 +374,7 @@ export function PreviewSourceContextProvider({
   const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
       case 'changeFileCallback': // ドキュメントの準備が完了
-        console.log('changeFileCallback');
+        console.log('changeFileCallback', action.vPubPath);
         return {
           ...state,
           path: action.path,
