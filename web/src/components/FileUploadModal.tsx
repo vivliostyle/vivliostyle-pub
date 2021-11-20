@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useRef, useMemo } from 'react';
 import * as UI from './ui';
-import { useToast } from "@chakra-ui/react"
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import { User } from 'firebase/auth';
 import { createFile } from '@services/serverSideFunctions';
@@ -33,23 +32,14 @@ export const FileUploadModal = ({
     if (e.target.files) setFile(e.target.files?.item(0))
   };
 
-  const toast = useToast()
   const onUploadButtonClick = useCallback(() => {
     (async () => {
       if (file === null) {
-        toast({
-          title: "file not selected",
-          status: "warning",
-        })
-        log.error('file not selected');
+        log.warning('file not selected', 3000);
         return
       }
       if (user === null) {
-        toast({
-          title: "user not found",
-          status: "warning",
-        })
-        log.error('user not found');
+        log.warning('user not found', 3000);
         return
       }
       setBusy(true)
@@ -57,29 +47,14 @@ export const FileUploadModal = ({
         const response = await createFile({user, owner:repository.owner!, repo:repository.repo!, branch:repository.currentBranch!, path:fileName}, file);
         if(!response) { return; }
         if (response.status === 201) {
-          toast({
-            title: "image uploaded",
-            status: "success",
-          })
-          log.info('image uploaded');
+          repository.selectBranch(repository.currentBranch!); // ファイル一覧の更新
+          log.success('image uploaded', 3000);
         } else if (response.status === 400 || response.status === 401) {
-          toast({
-            title: "authentication error",
-            status: "error"
-          })
-          log.error('authentication error');
+          log.error('authentication error', 3000);
         } else if (response.status === 413) {
-          toast({
-            title: "image size too large",
-            status: "error"
-          })
-          log.error('image size too large');
+          log.error('image size too large', 3000);
         } else {
-          toast({
-            title: "error:" + response.status,
-            status: "error"
-          })
-          log.error('error : ' + response.status);          
+          log.error('error : ' + response.status, 3000);          
         }
         onClose()
       } catch (error) {
@@ -89,7 +64,7 @@ export const FileUploadModal = ({
       }
     })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, repository, file, fileName, onClose, toast])
+  }, [user, repository, file, fileName, onClose])
 
   return (
     <UI.Modal isOpen={isOpen} onClose={onClose}>

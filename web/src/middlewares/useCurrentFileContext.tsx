@@ -88,7 +88,7 @@ export function CurrentFileContextProvider({
           if (!isEditableFile(action.file.path)) {
             // 画像などのエディタで編集不可能なファイル
             // TODO: 画像ビューワー
-            log.error('編集できないファイル形式です : ' + action.file.path);
+            log.error('編集できないファイル形式です : ' + action.file.path, 3000);
             onReady(action.file);
             return {...state, state: FileState.none};
           }
@@ -104,13 +104,13 @@ export function CurrentFileContextProvider({
             .then((content) => {
               console.log('dispatch setFileCallback', seq,action.file,content);
               if(!content) {
-                log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : '+content);
+                log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : '+content, 3000);
                 return state;
               }
               dispatch({type: 'setFileCallback', seq, file:action.file, content:content });
             })
             .catch((err) => {
-              log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : ' + err.message);
+              log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : ' + err.message, 3000);
               console.error(err);
               onReady(action.file);
             });

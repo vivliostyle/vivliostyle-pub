@@ -155,6 +155,7 @@ export function PreviewSourceContextProvider({
         .catch((err) => {
           log.error(
             `テーマの準備に失敗しました(${theme.style}) : ${err.message}`,
+            3000
           );
         });
     } else {
@@ -227,7 +228,8 @@ export function PreviewSourceContextProvider({
           })
           .catch((err) => {
             log.error(
-              'プレビュー変換に失敗しました(' + srcPath + ') ： ' + err.message,
+              'プレビュー変換に失敗しました(' + srcPath + ') ： ' + err.message, 
+              3000
             );
           });
       })();
@@ -325,6 +327,7 @@ export function PreviewSourceContextProvider({
                 state.path +
                 ') ： ' +
                 err.message,
+                3000
             );
           });
         return {...state, text: action.text};
