@@ -22,18 +22,6 @@ export const MarkdownEditor = ({
   console.log('[Editor]', currentFile);
 
   /**
-   * テキストの初期値
-   */
-  // const text = useMemo(() => {
-  //   if (isEditableFile(currentFile.file?.path)) {
-  //     console.log('editable', currentFile.file?.path,currentFile.text);
-  //     return currentFile.text;
-  //   } else {
-  //     return '';
-  //   }
-  // }, [repository.currentFile]);
-
-  /**
    * シンタックスハイライティング用のファイル種別
    * 自動判別するのでなくても良いような気がする
    */
@@ -58,9 +46,7 @@ export const MarkdownEditor = ({
    * @param event
    */
   const onChange = (value: string | undefined, event: any) => {
-    onModified(value ?? '');
     currentFile.modify(value ?? '');
-    // previewSource.modifyText(value ?? null);
   };
 
   const display = currentFile.state == FileState.none ? 'block' : 'none';
