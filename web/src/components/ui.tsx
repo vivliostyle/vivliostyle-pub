@@ -31,7 +31,7 @@ export {
   Select,
   Alert,
   Stack,
-  AlertIcon
+  AlertIcon,
 } from '@chakra-ui/react';
 
 

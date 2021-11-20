@@ -1,46 +1,80 @@
-import React, { useMemo } from 'react';
+import React, {useMemo} from 'react';
 import Editor from '@monaco-editor/react';
+import {FileState, getExt, isEditableFile} from '@middlewares/frontendFunctions';
+import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { isEditableFile } from '@middlewares/frontendFunctions';
-import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
+import * as UI from '@components/ui';
+
 
 export const MarkdownEditor = ({
   onModified = () => {},
 }: {
   onModified?: (value: string) => void;
 }) => {
-  console.log('Editor');
+  // Repositoryコンテキストのカレントファイルが変化したらリロード
+  // CurrentFileコンテクストが変化してもリロードしない
   const repository = useRepositoryContext();
-  const previewSource = usePreviewSourceContext();
+  const currentFile = useCurrentFileContext();
+  console.log('[Editor]', currentFile);
 
-  const text = useMemo(()=>{
-    if(repository.currentFile && isEditableFile(repository.currentFile.path)) {
-        console.log('editable',repository.currentFile.path);
-        return repository.currentFile?.text;
-    }else{
-        return '';
-    }
-  },[repository.currentFile]);
+  /**
+   * テキストの初期値
+   */
+  // const text = useMemo(() => {
+  //   if (isEditableFile(currentFile.file?.path)) {
+  //     console.log('editable', currentFile.file?.path,currentFile.text);
+  //     return currentFile.text;
+  //   } else {
+  //     return '';
+  //   }
+  // }, [repository.currentFile]);
 
-  const onChange = (value:string|undefined,event:any)=>{
-    if(value) {
-      console.log('editor.onChange');
-      previewSource.modifyText(value);
-      onModified(value);  
+  /**
+   * シンタックスハイライティング用のファイル種別
+   * 自動判別するのでなくても良いような気がするが。
+   */
+  const language = useMemo(() => {
+    const ext = getExt(currentFile.file?.path);
+    if (ext === 'md') {
+      return 'markdown';
+    } else if (ext === 'js') {
+      return 'javascript';
+    } else if (ext === 'html') {
+      return 'html';
+    } else if (ext === 'css') {
+      return 'css';
+    } else {
+      return 'plain';
     }
-  }
+  }, [currentFile]);
+
+  /**
+   * ファイルの内容が編集された
+   * @param value 
+   * @param event 
+   */
+  const onChange = (value: string | undefined, event: any) => {
+    onModified(value ?? '');
+  };
+
+  const display = currentFile.state == FileState.none ? 'block' : 'none';
 
   return (
+    <UI.Box w="100%" h="100%" position="relative">
     <Editor
       height="100%"
-      language="markdown"
-      path={repository.currentFile?.path}
+      language={language}
+      path={currentFile.file?.path}
       options={{
         minimap: {enabled: false},
         wordWrap: 'on',
       }}
-      onChange = {onChange}
-      defaultValue={text}
+      onChange={onChange}
+      value={currentFile.text}
     />
+    <UI.Box display={display}  position="absolute" w="100%" h="100%" top="0" left="0" textAlign="center" verticalAlign="center" backgroundColor="rgb(0,0,0,0.5)" lineHeight="100%">
+    <UI.Spinner size="xl" emptyColor="gray.200" color="blue.500" mt="calc(50% - 3rem)" />
+    </UI.Box>
+    </UI.Box>
   );
 };

@@ -5,10 +5,8 @@ import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
 
 export const CommitSessionButton = ({
-  disabled,
   onDidSaved = () => {},
 }: {
-  disabled?: boolean;
   onDidSaved?: () => void;
 }) => {
   const app = useAppContext();
@@ -33,7 +31,7 @@ export const CommitSessionButton = ({
   return (
     <UI.Button
       {...{ onClick }}
-      isDisabled={disabled}
+      disabled={!(repository.currentFile?.state == 'saved' || repository.currentFile?.state == 'modified')}
       isLoading={busy}
       loadingText="Saving document"
     >

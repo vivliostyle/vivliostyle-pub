@@ -1,12 +1,13 @@
 import {useMemo, useState} from 'react';
-import {FileEntry, useRepositoryContext} from '@middlewares/useRepositoryContext';
 import * as UI from '@components/ui';
-import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
+import {FileEntry, useRepositoryContext} from '@middlewares/useRepositoryContext';
+import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
 
 export function ProjectExplorer() {
-  console.log('Explorer');
+  console.log('[Project Explorer]');
   const repository = useRepositoryContext();
-  const previewSource = usePreviewSourceContext();
+  const currentFile = useCurrentFileContext();
+
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
 
   // 絞り込み後のファイルリスト
@@ -23,15 +24,23 @@ export function ProjectExplorer() {
     return path;
   },[repository.currentTree]);
 
+  /**
+   * ファイルまたはディレクトリが選択された
+   * blob,treeはGit用語
+   * @param file 
+   */
   const onClick = (file:FileEntry)=>{
     console.log('proj.onclick',file);
-    if(file.type == 'blob') {
-      repository.selectFile(file);
-    }else if(file.type == 'tree') {
+    if(file.type == 'blob') { // ファイル
+      repository.selectFile(file,new Date().getTime());
+    }else if(file.type == 'tree') { // ディレクトリ
       repository.selectTree(file);
     }
   }
 
+  /**
+   * 親ディレクトリへ移動する
+   */
   const upTree =()=>{
     repository.selectTree('..');
   }
@@ -66,7 +75,7 @@ export function ProjectExplorer() {
             <UI.Text
               mt={1}
               fontSize="sm"
-              fontWeight={file.path == repository.currentFile?.path ? 'bold' : 'normal'}
+              fontWeight={file.path == currentFile?.path ? 'bold' : 'normal'}
             >
               {file.path}{file.type=='tree'?'/':''}
             </UI.Text>

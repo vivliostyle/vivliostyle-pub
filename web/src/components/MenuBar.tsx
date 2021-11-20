@@ -19,19 +19,15 @@ const GitHubAccessToken: string | null =
 const themeManager = new ThemeManager(GitHubAccessToken);
 
 export function MenuBar({
-  status,
   isProcessing,
   isPresentationMode,
   setPresentationMode,
-  setStatus,
   setWarnDialog,
   onBuildPDFButtonClicked,
 }: {
-  status: FileState;
   isProcessing: boolean;
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
-  setStatus: Dispatch<React.SetStateAction<FileState>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
   onBuildPDFButtonClicked: () => void;
 }) {
@@ -50,9 +46,8 @@ export function MenuBar({
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
-    setStatus('clean');
     setWarnDialog(false);
-  }, [setStatus, setWarnDialog]);
+  }, [setWarnDialog]);
 
   const {
     isOpen: isOpenFileUploadModal,
@@ -75,14 +70,11 @@ export function MenuBar({
         <UI.Box w="180px" px="4">
           <BranchSelecter />
         </UI.Box>
-        {/* {status === 'saved' && <UI.Text>Document updated : </UI.Text>} */}
         {app.user /*&& session?.id*/ && (
           <div>
             <CommitSessionButton
               {...{onDidSaved}}
-              disabled={!(status == 'saved' || status == 'modified')}
             />
-            {status}
           </div>
         )}
       </UI.Flex>

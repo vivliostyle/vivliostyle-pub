@@ -11,7 +11,6 @@ import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 
 import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
-import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {useAppContext} from '@middlewares/useAppContext';
 import {PreviewSourceContextProvider} from '@middlewares/usePreviewSourceContext';
 
@@ -20,6 +19,7 @@ import {MenuBar} from '@components/MenuBar';
 import {FileState} from '@middlewares/frontendFunctions';
 import {useLogContext} from '@middlewares/useLogContext';
 import {LogView} from '@components/LogView';
+import {Footer} from '@components/Footer';
 
 interface BuildRecord {
   url: string | null;
@@ -79,7 +79,7 @@ const GitHubOwnerRepo = () => {
     }
     return {};
   }, [app.user, router.query]);
-  console.log('GitHubOwnerRepo', app.isPending, owner, repo);
+  console.log('[GitHubOwnerRepo]', app.isPending, owner, repo);
 
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
@@ -152,7 +152,6 @@ const GitHubOwnerRepo = () => {
     (updatedText) => {
       log.info('modified');
       console.log('onModified');
-      setStatus('modified');
       setWarnDialog(true);
     },
     [setWarnDialog],
@@ -186,28 +185,22 @@ const GitHubOwnerRepo = () => {
     //   });
   }
 
-
-  const onError = (num:number)=>{
-    console.log('onError',num);
+  const onLogging = (num: number) => {
+    console.log('onLogging', num);
     // TODO: ログが追加されたらLogViewを表示する。 手動で大きさを変えたあとでも対応できるようにする。
-  }
+  };
 
   return (
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <RepositoryContextProvider owner={owner} repo={repo}>
           <PreviewSourceContextProvider>
-            <UI.Box
-              height={'calc(100vh - 4rem)'}
-              // backgroundColor={'rgba(0,1,0,0.8)'}
-            >
+            <UI.Box height={'calc(100vh - 4rem)'}>
               {/* Wrapper  サイズ固定*/}
               <MenuBar
-                status={status}
                 isProcessing={isProcessing}
                 isPresentationMode={isPresentationMode}
                 setPresentationMode={setPresentationMode}
-                setStatus={setStatus}
                 setWarnDialog={setWarnDialog}
                 onBuildPDFButtonClicked={onBuildPDFButtonClicked}
               />
@@ -243,9 +236,7 @@ const GitHubOwnerRepo = () => {
                       {isPresentationMode ? null : <ReflexSplitter />}
                       {isPresentationMode ? null : (
                         <ReflexElement className="middle-pane">
-                          <UI.Box
-                            height={'100%'}
-                          >
+                          <UI.Box height={'100%'}>
                             <MarkdownEditor {...{onModified}} />
                           </UI.Box>
                         </ReflexElement>
@@ -262,22 +253,12 @@ const GitHubOwnerRepo = () => {
                   <ReflexSplitter />
 
                   <ReflexElement className="bottom-pane" minSize={0} flex={0}>
-                    <LogView onError={onError}/>
+                    <LogView onLogging={onLogging} />
                   </ReflexElement>
                 </ReflexContainer>
                 {/* Main */}
               </UI.Box>
-              <UI.Box
-                color={'white'}
-                width={'100vw'}
-                height={'1rem'}
-                backgroundColor={'gray'}
-                paddingLeft={10}
-                fontSize={'0.5rem'}
-              >
-                {/* footer */}
-                Vivliostyle Pub ver.0.0.0
-              </UI.Box>
+              <Footer />
               {/* Wrapper */}
             </UI.Box>
           </PreviewSourceContextProvider>
