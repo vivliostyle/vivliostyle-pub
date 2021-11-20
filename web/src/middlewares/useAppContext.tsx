@@ -8,7 +8,7 @@ import {Header} from '@components/Header';
 const provider = new GithubAuthProvider();
 
 
-export type App = {
+export type AppContext = {
     user:User|null;
     isPending:boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
     signIn:()=>void;
@@ -20,7 +20,7 @@ export type App = {
 type Actions = 
 | { type:'setUser'; user:User|null; };
 
-const AppContext = createContext({} as App);
+const AppContext = createContext({} as AppContext);
 
 export function useAppContext() {
     return useContext(AppContext);
@@ -84,7 +84,7 @@ export function AppContextProvider({children}:{children:JSX.Element}){
     /**
      * 初期値
      */
-    const [state] = useState<App>({
+    const [state] = useState<AppContext>({
         user: null,
         isPending: true,
         signIn: signIn,
@@ -94,7 +94,7 @@ export function AppContextProvider({children}:{children:JSX.Element}){
     /**
      * 
      */
-    const reducer = (state: App, action:Actions):App => {
+    const reducer = (state: AppContext, action:Actions):AppContext => {
         switch(action.type) {
             case 'setUser':
                 return {...state,user:action.user,isPending:false};

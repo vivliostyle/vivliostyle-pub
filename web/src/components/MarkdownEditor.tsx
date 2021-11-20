@@ -2,8 +2,8 @@ import React, {useMemo} from 'react';
 import Editor from '@monaco-editor/react';
 import {FileState, getExt, isEditableFile} from '@middlewares/frontendFunctions';
 import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
-import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import * as UI from '@components/ui';
+import { usePreviewSourceContext } from '@middlewares/usePreviewSourceContext';
 
 
 export const MarkdownEditor = ({
@@ -13,8 +13,9 @@ export const MarkdownEditor = ({
 }) => {
   // Repositoryコンテキストのカレントファイルが変化したらリロード
   // CurrentFileコンテクストが変化してもリロードしない
-  const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
+  const previewSource = usePreviewSourceContext();
+
   console.log('[Editor]', currentFile);
 
   /**
@@ -55,6 +56,7 @@ export const MarkdownEditor = ({
    */
   const onChange = (value: string | undefined, event: any) => {
     onModified(value ?? '');
+    previewSource.modifyText(value ?? null);
   };
 
   const display = currentFile.state == FileState.none ? 'block' : 'none';

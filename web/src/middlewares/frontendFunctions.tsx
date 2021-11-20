@@ -18,7 +18,7 @@ const VPUBFS_ROOT = '/vpubfs';
  * @param value 
  * @returns 
  */
-const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
+export const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
 /**
  * エディタで編集可能なファイルか
@@ -121,6 +121,7 @@ export async function readFileContent({
 }: RepositoryPath,file:FileEntry): Promise<string| null> {
   console.log('readFileContent',file);
   if (!(user && owner && repo && branch && file && file.path)) {
+    console.log('readFileContent context error',user, owner, repo, branch, file);
     return null;
   }
   // WebAPIにアクセスしてsessionIDを取得
@@ -135,6 +136,7 @@ export async function readFileContent({
       },
     },
   ).then((r) => {
+    console.log('readFileContent status',r.status);
     if (r.status === 200) {
       return r.json();
     } else if (r.status === 400) {
@@ -144,12 +146,14 @@ export async function readFileContent({
     } else if (r.status === 405) {
       throw new Error('github access error');
     }
+  }).catch((err)=>{
+    console.log('readFileContent error',err.message);
   });
 
   const sessionRef = doc(db, 'users', user.uid, 'sessions', id);
   const session = await getDoc(sessionRef);
   const data = session.data();
-  console.log('data',data);
+  console.log('readFileContent result',data);
   if (!data) {
     return null;
   }

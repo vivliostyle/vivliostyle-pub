@@ -12,7 +12,7 @@ import {Previewer} from '@components/MarkdownPreviewer';
 
 import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
-import {PreviewSourceContextProvider} from '@middlewares/usePreviewSourceContext';
+import {PreviewSourceContextProvider, usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
@@ -56,9 +56,10 @@ function useBuildStatus(
  * @returns
  */
 const GitHubOwnerRepo = () => {
+  const router = useRouter();
+
   const log = useLogContext();
   const app = useAppContext();
-  const router = useRouter();
 
   // check login
   useEffect(() => {
@@ -84,7 +85,7 @@ const GitHubOwnerRepo = () => {
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
 
-  const [status, setStatus] = useState<FileState>('init');
+  const [status, setStatus] = useState<FileState>(FileState.init);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   // const toast = useToast();
@@ -150,7 +151,6 @@ const GitHubOwnerRepo = () => {
 
   const onModified = useCallback(
     (updatedText) => {
-      log.info('modified');
       console.log('onModified');
       setWarnDialog(true);
     },
@@ -194,7 +194,6 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <RepositoryContextProvider owner={owner} repo={repo}>
-          <PreviewSourceContextProvider>
             <UI.Box height={'calc(100vh - 4rem)'}>
               {/* Wrapper  サイズ固定*/}
               <MenuBar
@@ -214,6 +213,7 @@ const GitHubOwnerRepo = () => {
                   windowResizeAware={true}
                 >
                   <ReflexElement className="top-pane" flex={1.0}>
+                  <PreviewSourceContextProvider>
                     <ReflexContainer
                       orientation="vertical"
                       windowResizeAware={true}
@@ -248,6 +248,7 @@ const GitHubOwnerRepo = () => {
                         </UI.Box>
                       </ReflexElement>
                     </ReflexContainer>
+                    </PreviewSourceContextProvider>
                   </ReflexElement>
 
                   <ReflexSplitter />
@@ -261,7 +262,6 @@ const GitHubOwnerRepo = () => {
               <Footer />
               {/* Wrapper */}
             </UI.Box>
-          </PreviewSourceContextProvider>
         </RepositoryContextProvider>
       ) : null}
     </UI.Box>

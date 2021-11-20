@@ -1,4 +1,3 @@
-import { StatHelpText } from '@chakra-ui/stat';
 import React, {
   createContext,
   useCallback,
@@ -9,12 +8,8 @@ import React, {
 } from 'react';
 import {
   fetchBranches,
-  isEditableFile,
   FileEntry,
   fetchFiles,
-  readFileContent,
-  FileState,
-  CurrentFile,
 } from './frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {CurrentFileContextProvider} from './useCurrentFileContext';
@@ -22,7 +17,7 @@ import {useLogContext} from './useLogContext';
 import {useVivlioStyleConfig} from './useVivliostyleConfig';
 import {CoreProps} from './vivliostyle.config';
 
-type Repository = {
+export type Repository = {
   owner: string | null;
   repo: string | null;
   currentBranch: string | null;

@@ -1,5 +1,5 @@
 import {createContext, useCallback, useContext, useEffect, useReducer} from 'react';
-import {CurrentFile, FileEntry, FileState, isEditableFile, readFileContent} from './frontendFunctions';
+import {CurrentFile, FileEntry, FileState, getExt, isEditableFile, readFileContent} from './frontendFunctions';
 import { useAppContext } from './useAppContext';
 import {useLogContext} from './useLogContext';
 import { useRepositoryContext } from './useRepositoryContext';
@@ -68,7 +68,7 @@ export function CurrentFileContextProvider({
           // ここでfile.textを更新するとフィードバックループが発生する?
           // monaco-edtitorのdefaultValueに指定するなら大丈夫か?
           // currentFile.text = action.text;
-          return {...state, state: FileState.modified};
+          return {...state, state: FileState.modified, text:action.text};
         case 'setFile':
           console.log('setFile',action);
           // 同じファイルを選択した場合何もしない
@@ -103,7 +103,11 @@ export function CurrentFileContextProvider({
           )
             .then((content) => {
               console.log('dispatch setFileCallback', seq,action.file,content);
-              dispatch({type: 'setFileCallback', seq, file:action.file, content:content??'none'});
+              if(!content) {
+                log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : '+content);
+                return state;
+              }
+              dispatch({type: 'setFileCallback', seq, file:action.file, content:content });
             })
             .catch((err) => {
               log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : ' + err.message);
@@ -127,7 +131,7 @@ export function CurrentFileContextProvider({
         //     // }
         //     // previewSource.changeFile(path, file.text);
             onReady(action.file);
-            return {...state, state:FileState.init, file: action.file, text: action.content /*action.file.file*/};
+            return {...state, state:FileState.init, file: action.file, text: action.content, ext: getExt(action.file.path) /*action.file.file*/};
           } else {
             // ファイル情報が取得できなかった
             console.error('file not found');
@@ -137,7 +141,7 @@ export function CurrentFileContextProvider({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [app,repository],
   );
   const [context, dispatch] = useReducer(reducer, initialState);
 

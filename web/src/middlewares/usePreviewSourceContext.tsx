@@ -5,10 +5,8 @@ import {
   useReducer,
   Dispatch,
   useEffect,
-  useMemo,
   useCallback,
 } from 'react';
-import {stringify} from '@vivliostyle/vfm';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
 import {
@@ -21,9 +19,10 @@ import {useRepositoryContext} from './useRepositoryContext';
 import path from 'path';
 import {useAppContext} from './useAppContext';
 import {Theme} from 'theme-manager';
-import repos from 'pages/api/github/repos';
+import { useCurrentFileContext } from './useCurrentFileContext';
+import { pickupCSSResources, processTheme, transpileMarkdown, VPUBFS_ROOT } from './previewFunctions';
+import { useLogContext } from './useLogContext';
 
-const VPUBFS_ROOT = '/vpubfs';
 
 /**
  * URLか判定
@@ -131,9 +130,16 @@ export function PreviewSourceContextProvider({
   children: JSX.Element;
 }) {
   let dispatcher: Dispatch<Actions> | undefined;
+  const log = useLogContext();
   const app = useAppContext();
   const repository = useRepositoryContext();
+  const currentFile = useCurrentFileContext();
 
+  useEffect(()=>{
+    console.log('modifiedText',currentFile.text);
+  },[currentFile.text]);
+
+  console.log('[PreviewSourceContext]',currentFile);
   /**
    * ファイルをリポジトリにコミットする
    * @param session
@@ -160,24 +166,34 @@ export function PreviewSourceContextProvider({
   const changeTheme = (theme: Theme | null) => {
     console.log('changeTheme', theme, app.user);
     if (theme) {
-      processTheme(theme.files[0]);
+      processTheme(app,repository,theme.files[0])
+      .then((themePath)=>{
+        // 準備が終わったら状態を変化させる
+        if (dispatcher) {
+          dispatcher({type: 'changeThemeCallback', theme: themePath});
+        }
+      })
+      .catch((err)=>{
+        log.error(`テーマの準備に失敗しました(${theme.style}) : ${err.message}`);
+      });
     } else {
       // TODO: テーマのリセット
     }
   };
+
   /**
    * テキストを更新する
    * @param text
    */
-  const modifyText = (text: string | null) => {
-    console.log('modifieText', text);
+  const modifyText = useCallback((text: string | null) => {
+    // console.log('preview modifyText', text);
     dispatch({type: 'modifyText', text});
-  };
+  },[]);
 
   /**
    * 初期値
    */
-  const [state] = useState<PreviewSource>({
+  const initialState = {
     // properties
     path: null,
     vpubPath: null,
@@ -185,48 +201,11 @@ export function PreviewSourceContextProvider({
     theme: null,
     stylePath: null,
     // methods
-    changeFile: changeFile,
-    changeTheme: changeTheme,
-    modifyText: modifyText,
+    changeFile,
+    changeTheme,
+    modifyText,
     commit: commit,
-  });
-
-  /**
-   * HTMLからアプリケーションキャッシュの対象になるファイルのリストアップ
-   * @param text
-   * @returns
-   */
-  const pickupHtmlResources = (text: string): string[] => {
-    const imagePaths = [] as string[];
-    const parser = new DOMParser();
-    // アプリケーションキャッシュの対象になる画像ファイルの取得
-    parser
-      .parseFromString(text, 'text/html')
-      .querySelectorAll('img')
-      .forEach((element) => {
-        const src = element.getAttribute('src');
-        if (src && !isURL(src)) imagePaths.push(src);
-      });
-    // TODO: link要素によるCSSファイルも扱う
-
-    return imagePaths;
-  };
-
-  /**
-   * CSSからアプリケーションキャッシュの対象になるファイルのリストアップ
-   * @param text
-   * @returns
-   */
-  const pickupCSSResources = (text: string): string[] => {
-    // TODO: パースして取り出す エラー処理も重要
-    // const ast = parse(text);
-
-    const imagePaths = Array.from(
-      text.matchAll(/url\("?(.+?)"?\)/g),
-      (m) => m[1],
-    );
-    return imagePaths;
-  };
+  } as PreviewSource;
 
   /**
    * MarkDownファイルをHTMLに変換する
@@ -236,68 +215,46 @@ export function PreviewSourceContextProvider({
    */
   const transpile = useCallback(
     (srcPath: string, text: string): void => {
-      if (srcPath && text && srcPath.endsWith('.md')) {
-        srcPath = srcPath.replace(/\.md$/, '.html');
-        text = stringify(text);
-      }
-      console.log('transpiled', srcPath, '\n' /*, text*/);
-      if (srcPath.endsWith('.html')) {
-        const imagePaths = pickupHtmlResources(text);
-        Promise.all(
-          imagePaths.map((imagePath) =>
-            updateCacheFromPath(
-              repository.owner!,
-              repository.repo!,
-              repository.currentBranch!,
-              srcPath!,
-              imagePath,
-              app.user!,
-            ),
-          ),
-        ).catch((error) => {
-          if (error.message.startsWith('403:')) {
-            console.error(error.message);
-            // toast({
-            //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
-            //   status: "error"
-            // });
-          }
+      (async ()=>{
+        await transpileMarkdown(app,repository,srcPath, text)
+        .then(({vPubPath, text})=>{
+          // 準備が終わったら状態を変化させる
+          console.log('call dispatcher', dispatch);
+          dispatch({
+            type: 'changeFileCallback',
+            path: srcPath,
+            vPubPath: vPubPath,
+            text: text,
+          });        
+        })
+        .catch((err)=>{
+          log.error('プレビュー変換に失敗しました('+srcPath+') ： ' + err.message );
         });
-        console.log('imagePaths', imagePaths);
-      }
-      updateCache(srcPath, text).then(() => {});
-      const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
-      // 準備が終わったら状態を変化させる
-      console.log('call dispatcher', dispatcher);
-      dispatch({
-        type: 'changeFileCallback',
-        path: srcPath,
-        vPubPath: vPubPath,
-        text: text,
-      });
+      })();
     },
-    [
-      app.user,
-      dispatcher,
-      repository.currentBranch,
-      repository.owner,
-      repository.repo,
-    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [app, repository],
   );
 
   /**
    * エディタの更新チェック
    */
   useEffect(() => {
-    console.log('編集対象が変更された', repository.currentFile);
-    if (
-      repository.currentFile?.path &&
-      isEditableFile(repository.currentFile?.path)
-    ) {
-      console.log('編集対象ファイルは編集可能');
-      transpile(repository.currentFile.path, repository.currentFile.text);
+    console.log('編集対象が変更された', currentFile);
+    if(currentFile.file) {
+      if (
+        currentFile.file.path &&
+        isEditableFile(currentFile.file.path) &&
+        (currentFile.ext == 'md' || currentFile.ext == 'html')
+      ) {
+        console.log('編集対象ファイルはプレビュー可能');
+        transpile(currentFile.file.path, currentFile.text);
+      } else {
+        console.log('編集対象ファイルはプレビュー不可');
+      }
     }
-  }, [repository.currentFile, transpile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFile]);
 
   const fetchTheme = () => {
     const VPUBFS_CACHE_NAME = 'vpubfs';
@@ -319,51 +276,6 @@ export function PreviewSourceContextProvider({
     })();
   };
 
-  /**
-   * テーマの準備
-   */
-  const processTheme = (path: string) => {
-    if (app.user && path && !isURL(path)) {
-      (async () => {
-        const content = await getFileContentFromGithub(
-          repository.owner!,
-          repository.repo!,
-          repository.currentBranch!,
-          path,
-          app.user!,
-        );
-        if ('content' in content) {
-          const stylesheet = content.content;
-          await updateCache(path, stylesheet);
-          const imagesOfStyle = pickupCSSResources(stylesheet);
-          await Promise.all(
-            imagesOfStyle.map((imageOfStyle) =>
-              updateCacheFromPath(
-                repository.owner!,
-                repository.repo!,
-                repository.currentBranch!,
-                stylesheet,
-                imageOfStyle,
-                app.user!,
-              ),
-            ),
-          ).catch((error) => {
-            if (error.message.startsWith('403:')) {
-              console.error(error);
-              // toast({
-              //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
-              //   status: "error"
-              // });
-            }
-          });
-        }
-        // 準備が終わったら状態を変化させる
-        if (dispatcher) {
-          dispatcher({type: 'changeThemeCallback', theme: path});
-        }
-      })();
-    }
-  };
 
   /**
    * 処理のディスパッチ
@@ -374,7 +286,7 @@ export function PreviewSourceContextProvider({
   const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
       case 'changeFileCallback': // ドキュメントの準備が完了
-        console.log('changeFileCallback', action.vPubPath);
+        console.log('changeFileCallback', action.vPubPath, action.text);
         return {
           ...state,
           path: action.path,
@@ -391,6 +303,21 @@ export function PreviewSourceContextProvider({
         }
         return {...state, theme: action.theme!, stylePath};
       case 'modifyText': // テキストが変更された
+        console.log('modified');
+        transpileMarkdown(app, repository, state.path!, action.text!)
+        .then(({vPubPath, text})=>{
+          // 準備が終わったら状態を変化させる
+          console.log('call dispatcher', dispatch, text);
+          dispatch({
+            type: 'changeFileCallback',
+            path: state.path,
+            vPubPath: vPubPath,
+            text: text,
+          });        
+        })
+        .catch((err)=>{
+          log.error('プレビュー変換に失敗しました('+state.path+') ： ' + err.message );
+        });
         return {...state, text: action.text};
       case 'commit': // コミット
         commit(action.session!, action.branch);
@@ -398,10 +325,12 @@ export function PreviewSourceContextProvider({
     }
   };
 
-  const [previewTarget, dispatch] = useReducer(reducer, state);
+  const [previewSource, dispatch] = useReducer(reducer, initialState);
+
+  console.log('PreviewSourceContext source',previewSource);
 
   return (
-    <PreviewSourceContext.Provider value={previewTarget}>
+    <PreviewSourceContext.Provider value={previewSource}>
       {children}
     </PreviewSourceContext.Provider>
   );
