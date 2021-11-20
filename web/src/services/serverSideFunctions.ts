@@ -1,6 +1,21 @@
-import firebase from './firebase';
+import {NextApiRequest, NextApiResponse} from 'next';
+import firebaseAdmin from '@services/firebaseAdmin';
+import {decrypt} from '@utils/encryption';
+import { User } from 'firebase/auth';
 
-type RepositoryPath = {
+/**
+ * 
+ */
+export type Repositry = {
+  owner: string;
+  repo: string;
+  branch: string;
+}
+
+/**
+ * 
+ */
+export type RepositoryPath = {
   user: User | null;
   owner: string | undefined;
   repo: string | undefined;
@@ -8,6 +23,11 @@ type RepositoryPath = {
   path: string;
 };
 
+/**
+ * 
+ * @param file 
+ * @returns 
+ */
 const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
     const reader = new FileReader()
     return new Promise((resolve, reject) => {
@@ -17,6 +37,12 @@ const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
     })
   }
 
+  /**
+   * リポジトリにファイルを追加する
+   * @param param0 
+   * @param data 
+   * @returns 
+   */
 export async function createFile(
   {user, owner, repo, branch, path}: RepositoryPath,
   data: File,
@@ -48,27 +74,28 @@ export async function createFile(
 }
 
 
-import {NextApiHandler, NextApiRequest, NextApiResponse} from 'next';
-import firebaseAdmin from '@services/firebaseAdmin';
-import {decrypt} from '@utils/encryption';
-import { User } from 'firebase/auth';
-
-export async function getDecryptedId(req:NextApiRequest,res:NextApiResponse){
-    const idToken = req.headers['x-id-token'];
-    if (!idToken) {
-      return res.status(401).send(null);
-    }
-    let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
-    try {
-      const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
-      idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
-    } catch (error) {
-      return res.status(400).send(null);
-    }
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+// export async function getDecryptedId(req:NextApiRequest,res:NextApiResponse){
+//     const idToken = req.headers['x-id-token'];
+//     if (!idToken) {
+//       return res.status(401).send(null);
+//     }
+//     let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
+//     try {
+//       const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
+//       idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
+//     } catch (error) {
+//       return res.status(400).send(null);
+//     }
   
-    if (!idTokenDecoded?.githubAccessToken) {
-      return res.status(405).send(null);
-    }
-    const decrypted = decrypt(idTokenDecoded.githubAccessToken);
-    return decrypted;
-  }
+//     if (!idTokenDecoded?.githubAccessToken) {
+//       return res.status(405).send(null);
+//     }
+//     const decrypted = decrypt(idTokenDecoded.githubAccessToken);
+//     return decrypted;
+//   }
