@@ -35,7 +35,7 @@
     "react-split-pane": "^2.0.3",
     "scss-parser": "^1.0.5",
     "swr": "^1.0.1",
-    "theme-manager": "https://github.com/AyumuTakai/thememanager.git"
+    "theme-manager": "packages/theme-manager"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",

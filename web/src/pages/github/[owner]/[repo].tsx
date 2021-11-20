@@ -193,6 +193,7 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <RepositoryContextProvider owner={owner} repo={repo}>
+          <PreviewSourceContextProvider>
             <UI.Box height={'calc(100vh - 4rem)'}>
               {/* Wrapper  サイズ固定*/}
               <MenuBar
@@ -212,7 +213,6 @@ const GitHubOwnerRepo = () => {
                   windowResizeAware={true}
                 >
                   <ReflexElement className="top-pane" flex={1.0}>
-                  <PreviewSourceContextProvider>
                     <ReflexContainer
                       orientation="vertical"
                       windowResizeAware={true}
@@ -247,7 +247,6 @@ const GitHubOwnerRepo = () => {
                         </UI.Box>
                       </ReflexElement>
                     </ReflexContainer>
-                    </PreviewSourceContextProvider>
                   </ReflexElement>
 
                   <ReflexSplitter />
@@ -261,6 +260,7 @@ const GitHubOwnerRepo = () => {
               <Footer />
               {/* Wrapper */}
             </UI.Box>
+            </PreviewSourceContextProvider>
         </RepositoryContextProvider>
       ) : null}
     </UI.Box>

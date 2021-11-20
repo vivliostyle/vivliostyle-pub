@@ -205,6 +205,9 @@ export async function getFileContentFromGithub(
       },
     },
   ).then((r) => {
+    r.text().then((text)=>{
+      console.log('return text',text);
+    });
     if (r.status === 403) {
       throw new Error(`403:${path}`);
     }

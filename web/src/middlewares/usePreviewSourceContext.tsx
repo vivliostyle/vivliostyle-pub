@@ -1,9 +1,7 @@
 import {
   createContext,
-  useState,
   useContext,
   useReducer,
-  Dispatch,
   useEffect,
   useCallback,
 } from 'react';
@@ -11,10 +9,7 @@ import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
 import {
   FileState,
-  getFileContentFromGithub,
   isEditableFile,
-  updateCache,
-  updateCacheFromPath,
 } from './frontendFunctions';
 import {useRepositoryContext} from './useRepositoryContext';
 import path from 'path';
@@ -22,8 +17,8 @@ import {useAppContext} from './useAppContext';
 import {Theme} from 'theme-manager';
 import {useCurrentFileContext} from './useCurrentFileContext';
 import {
-  pickupCSSResources,
   processTheme,
+  processThemeString,
   transpileMarkdown,
   VPUBFS_ROOT,
 } from './previewFunctions';
@@ -65,7 +60,7 @@ export type PreviewSource = {
   stylePath: string | null; // viewer.jsのstyle= に渡すパス
   // パブリック メソッドに相当
   changeFile: (path: string | null, text: string | null) => void;
-  changeTheme: (text: Theme | null) => void;
+  changeTheme: (theme: Theme | null) => void;
   modifyText: (text: string | null) => void;
   commit: (
     session: DocumentReference<DocumentData> | undefined,
@@ -108,7 +103,6 @@ export function PreviewSourceContextProvider({
 }: {
   children: JSX.Element;
 }) {
-  let dispatcher: Dispatch<Actions> | undefined;
   const log = useLogContext();
   const app = useAppContext();
   const repository = useRepositoryContext();
@@ -118,16 +112,18 @@ export function PreviewSourceContextProvider({
     console.log('modifiedText', currentFile.text);
   }, [currentFile.text]);
 
-  console.log('[PreviewSourceContext]', currentFile);
+  console.log('[PreviewSourceContext]', currentFile, repository);
   /**
    * ファイルをリポジトリにコミットする
    * @param session
    * @param branch
    */
-  const commit = async (
+  const commit = useCallback((
     session: DocumentReference<DocumentData> | undefined,
     branch: string | undefined,
-  ) => {};
+  ) => {
+
+  },[]);
   /**
    * 対象となるファイルを切り替える
    * @param path
@@ -142,27 +138,38 @@ export function PreviewSourceContextProvider({
    * TODO: CSS単体ファイルだけではなく、テーマオブジェクトを扱えるようにする。
    * @param theme
    */
-  const changeTheme = (theme: Theme | null) => {
-    console.log('changeTheme', theme, app.user);
+  const changeTheme = useCallback((theme: Theme | null) => {
     if (theme) {
-      processTheme(app, repository, theme.files[0])
+      processThemeString(app, repository, theme)
         .then((themePath) => {
           // 準備が終わったら状態を変化させる
-          if (dispatcher) {
-            dispatcher({type: 'changeThemeCallback', theme: themePath});
+          if (dispatch) {
+            dispatch({type: 'changeThemeCallback', theme: themePath});
           }
         })
         .catch((err) => {
-          log.error(
-            `テーマの準備に失敗しました(${theme.style}) : ${err.message}`,
-            3000
-          );
+          if (err.message.startsWith('403:')) {
+            console.error(err);
+            log.error("file size too large : " + err.message.split(':')[1], 3000);
+          }else{
+            console.log(err);
+            log.error(
+              `テーマの準備に失敗しました(${theme.style}) : ${err.message}`,
+              3000
+            );  
+          }
+
         });
     } else {
       // TODO: テーマのリセット
+      log.warning('テーマが指定されていません', 1000);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[app, repository]);
 
+  /**
+   * プレビューを更新
+   */
   const updatePreview = () => {
     if (currentFile.file && currentFile.text) {
       console.log('onUpdate');
@@ -263,25 +270,7 @@ export function PreviewSourceContextProvider({
     REFRESH_MS,
   );
 
-  const fetchTheme = () => {
-    const VPUBFS_CACHE_NAME = 'vpubfs';
-    const VPUBFS_ROOT = '/vpubfs';
-    (async () => {
-      // const cache = await caches.open(VPUBFS_CACHE_NAME);
-      // const file: File = new File([theme.files[theme.style]], theme.style);
-      // const headers = new Headers();
-      // headers.append('content-type', 'text/css');
-      // const stylesheetPath = `${theme.name}/${theme.style}`;
-      // const vpubfsPath = `${VPUBFS_ROOT}/${stylesheetPath}`;
-      // await cache.delete(new Request(vpubfsPath));
-      // await cache.put(
-      //   vpubfsPath,
-      //   new Response(theme.files[theme.style], {headers}),
-      // );
-      // previewSource.changeTheme(stylesheetPath);
-      // setStylesheet(stylesheetPath);
-    })();
-  };
+
 
   /**
    * 処理のディスパッチ
@@ -289,7 +278,7 @@ export function PreviewSourceContextProvider({
    * @param action
    * @returns
    */
-  const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
+  const reducer = useCallback((state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
       case 'changeFileCallback': // ドキュメントの準備が完了
         console.log('changeFileCallback', action.vPubPath /*, action.text */);
@@ -335,7 +324,7 @@ export function PreviewSourceContextProvider({
         commit(action.session!, action.branch);
         return state;
     }
-  };
+  },[app]);
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);
 

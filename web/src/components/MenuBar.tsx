@@ -11,7 +11,6 @@ import {useAppContext} from '@middlewares/useAppContext';
 import {Theme, ThemeManager} from 'theme-manager';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
-import { FileState } from '@middlewares/frontendFunctions';
 
 const GitHubAccessToken: string | null =
   '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';
@@ -59,9 +58,9 @@ export function MenuBar({
    * スタイルシートが変更された
    * @param theme
    */
-  function onThemeSelected(theme: Theme) {
+  const onThemeSelected = useCallback((theme: Theme)=>{
     previewSource.changeTheme(theme);
-  }
+  },[]);
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
