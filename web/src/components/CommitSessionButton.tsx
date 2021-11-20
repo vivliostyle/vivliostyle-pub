@@ -1,5 +1,6 @@
+import { FileState } from '@middlewares/frontendFunctions';
 import { useAppContext } from '@middlewares/useAppContext';
-import { useModifiedTextContext } from '@middlewares/useModifiedTextContext';
+import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
 import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
@@ -11,27 +12,27 @@ export const CommitSessionButton = ({
 }) => {
   const app = useAppContext();
   const repository = useRepositoryContext();
-  const modifiedText = useModifiedTextContext();
+  const currentFile = useCurrentFileContext();
   const [busy, setBusy] = useState(false);
   const onClick = useCallback(() => {
-    (async () => {
-      setBusy(true);
-      try {
-        await modifiedText.commit(repository.currentFile?.session,repository.currentBranch!,app.user!);
-        console.log('commit end');
-        onDidSaved();
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setBusy(false);
-      }
-    })();
-  }, [modifiedText, repository.currentFile?.session, repository.currentBranch, app.user, onDidSaved]);
+    // (async () => {
+    //   setBusy(true);
+    //   try {
+    //     await modifiedText.commit(repository.currentFile?.session,repository.currentBranch!,app.user!);
+    //     console.log('commit end');
+    //     onDidSaved();
+    //   } catch (error) {
+    //     console.error(error);
+    //   } finally {
+    //     setBusy(false);
+    //   }
+    // })();
+  }, []);
 
   return (
     <UI.Button
       {...{ onClick }}
-      disabled={!(repository.currentFile?.state == 'saved' || repository.currentFile?.state == 'modified')}
+      disabled={!(currentFile?.state == FileState.saved || currentFile?.state == FileState.modified)}
       isLoading={busy}
       loadingText="Saving document"
     >
