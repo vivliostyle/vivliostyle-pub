@@ -151,7 +151,6 @@ const GitHubOwnerRepo = () => {
 
   const onModified = useCallback(
     (updatedText) => {
-      console.log('onModified');
       setWarnDialog(true);
     },
     [setWarnDialog],
