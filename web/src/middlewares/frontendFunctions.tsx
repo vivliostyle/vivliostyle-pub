@@ -342,7 +342,7 @@ export const fetchFiles = async (
     branch: string,
     tree_sha: string,
   ): Promise<FileEntry[]> => {
-    console.log('fetchFiles', owner, repo, branch);
+    // console.log('fetchFiles', owner, repo, branch);
     if (!owner || !repo || !branch) {
       return [];
     }
@@ -363,9 +363,9 @@ export const fetchFiles = async (
         },
       );
       const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-      console.log('data', data.tree);
+      // console.log('data', data.tree);
       const files = data.tree.map((tree) => {
-        console.log(tree);
+        // console.log(tree);
         return tree as FileEntry;
       });
       // console.log('files',files);
