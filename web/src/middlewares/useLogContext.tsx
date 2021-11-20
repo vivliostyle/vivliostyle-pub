@@ -7,6 +7,7 @@ import {
   useReducer,
   useState,
 } from 'react';
+import { useToast } from "@chakra-ui/react"
 
 type LogEntry = {
   timestamp: number;
@@ -15,8 +16,10 @@ type LogEntry = {
 };
 
 type Log = {
-  info: (message: string) => void;
-  error: (message: string) => void;
+  info: (message: string, toastDuration?: number) => void;
+  error: (message: string, toastDuration?: number) => void;
+  success: (message: string, toastDuration?: number) => void;
+  warning: (message: string, toastDuration?: number) => void;
   clear: () => void;
 };
 
@@ -52,7 +55,7 @@ export function useLogBufferContext() {
   return useContext(LogBufferContext);
 }
 
-type MessageType = 'info' | 'error' | 'success' | 'warning';
+type MessageType ="info" | "warning" | "success" | "error" | undefined;
 
 /**
  * LogContextProviderコンポーネント
@@ -60,31 +63,51 @@ type MessageType = 'info' | 'error' | 'success' | 'warning';
  * @returns
  */
 export function LogContextProvider({children}: {children: JSX.Element}) {
+  const toast = useToast();
+
   const [buf, setBuf] = useState<LogEntry[]>([]);
   console.log('relroad buf', buf);
 
   const createEntry = useCallback(
     (type: MessageType, message: string): LogEntry => {
-      return {type, message, timestamp: Date.now()};
+      // type指定がundefinedならとりあえず'info'にする
+      return {type:type??'info', message, timestamp: Date.now()};
     },
     [],
   );
 
-  const info = useCallback((message: string) => {
-    const entry = createEntry('info', message);
-    console.log('info buf', buf);
+  const logging = useCallback((status:MessageType, message:string, toastDuration: number | null = 0) => { 
+    if(toastDuration && toastDuration > 0) {
+      toast({
+        title: message,
+        status: status,
+        duration: toastDuration
+      })  
+    }
+    const entry = createEntry(status, message);
     dispatch({type: 'logging', entries: buf, entry, setBuf});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  const info = useCallback((message: string, toastDuration: number | null = 0) => {
+    logging('info', message, toastDuration);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const error = useCallback(
-    (message: string) => {
-      const entry = createEntry('error', message);
-      console.log('error buf', buf);
-      dispatch({type: 'logging', entries: buf, entry, setBuf});
-    },
-    [buf, createEntry],
-  );
+  const warning = useCallback((message: string, toastDuration: number | null = 0) => {
+    logging('warning', message, toastDuration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  const success = useCallback((message: string, toastDuration: number | null = 0) => {
+    logging('success', message, toastDuration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  const error = useCallback((message: string, toastDuration: number | null = 0) => {
+      logging('error', message, toastDuration);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const clear = useCallback(() => {
     console.log('clear');
@@ -106,6 +129,8 @@ export function LogContextProvider({children}: {children: JSX.Element}) {
   const state = {
     info,
     error,
+    success,
+    warning,
     clear,
   };
   const [log, dispatch] = useReducer(reducer!, state);
