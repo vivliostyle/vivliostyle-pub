@@ -1,9 +1,9 @@
-import React, { useCallback, useState, useRef, useMemo } from 'react';
+import React, {useCallback, useState, useRef, useMemo} from 'react';
 import * as UI from './ui';
-import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { User } from 'firebase/auth';
-import { createFile } from '@services/serverSideFunctions';
-import { useLogContext } from '@middlewares/useLogContext';
+import {useRepositoryContext} from '@middlewares/useRepositoryContext';
+import {User} from 'firebase/auth';
+import {createFile} from '@services/serverSideFunctions';
+import {useLogContext} from '@middlewares/useLogContext';
 
 export const FileUploadModal = ({
   user,
@@ -21,31 +21,42 @@ export const FileUploadModal = ({
 
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const fileName = useMemo(() => {
-    if (!file) return ""
-    return file.name
-  }, [file])
+    if (!file) return '';
+    return file.name;
+  }, [file]);
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFile(e.target.files?.item(0))
+    if (e.target.files) setFile(e.target.files?.item(0));
   };
 
   const onUploadButtonClick = useCallback(() => {
     (async () => {
       if (file === null) {
         log.warning('file not selected', 3000);
-        return
+        return;
       }
       if (user === null) {
         log.warning('user not found', 3000);
-        return
+        return;
       }
-      setBusy(true)
+      setBusy(true);
       try {
-        const response = await createFile({user, owner:repository.owner!, repo:repository.repo!, branch:repository.currentBranch!, path:fileName}, file);
-        if(!response) { return; }
+        const response = await createFile(
+          {
+            user,
+            owner: repository.owner!,
+            repo: repository.repo!,
+            branch: repository.currentBranch!,
+            path: fileName,
+          },
+          file,
+        );
+        if (!response) {
+          return;
+        }
         if (response.status === 201) {
           repository.selectBranch(repository.currentBranch!); // ファイル一覧の更新
           log.success('image uploaded', 3000);
@@ -54,17 +65,17 @@ export const FileUploadModal = ({
         } else if (response.status === 413) {
           log.error('image size too large', 3000);
         } else {
-          log.error('error : ' + response.status, 3000);          
+          log.error('error : ' + response.status, 3000);
         }
-        onClose()
+        onClose();
       } catch (error) {
         console.error(error);
       } finally {
         setBusy(false);
       }
-    })()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, repository, file, fileName, onClose])
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, repository, file, fileName, onClose]);
 
   return (
     <UI.Modal isOpen={isOpen} onClose={onClose}>
@@ -73,17 +84,32 @@ export const FileUploadModal = ({
         <UI.ModalHeader>Upload Image</UI.ModalHeader>
         <UI.ModalCloseButton />
         <UI.ModalBody>
-
           <UI.InputGroup>
-            <UI.Button onClick={() => inputRef.current?.click()}>Select File</UI.Button>
-            <UI.Input placeholder="Your file ..." value={fileName} isDisabled={true} />
-            <input type='file' accept={'image/*'} ref={inputRef} style={{ display: 'none' }} onChange={onFileInputChange}></input>
+            <UI.Button onClick={() => inputRef.current?.click()}>
+              Select File
+            </UI.Button>
+            <UI.Input
+              placeholder="Your file ..."
+              value={fileName}
+              isDisabled={true}
+            />
+            <input
+              type="file"
+              accept={'image/*'}
+              ref={inputRef}
+              style={{display: 'none'}}
+              onChange={onFileInputChange}
+            ></input>
           </UI.InputGroup>
-
         </UI.ModalBody>
 
         <UI.ModalFooter>
-          <UI.Button colorScheme="blue" mr={3} onClick={onUploadButtonClick} isLoading={busy}>
+          <UI.Button
+            colorScheme="blue"
+            mr={3}
+            onClick={onUploadButtonClick}
+            isLoading={busy}
+          >
             Upload
           </UI.Button>
         </UI.ModalFooter>
