@@ -10,6 +10,7 @@ import {
 import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {parse} from 'scss-parser';
 import {
+  FileState,
   getFileContentFromGithub,
   isEditableFile,
   updateCache,
@@ -19,10 +20,14 @@ import {useRepositoryContext} from './useRepositoryContext';
 import path from 'path';
 import {useAppContext} from './useAppContext';
 import {Theme} from 'theme-manager';
-import { useCurrentFileContext } from './useCurrentFileContext';
-import { pickupCSSResources, processTheme, transpileMarkdown, VPUBFS_ROOT } from './previewFunctions';
-import { useLogContext } from './useLogContext';
-
+import {useCurrentFileContext} from './useCurrentFileContext';
+import {
+  pickupCSSResources,
+  processTheme,
+  transpileMarkdown,
+  VPUBFS_ROOT,
+} from './previewFunctions';
+import {useLogContext} from './useLogContext';
 
 /**
  * URLか判定
@@ -34,45 +39,19 @@ const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 /**
  * 遅延処理
  */
-// const REFRESH_MS = 2000;
-// function useDefferedEffect(
-//   fn: () => void,
-//   args: React.DependencyList,
-//   duration: number,
-// ) {
-//   useEffect(() => {
-//     const timer = setTimeout(() => fn(), duration);
-//     return () => {
-//       clearTimeout(timer);
-//     };
-//   }, args);
-// }
-
-/**
- * 遅延処理
- */
-// useDefferedEffect(
-//   () => {
-//     if(modifiedText.text){
-//       console.log('onUpdate');
-//       if (!session) {
-//         // console.log('same text',session ,updatedText, currentFile.text);
-//         return;
-//       }
-//       session
-//         .update({
-//           userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-//           text: modifiedText.text,
-//           state: 'update',
-//         })
-//         .then(() => {
-//           setStatus('saved');
-//         });
-//       }
-//   },
-//   [modifiedText.text],
-//   REFRESH_MS,
-// );
+const REFRESH_MS = 2000;
+function useDefferedEffect(
+  fn: () => void,
+  args: React.DependencyList,
+  duration: number,
+) {
+  useEffect(() => {
+    const timer = setTimeout(() => fn(), duration);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, args);
+}
 
 /**
  * モデルクラスのインターフェースに相当
@@ -135,11 +114,11 @@ export function PreviewSourceContextProvider({
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
-  useEffect(()=>{
-    console.log('modifiedText',currentFile.text);
-  },[currentFile.text]);
+  useEffect(() => {
+    console.log('modifiedText', currentFile.text);
+  }, [currentFile.text]);
 
-  console.log('[PreviewSourceContext]',currentFile);
+  console.log('[PreviewSourceContext]', currentFile);
   /**
    * ファイルをリポジトリにコミットする
    * @param session
@@ -166,18 +145,37 @@ export function PreviewSourceContextProvider({
   const changeTheme = (theme: Theme | null) => {
     console.log('changeTheme', theme, app.user);
     if (theme) {
-      processTheme(app,repository,theme.files[0])
-      .then((themePath)=>{
-        // 準備が終わったら状態を変化させる
-        if (dispatcher) {
-          dispatcher({type: 'changeThemeCallback', theme: themePath});
-        }
-      })
-      .catch((err)=>{
-        log.error(`テーマの準備に失敗しました(${theme.style}) : ${err.message}`);
-      });
+      processTheme(app, repository, theme.files[0])
+        .then((themePath) => {
+          // 準備が終わったら状態を変化させる
+          if (dispatcher) {
+            dispatcher({type: 'changeThemeCallback', theme: themePath});
+          }
+        })
+        .catch((err) => {
+          log.error(
+            `テーマの準備に失敗しました(${theme.style}) : ${err.message}`,
+          );
+        });
     } else {
       // TODO: テーマのリセット
+    }
+  };
+
+  const updatePreview = () => {
+    if (currentFile.file && currentFile.text) {
+      console.log('onUpdate');
+      console.log('編集対象が変更された', currentFile);
+      if (
+        currentFile.file.path &&
+        isEditableFile(currentFile.file.path) &&
+        (currentFile.ext == 'md' || currentFile.ext == 'html')
+      ) {
+        console.log('編集対象ファイルはプレビュー可能');
+        transpile(currentFile.file.path, currentFile.text);
+      } else {
+        console.log('編集対象ファイルはプレビュー不可');
+      }
     }
   };
 
@@ -187,8 +185,8 @@ export function PreviewSourceContextProvider({
    */
   const modifyText = useCallback((text: string | null) => {
     // console.log('preview modifyText', text);
-    dispatch({type: 'modifyText', text});
-  },[]);
+    // dispatch({type: 'modifyText', text});
+  }, []);
 
   /**
    * 初期値
@@ -215,21 +213,23 @@ export function PreviewSourceContextProvider({
    */
   const transpile = useCallback(
     (srcPath: string, text: string): void => {
-      (async ()=>{
-        await transpileMarkdown(app,repository,srcPath, text)
-        .then(({vPubPath, text})=>{
-          // 準備が終わったら状態を変化させる
-          console.log('call dispatcher', dispatch);
-          dispatch({
-            type: 'changeFileCallback',
-            path: srcPath,
-            vPubPath: vPubPath,
-            text: text,
-          });        
-        })
-        .catch((err)=>{
-          log.error('プレビュー変換に失敗しました('+srcPath+') ： ' + err.message );
-        });
+      (async () => {
+        await transpileMarkdown(app, repository, srcPath, text)
+          .then(({vPubPath, text}) => {
+            // 準備が終わったら状態を変化させる
+            console.log('call dispatcher', dispatch);
+            dispatch({
+              type: 'changeFileCallback',
+              path: srcPath,
+              vPubPath: vPubPath,
+              text: text,
+            });
+          })
+          .catch((err) => {
+            log.error(
+              'プレビュー変換に失敗しました(' + srcPath + ') ： ' + err.message,
+            );
+          });
       })();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -240,21 +240,26 @@ export function PreviewSourceContextProvider({
    * エディタの更新チェック
    */
   useEffect(() => {
-    console.log('編集対象が変更された', currentFile);
-    if(currentFile.file) {
-      if (
-        currentFile.file.path &&
-        isEditableFile(currentFile.file.path) &&
-        (currentFile.ext == 'md' || currentFile.ext == 'html')
-      ) {
-        console.log('編集対象ファイルはプレビュー可能');
-        transpile(currentFile.file.path, currentFile.text);
-      } else {
-        console.log('編集対象ファイルはプレビュー不可');
-      }
+    // ファイルを切り替えたときだけプレビューを更新
+    // テキストを編集した場合はuseDefferdEffectによる遅延処理を行なう
+    if (currentFile.state == FileState.init) {
+      updatePreview();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFile]);
+
+  /**
+   * 遅延処理
+   */
+  useDefferedEffect(
+    () => {
+      if (currentFile.state == FileState.modified) {
+        updatePreview();
+      }
+    },
+    [currentFile.text],
+    REFRESH_MS,
+  );
 
   const fetchTheme = () => {
     const VPUBFS_CACHE_NAME = 'vpubfs';
@@ -275,7 +280,6 @@ export function PreviewSourceContextProvider({
       // setStylesheet(stylesheetPath);
     })();
   };
-
 
   /**
    * 処理のディスパッチ
@@ -305,19 +309,24 @@ export function PreviewSourceContextProvider({
       case 'modifyText': // テキストが変更された
         console.log('modified');
         transpileMarkdown(app, repository, state.path!, action.text!)
-        .then(({vPubPath, text})=>{
-          // 準備が終わったら状態を変化させる
-          console.log('call dispatcher', dispatch, text);
-          dispatch({
-            type: 'changeFileCallback',
-            path: state.path,
-            vPubPath: vPubPath,
-            text: text,
-          });        
-        })
-        .catch((err)=>{
-          log.error('プレビュー変換に失敗しました('+state.path+') ： ' + err.message );
-        });
+          .then(({vPubPath, text}) => {
+            // 準備が終わったら状態を変化させる
+            console.log('call dispatcher', dispatch, text);
+            dispatch({
+              type: 'changeFileCallback',
+              path: state.path,
+              vPubPath: vPubPath,
+              text: text,
+            });
+          })
+          .catch((err) => {
+            log.error(
+              'プレビュー変換に失敗しました(' +
+                state.path +
+                ') ： ' +
+                err.message,
+            );
+          });
         return {...state, text: action.text};
       case 'commit': // コミット
         commit(action.session!, action.branch);
@@ -327,7 +336,7 @@ export function PreviewSourceContextProvider({
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);
 
-  console.log('PreviewSourceContext source',previewSource);
+  console.log('PreviewSourceContext source', previewSource);
 
   return (
     <PreviewSourceContext.Provider value={previewSource}>

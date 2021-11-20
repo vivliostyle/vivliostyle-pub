@@ -56,7 +56,8 @@ export const MarkdownEditor = ({
    */
   const onChange = (value: string | undefined, event: any) => {
     onModified(value ?? '');
-    previewSource.modifyText(value ?? null);
+    currentFile.modify(value??'');
+    // previewSource.modifyText(value ?? null);
   };
 
   const display = currentFile.state == FileState.none ? 'block' : 'none';
