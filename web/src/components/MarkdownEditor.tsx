@@ -7,7 +7,6 @@ import {
 } from '@middlewares/frontendFunctions';
 import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
 import * as UI from '@components/ui';
-import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 
 export const MarkdownEditor = ({
   onModified = () => {},
@@ -17,9 +16,8 @@ export const MarkdownEditor = ({
   // Repositoryコンテキストのカレントファイルが変化したらリロード
   // CurrentFileコンテクストが変化してもリロードしない
   const currentFile = useCurrentFileContext();
-  const previewSource = usePreviewSourceContext();
 
-  console.log('[Editor]', currentFile);
+  console.log('[Editor]', /* currentFile */);
 
   /**
    * シンタックスハイライティング用のファイル種別

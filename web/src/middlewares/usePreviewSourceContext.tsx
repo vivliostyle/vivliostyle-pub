@@ -292,7 +292,7 @@ export function PreviewSourceContextProvider({
   const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
     switch (action.type) {
       case 'changeFileCallback': // ドキュメントの準備が完了
-        console.log('changeFileCallback', action.vPubPath, action.text);
+        console.log('changeFileCallback', action.vPubPath /*, action.text */);
         return {
           ...state,
           path: action.path,
