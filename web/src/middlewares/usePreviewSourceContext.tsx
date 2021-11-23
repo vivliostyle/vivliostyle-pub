@@ -108,11 +108,11 @@ export function PreviewSourceContextProvider({
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
-  useEffect(() => {
-    console.log('modifiedText', currentFile.text);
-  }, [currentFile.text]);
+  // useEffect(() => {
+    // console.log('modifiedText', currentFile.text);
+  // }, [currentFile.text]);
 
-  console.log('[PreviewSourceContext]', currentFile, repository);
+  console.log('[PreviewSourceContext]', /*currentFile, repository*/);
   /**
    * ファイルをリポジトリにコミットする
    * @param session
@@ -172,17 +172,16 @@ export function PreviewSourceContextProvider({
    */
   const updatePreview = () => {
     if (currentFile.file && currentFile.text) {
-      console.log('onUpdate');
-      console.log('編集対象が変更された', currentFile);
+      // console.log('編集対象が変更された', currentFile);
       if (
-        currentFile.file.path &&
-        isEditableFile(currentFile.file.path) &&
+        currentFile.file.name &&
+        isEditableFile(currentFile.file.name) &&
         (currentFile.ext == 'md' || currentFile.ext == 'html')
       ) {
-        console.log('編集対象ファイルはプレビュー可能');
-        transpile(currentFile.file.path, currentFile.text);
+        // console.log('編集対象ファイルはプレビュー可能');
+        transpile(currentFile.file.name, currentFile.text);
       } else {
-        console.log('編集対象ファイルはプレビュー不可');
+        // console.log('編集対象ファイルはプレビュー不可');
       }
     }
   };
@@ -225,7 +224,7 @@ export function PreviewSourceContextProvider({
         await transpileMarkdown(app, repository, srcPath, text)
           .then(({vPubPath, text}) => {
             // 準備が終わったら状態を変化させる
-            console.log('call dispatcher', dispatch);
+            // console.log('call dispatcher', dispatch);
             dispatch({
               type: 'changeFileCallback',
               path: srcPath,
@@ -328,7 +327,7 @@ export function PreviewSourceContextProvider({
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);
 
-  console.log('PreviewSourceContext source', previewSource);
+  // console.log('PreviewSourceContext source', previewSource);
 
   return (
     <PreviewSourceContext.Provider value={previewSource}>

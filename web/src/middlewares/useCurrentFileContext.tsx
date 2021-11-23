@@ -1,8 +1,10 @@
-import {createContext, useCallback, useContext, useEffect, useReducer} from 'react';
-import {CurrentFile, FileEntry, FileState, getExt, isEditableFile, readFileContent} from './frontendFunctions';
+import { Dirent } from 'fs-extra';
+import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
+import { CurrentFile, FileState, getExt, isEditableFile } from './frontendFunctions';
 import { useAppContext } from './useAppContext';
-import {useLogContext} from './useLogContext';
+import { useLogContext } from './useLogContext';
 import { useRepositoryContext } from './useRepositoryContext';
+import { WebApiFs } from './WebApiFS';
 
 const CurrentFileContext = createContext({} as CurrentFile);
 
@@ -12,8 +14,8 @@ export function useCurrentFileContext() {
 
 type CurrentFileActions =
 | { type: 'modify'; text: string; }
-| { type: 'setFile'; file: FileEntry | null; }
-| { type: 'setFileCallback'; seq:number; file: FileEntry | null; content:string};
+| { type: 'setFile'; file: Dirent | null; }
+| { type: 'setFileCallback'; seq:number; file: Dirent | null; content:string};
 
 /**
  * テキスト編集ごとにかかる更新範囲を限定するため、
@@ -28,8 +30,8 @@ export function CurrentFileContextProvider({
   onReady
 }: {
   children: JSX.Element;
-  file: FileEntry | null;
-  onReady: (file:FileEntry|null)=>void;
+  file: Dirent | null;
+  onReady: (file:Dirent|null)=>void;
 }) {
   console.log('[CurrentFileContextProvider]', file,onReady);
   const app = useAppContext();
@@ -74,8 +76,8 @@ export function CurrentFileContextProvider({
           // 同じファイルを選択した場合何もしない
           // ファイルの切り替えの際にはコミットされている前提
           if (
-            (action.file == null && state.file == null) ||
-            action.file?.sha === state.file?.sha
+            (action.file == null && state.file == null)
+             // || action.file?.sha === state.file?.sha
           ) {
             return state;
           }
@@ -84,36 +86,34 @@ export function CurrentFileContextProvider({
             onReady(null);
             return {...state, file: null, state:FileState.none};
           }
-          if(action.file) {log.info('ファイルが選択されました : '+action.file?.path)};
-          if (!isEditableFile(action.file.path)) {
+          if(action.file) {log.info('ファイルが選択されました : '+action.file?.name)};
+          if (!isEditableFile(action.file.name)) {
             // 画像などのエディタで編集不可能なファイル
             // TODO: 画像ビューワー
-            log.error('編集できないファイル形式です : ' + action.file.path, 3000);
+            log.error('編集できないファイル形式です : ' + action.file.name, 3000);
             onReady(action.file);
             return {...state, state: FileState.none};
           }
-          readFileContent({
-              user: app.user,
-              owner: repository.owner!,
-              repo: repository.repo!,
-              branch: repository.currentBranch!, // TODO: なぜこれだけcurrent?
-              path:'' // TODO: 仮置き
-            },
-            action.file, // TODO: サブディレクトリに対応
-          )
-            .then((content) => {
+          WebApiFs.open({
+            user: app.user!,
+            owner: repository.owner!,
+            repo: repository.repo!,
+            branch: repository.currentBranch!, // TODO: なぜこれだけcurrent?
+          }).then((fs)=>{
+            fs.readFile(action.file?.name!)
+            .then((content)=>{
               console.log('dispatch setFileCallback', seq,action.file,content);
               if(!content) {
-                log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : '+content, 3000);
+                log.error('ファイルの取得が出来ませんでした(' + action.file?.name + ') : '+content, 3000);
                 return state;
               }
-              dispatch({type: 'setFileCallback', seq, file:action.file, content:content });
+              dispatch({type: 'setFileCallback', seq, file:action.file, content:content.toString() });
             })
-            .catch((err) => {
-              log.error('ファイルの取得が出来ませんでした(' + action.file?.path + ') : ' + err.message, 3000);
-              console.error(err);
-              onReady(action.file);
-            });
+          }).catch((err)=>{
+            log.error('ファイルの取得が出来ませんでした(' + action.file?.name + ') : ' + err.message, 3000);
+            console.error(err);
+            onReady(action.file);
+          });
           return {...state,state:FileState.none};
         case 'setFileCallback':
           console.log('setFileCallback',action);
@@ -131,7 +131,7 @@ export function CurrentFileContextProvider({
         //     // }
         //     // previewSource.changeFile(path, file.text);
             onReady(action.file);
-            return {...state, state:FileState.init, file: action.file, text: action.content, ext: getExt(action.file.path) /*action.file.file*/};
+            return {...state, state:FileState.init, file: action.file, text: action.content, ext: getExt(action.file.name) /*action.file.file*/};
           } else {
             // ファイル情報が取得できなかった
             console.error('file not found');

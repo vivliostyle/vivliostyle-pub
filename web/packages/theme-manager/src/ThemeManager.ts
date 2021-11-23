@@ -1,7 +1,8 @@
 import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
 import { PluginManager } from "../node_modules/live-plugin-manager/dist/index";
-import { GitHubIO, ThemeIO } from "./srcIO";
-import upath from "upath";
+import { Fs, GitHubFs } from "./srcIO";
+import { Theme } from ".";
+import { PackageTheme } from "./theme";
 
 let GitHubAccessToken: string | null;
 
@@ -41,165 +42,10 @@ let GitHubAccessToken: string | null;
 
 // MEMO: テーマには形式(Package,CSSファイル)と保存場所(GitHub, NPM repository, ローカルファイル, ApplicationCache)の組合せが存在する
 
-export interface Theme {
-  name: string;
-  category: string;
-  topics: string[];
-  style: string;
-  description?: string;
-  version?: string;
-  author?: string;
-  files: { [filepath: string]: any };
-}
 
-/**
- * CSSファイル単体のテーマ
- * http
- * local
- * TODO: nodeパッケージはありえないか
- */
-export class SingleFileTheme implements Theme {
-  name: string = "";
-  category: string;
-  style: string;
-  topics: string[] = [];
-  description?: string | undefined;
-  version?: string | undefined;
-  author?: string | undefined;
-  files: { [filepath: string]: any } = {};
-
-  constructor(packageName: string) {
-    // HTTPかローカルか
-    if (packageName.match(/^https?:/)) {
-      // HTTP
-      // this.srcIO = new HttpIO();
-    } else {
-      // ローカル
-      // this.srcIO = new localIO();
-    }
-    this.name = packageName;
-    this.style = packageName;
-    // TODO: コメントから取得
-    this.category = "";
-  }
-}
-
-/**
- * nodeパッケージ型のテーマ
- * package.jsonがルートディレクトリに存在する
- */
-export class PackageTheme implements Theme {
-  name: string = "";
-  author: string = "";
-  date: string = "";
-  description: string = "";
-  keywords: string[] = [];
-  links: {
-    npm?: string;
-    homepage?: string;
-    repository?: string;
-    bugs?: string;
-  } = {};
-  maintainers: { username: string; email: string }[] = [];
-  publisher: { username: string; email: string } = { username: "", email: "" };
-  scope: string = "";
-  version: string = "";
-  // from package.json
-  category: string = "";
-  style: string = "";
-  topics: string[] = [];
-  files: { [filepath: string]: any } = {};
-
-  public constructor() {}
-
-  public static async fetch(packageName: string): Promise<Theme> {
-    //TODO: とりあえずGitHubに本体のあるパッケージの場合.他のケースはあとで
-    const pkgName = encodeURIComponent(packageName);
-    const results = await NpmApi.getPackage(pkgName);
-    const repository = results.collected.metadata.repository;
-    if (!repository) {
-      throw new Error("GitHub repository not found : " + pkgName);
-    }
-    // GitHubにアクセスするためのIOクラス
-    const path = GitHubIO.parseURL(repository.url);
-    const io = new GitHubIO(path.owner, path.repo, GitHubAccessToken);
-
-    const filenames = await io.findAll();
-    const pkgJson = (await PackageTheme.getPackageJson(
-      repository.directory,
-      io
-    )) as unknown as {
-      name: string;
-      description: string;
-      version: string;
-      author: string;
-      vivliostyle: {
-        theme: {
-          category?: string;
-          topics?: string[];
-          style?: string;
-        };
-      };
-    };
-    const theme = new PackageTheme();
-    // console.log(pkgJson);
-    theme.name = packageName;
-    theme.description = pkgJson.description;
-    theme.version = pkgJson.version;
-    theme.author = pkgJson.author;
-    if (pkgJson.vivliostyle) {
-      if (pkgJson.vivliostyle.theme) {
-        const t = pkgJson.vivliostyle.theme;
-        theme.category = t.category ?? "";
-        theme.topics = t.topics ?? [];
-        theme.style = upath.normalize(t.style ?? "");
-      }
-    }
-    if (theme.style) {
-      try {
-        const data = await io.get(
-          upath.join(repository.directory, theme.style)
-        );
-        theme.files[theme.style] = data;
-      } catch (error) {
-        throw new Error("style file access error");
-      }
-    }
-    return theme;
-  }
-
-  /**
-   * npm-api.jsの結果からPackageThemeオブジェクトを生成
-   * @param packageName
-   * @returns PackageThemeオブジェクトまたはundefined
-   */
-  public static async fromNpm(packageName: string): Promise<Theme> {
-    try {
-      const packageTheme = await PackageTheme.fetch(packageName);
-
-      return packageTheme;
-    } catch (e) {
-      if ((e as Error).message.includes("API rate limit")) {
-        throw new Error("認証せずにGitHub APIを使えるのは、60件/時まで");
-      } else {
-        throw e;
-      }
-    }
-  }
-
-  public static async getPackageJson(
-    repo_directory: string,
-    io: ThemeIO
-  ): Promise<object | null> {
-    const path = `${repo_directory ?? ""}/package.json`;
-    try {
-      const pkg_json = await io.get(path, true);
-      return pkg_json;
-    } catch (error) {
-      console.error(error, "file read error:", path);
-      return null;
-    }
-  }
+export type ThemeManagerConfig = {
+  GitHubAccessToken?: string | null;
+  // octokit?: octokit;
 }
 
 /**
@@ -213,36 +59,91 @@ export default class ThemeManager {
    * コンストラクタ
    * @param token GitHubAccessToken
    */
-  public constructor(token: string | null = null) {
-    GitHubAccessToken = token;
+  public constructor(config: ThemeManagerConfig | null = null) {
+    if (config?.GitHubAccessToken) {
+      GitHubAccessToken = config.GitHubAccessToken;
+    }
   }
 
   /**
-   * NPMで公開されているテーマの一覧を取得
+   * npmのパッケージ名からGitHubへのアクセスオブジェクトを生成する
+   * @param packageName 
+   * @returns 
+   */
+  public async npmToFs(packageName:string):Promise<Fs|null> {
+    // NPMのパッケージ情報からGitHubのURLを取得する
+    const pkgName = encodeURIComponent(packageName);
+    const result = await NpmApi.getPackage(pkgName);
+    const repository = result.collected.metadata.repository; // {directory:string, type:"git", url:string }
+    if (repository) {
+      if (repository.type === "git") {
+        return null; 
+        // new GitHubFs({
+        //   octkitOrToken:GitHubAccessToken!, 
+        //   ownerOrUrl:repository.url
+        // });    
+      }
+    } else {
+      console.error('not Git : ', result.collected.metadata.name,'\n', result.collected.npm, '\n', result.collected.source);
+    }
+    throw new Error("GitHub repository not found : " + pkgName);
+  }
+
+  /**
+   * npmで公開されているテーマの一覧を取得
    * @param query
    * @param max 最大取得件数
    * @returns
    */
   public async searchFromNpm(query: string = this.serchQuery, max = 100) {
+    return [];
     try {
+      // npmのAPIを叩いて情報を取得する
+      // {package:{name:string}}
       const results = await NpmApi.SearchPackage(query, max);
+      // [
+      //   {
+      //     package: {
+      //       name: '@vivliostyle/theme-bunko',
+      //       scope: 'vivliostyle',
+      //       version: '0.5.0',
+      //       description: '文庫用のテーマ',
+      //       keywords: [Array],
+      //       date: '2021-11-07T11:47:24.147Z',
+      //       links: [Object],
+      //       author: [Object],
+      //       publisher: [Object],
+      //       maintainers: [Array]
+      //     },
+      //     flags: { unstable: true },
+      //     score: { final: 0.5837110266096406, detail: [Object] },
+      //     searchScore: 0.00008372865
+      //   },
+      // ]
       // console.log(results);
-      if (!results) {
-        return [] as Theme[];
+      // 検索結果が得られなければ例外を投げる
+      if (!results) { 
+        throw new Error('npm access error');
       }
+
+      // 得られた検索結果を元にファイルアクセスのためのfsオブジェクトを生成して返す
       const promises: Promise<PackageTheme | null>[] = results.map(
         async (result: any) => {
           try {
-            const theme = await PackageTheme.fromNpm(result.package.name);
+            // リポジトリにアクセスするためのfsのサブセットオブジェクトを返す
+            const fs = await this.npmToFs(result.package.name);
+            // npmの場合はNodeパッケージ型のテーマのみ
+            const theme = new PackageTheme(fs!, result.package.name);
             return theme;
           } catch (error) {
+            console.error(error);
             return null;
           }
         }
       );
-      const themes = (await Promise.all(promises)).filter((v) => v) as Theme[]; // nullを除去
-      this.themes = themes;
-
+      // Promise.allを実行し、実行結果からnullを除去
+      const themes = (await Promise.all(promises)).filter((v) => v) as Theme[];
+      this.themes = themes; // メモ化
       return this.themes;
     } catch (error) {
       console.error(error);
@@ -250,13 +151,17 @@ export default class ThemeManager {
     }
   }
 
+  /**
+   * 
+   * @param themeName 
+   * @returns 
+   */
   public async getPackageFromNpm(themeName: string): Promise<Theme> {
     // npmからパッケージ情報を取得する
     const results = await NpmApi.SearchPackage(themeName, 1);
     if (results.length != 1) {
       throw new Error("theme not found");
     }
-
     // GitHubからテーマ情報を取得する
     const theme = await PackageTheme.fromNpm(results[0].package.name);
     if (theme != null) {

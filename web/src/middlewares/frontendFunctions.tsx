@@ -1,22 +1,21 @@
-import {GithubRequestSessionApiResponse} from 'pages/api/github/selectFile';
 import {User} from 'firebase/auth';
 import useSWR from 'swr';
 import {GithubReposApiResponse} from '../pages/api/github/repos';
-import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository';
 import firebase, {db} from '@services/firebase';
 import {collection, doc, DocumentReference, getDoc} from 'firebase/firestore';
 import path from 'path';
-import mime from 'mime-types';
 import {BranchesApiResponse} from 'pages/api/github/branches';
-import { CommitsOfRepositoryApiResponse } from 'pages/api/github/tree';
+import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
+import {AppCacheFs} from './AppCacheFS';
+import {WebApiFs} from './WebApiFS';
+import { Dirent } from 'fs-extra';
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
-const VPUBFS_ROOT = '/vpubfs';
 
 /**
  * URL判別
- * @param value 
- * @returns 
+ * @param value
+ * @returns
  */
 export const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
@@ -65,12 +64,12 @@ export function getExt(path?: string) {
  * saved firestoreと一致している状態
  */
 export enum FileState {
-  none = 'none' ,
-  init = 'init' ,
-  clean = 'clean' , 
-  modified = 'modified' ,
-  saved = 'saved'
-};
+  none = 'none',
+  init = 'init',
+  clean = 'clean',
+  modified = 'modified',
+  saved = 'saved',
+}
 
 /**
  * リポジトリ上のファイルパス
@@ -84,90 +83,17 @@ type RepositoryPath = {
 };
 
 /**
- * Gitのファイル情報
- */
- export type FileEntry = {
-  mode: string; // パーミッション
-  path: string; // リポジトリのルートディレクトリからの相対パス
-  sha: string;  // コンテンツのハッシュ値
-  type: string; // 'blob':ファイル | 'tree':ディレクトリ
-  url: string;  // コンテンツにアクセスするためのURL(ファイル情報含む)
-  size: number; // ファイルサイズ
-};
-
-/**
  * エディタで編集しているファイル情報
  */
 export type CurrentFile = {
-  file: FileEntry | null;
+  file: Dirent | null;
   text: string;
   ext: string; // 拡張子
   state: FileState;
   // session?: DocumentReference;
   modify: (text: string) => void;
-  commit: ()=>void;
+  commit: () => void;
 };
-
-/**
- *
- * @param param0
- * @returns
- */
-export async function readFileContent({
-  user,
-  owner,
-  repo,
-  branch
-}: RepositoryPath,file:FileEntry): Promise<string| null> {
-  console.log('readFileContent',file);
-  if (!(user && owner && repo && branch && file && file.path)) {
-    console.log('readFileContent context error',user, owner, repo, branch, file);
-    return null;
-  }
-  // WebAPIにアクセスしてsessionIDを取得
-  const {id}: GithubRequestSessionApiResponse = await fetch(
-    '/api/github/selectFile',
-    {
-      method: 'POST',
-      body: JSON.stringify({owner, repo, branch, path:file.path}),
-      headers: {
-        'content-type': 'application/json',
-        'x-id-token': await user.getIdToken(),
-      },
-    },
-  ).then((r) => {
-    console.log('readFileContent status',r.status);
-    if (r.status === 200) {
-      return r.json();
-    } else if (r.status === 400) {
-      throw new Error('invalid request');
-    } else if (r.status === 401) {
-      throw new Error('id token error');
-    } else if (r.status === 405) {
-      throw new Error('github access error');
-    }
-  }).catch((err)=>{
-    console.log('readFileContent error',err.message);
-  });
-
-  const sessionRef = doc(db, 'users', user.uid, 'sessions', id);
-  const session = await getDoc(sessionRef);
-  const data = session.data();
-  console.log('readFileContent result',data);
-  if (!data) {
-    return null;
-  }
-  // return { 
-  //   text: 'test',
-  //   file: null,
-  //   ext: getExt(file.path),
-  //   state: FileState.init,
-  //   modify: ()=>{},
-  //   commit: ()=>{}
-  //   //session: session,
-  // };
-  return data.text;
-}
 
 export async function updateFile() {}
 
@@ -190,30 +116,10 @@ export async function getFileContentFromGithub(
   branch: string,
   path: string,
   user: User,
-): Promise<ContentOfRepositoryApiResponse> {
-  const content: ContentOfRepositoryApiResponse = await fetch(
-    `/api/github/contentOfRepository?${new URLSearchParams({
-      owner,
-      repo,
-      branch,
-      path,
-    })}`,
-    {
-      headers: {
-        'content-type': 'application/json',
-        'x-id-token': await user.getIdToken(),
-      },
-    },
-  ).then((r) => {
-    r.text().then((text)=>{
-      console.log('return text',text);
-    });
-    if (r.status === 403) {
-      throw new Error(`403:${path}`);
-    }
-    return r.json();
-  });
-  if (Array.isArray(content) || !('content' in content)) {
+): Promise<any> {
+  const fs: WebApiFs = await WebApiFs.open({user, owner, repo, branch});
+  const content = await fs.readFile(path);
+  if (Array.isArray(content)) {
     // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
     throw new Error(`Content type is not file`);
   }
@@ -254,14 +160,9 @@ export function GetRepsitoryList(idToken: string | null) {
  * @param content
  */
 export async function updateCache(cachePath: string, content: any) {
-  const filePath = path.join(VPUBFS_ROOT, cachePath);
-  const cache = await caches.open(VPUBFS_CACHE_NAME);
-  const contentType = mime.lookup(filePath);
-  console.log(`updateCache : ${filePath}`);
-  const headers = new Headers();
-  headers.append('content-type', `${contentType.toString()}`);
-  await cache.delete(filePath);
-  await cache.put(filePath, new Response(content, {headers}));
+  const fs = await AppCacheFs.open(VPUBFS_CACHE_NAME);
+  await fs.writeFile(cachePath, content);
+  console.log(`updateCache : ${cachePath}`);
 }
 
 /**
@@ -291,9 +192,7 @@ export const updateCacheFromPath = async (
     contentPath,
     user,
   );
-  if ('content' in content) {
-    await updateCache(contentPath, Buffer.from(content.content, 'base64'));
-  }
+  await updateCache(contentPath, Buffer.from(content, 'base64'));
 };
 
 /**
@@ -339,42 +238,42 @@ export const fetchBranches = async (
  * ブランチに存在する全てのファイル名を取得
  */
 export const fetchFiles = async (
-    user: User,
-    owner: string,
-    repo: string,
-    branch: string,
-    tree_sha: string,
-  ): Promise<FileEntry[]> => {
-    // console.log('fetchFiles', owner, repo, branch);
-    if (!owner || !repo || !branch) {
-      return [];
-    }
-    try {
-      const token = await user.getIdToken();
-      const resp = await fetch(
-        `/api/github/tree?${new URLSearchParams({
-          owner,
-          repo,
-          branch,
-          tree_sha,
-        })}`,
-        {
-          method: 'GET',
-          headers: {
-            'x-id-token': token,
-          },
+  user: User,
+  owner: string,
+  repo: string,
+  branch: string,
+  tree_sha: string,
+): Promise<FileEntry[]> => {
+  // console.log('fetchFiles', owner, repo, branch);
+  if (!owner || !repo || !branch) {
+    return [];
+  }
+  try {
+    const token = await user.getIdToken();
+    const resp = await fetch(
+      `/api/github/tree?${new URLSearchParams({
+        owner,
+        repo,
+        branch,
+        tree_sha,
+      })}`,
+      {
+        method: 'GET',
+        headers: {
+          'x-id-token': token,
         },
-      );
-      const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-      // console.log('data', data.tree);
-      const files = data.tree.map((tree) => {
-        // console.log(tree);
-        return tree as FileEntry;
-      });
-      // console.log('files',files);
-      return files;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  };
+      },
+    );
+    const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
+    // console.log('data', data.tree);
+    const files = data.tree.map((tree) => {
+      // console.log(tree);
+      return tree as FileEntry;
+    });
+    // console.log('files',files);
+    return files;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};

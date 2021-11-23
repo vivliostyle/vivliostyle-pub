@@ -39,171 +39,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PackageTheme = exports.SingleFileTheme = void 0;
 var npm_api_js_1 = __importDefault(require("npm-api.js")); // npm-apiとnpm-api.jsという別のパッケージがあるので注意
-var srcIO_1 = require("./srcIO");
-var upath_1 = __importDefault(require("upath"));
+var theme_1 = require("./theme");
 var GitHubAccessToken;
-/**
- * CSSファイル単体のテーマ
- * http
- * local
- * TODO: nodeパッケージはありえないか
- */
-var SingleFileTheme = /** @class */ (function () {
-    function SingleFileTheme(packageName) {
-        this.name = "";
-        this.topics = [];
-        this.files = {};
-        // HTTPかローカルか
-        if (packageName.match(/^https?:/)) {
-            // HTTP
-            // this.srcIO = new HttpIO();
-        }
-        else {
-            // ローカル
-            // this.srcIO = new localIO();
-        }
-        this.name = packageName;
-        this.style = packageName;
-        // TODO: コメントから取得
-        this.category = "";
-    }
-    return SingleFileTheme;
-}());
-exports.SingleFileTheme = SingleFileTheme;
-/**
- * nodeパッケージ型のテーマ
- * package.jsonがルートディレクトリに存在する
- */
-var PackageTheme = /** @class */ (function () {
-    function PackageTheme() {
-        this.name = "";
-        this.author = "";
-        this.date = "";
-        this.description = "";
-        this.keywords = [];
-        this.links = {};
-        this.maintainers = [];
-        this.publisher = { username: "", email: "" };
-        this.scope = "";
-        this.version = "";
-        // from package.json
-        this.category = "";
-        this.style = "";
-        this.topics = [];
-        this.files = {};
-    }
-    PackageTheme.fetch = function (packageName) {
-        var _a, _b, _c;
-        return __awaiter(this, void 0, void 0, function () {
-            var pkgName, results, repository, path, io, filenames, pkgJson, theme, t, data, error_1;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        pkgName = encodeURIComponent(packageName);
-                        return [4 /*yield*/, npm_api_js_1.default.getPackage(pkgName)];
-                    case 1:
-                        results = _d.sent();
-                        repository = results.collected.metadata.repository;
-                        if (!repository) {
-                            throw new Error("GitHub repository not found : " + pkgName);
-                        }
-                        path = srcIO_1.GitHubIO.parseURL(repository.url);
-                        io = new srcIO_1.GitHubIO(path.owner, path.repo, GitHubAccessToken);
-                        return [4 /*yield*/, io.findAll()];
-                    case 2:
-                        filenames = _d.sent();
-                        return [4 /*yield*/, PackageTheme.getPackageJson(repository.directory, io)];
-                    case 3:
-                        pkgJson = (_d.sent());
-                        theme = new PackageTheme();
-                        // console.log(pkgJson);
-                        theme.name = packageName;
-                        theme.description = pkgJson.description;
-                        theme.version = pkgJson.version;
-                        theme.author = pkgJson.author;
-                        if (pkgJson.vivliostyle) {
-                            if (pkgJson.vivliostyle.theme) {
-                                t = pkgJson.vivliostyle.theme;
-                                theme.category = (_a = t.category) !== null && _a !== void 0 ? _a : "";
-                                theme.topics = (_b = t.topics) !== null && _b !== void 0 ? _b : [];
-                                theme.style = upath_1.default.normalize((_c = t.style) !== null && _c !== void 0 ? _c : "");
-                            }
-                        }
-                        if (!theme.style) return [3 /*break*/, 7];
-                        _d.label = 4;
-                    case 4:
-                        _d.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, io.get(upath_1.default.join(repository.directory, theme.style))];
-                    case 5:
-                        data = _d.sent();
-                        theme.files[theme.style] = data;
-                        return [3 /*break*/, 7];
-                    case 6:
-                        error_1 = _d.sent();
-                        throw new Error("style file access error");
-                    case 7: return [2 /*return*/, theme];
-                }
-            });
-        });
-    };
-    /**
-     * npm-api.jsの結果からPackageThemeオブジェクトを生成
-     * @param packageName
-     * @returns PackageThemeオブジェクトまたはundefined
-     */
-    PackageTheme.fromNpm = function (packageName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var packageTheme, e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, PackageTheme.fetch(packageName)];
-                    case 1:
-                        packageTheme = _a.sent();
-                        return [2 /*return*/, packageTheme];
-                    case 2:
-                        e_1 = _a.sent();
-                        if (e_1.message.includes("API rate limit")) {
-                            throw new Error("認証せずにGitHub APIを使えるのは、60件/時まで");
-                        }
-                        else {
-                            throw e_1;
-                        }
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    PackageTheme.getPackageJson = function (repo_directory, io) {
-        return __awaiter(this, void 0, void 0, function () {
-            var path, pkg_json, error_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        path = (repo_directory !== null && repo_directory !== void 0 ? repo_directory : "") + "/package.json";
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, io.get(path, true)];
-                    case 2:
-                        pkg_json = _a.sent();
-                        return [2 /*return*/, pkg_json];
-                    case 3:
-                        error_2 = _a.sent();
-                        console.error(error_2, "file read error:", path);
-                        return [2 /*return*/, null];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    return PackageTheme;
-}());
-exports.PackageTheme = PackageTheme;
 /**
  *
  */
@@ -212,14 +50,49 @@ var ThemeManager = /** @class */ (function () {
      * コンストラクタ
      * @param token GitHubAccessToken
      */
-    function ThemeManager(token) {
-        if (token === void 0) { token = null; }
+    function ThemeManager(config) {
+        if (config === void 0) { config = null; }
         this.themes = [];
         this.serchQuery = "keywords:vivliostyle-theme";
-        GitHubAccessToken = token;
+        if (config === null || config === void 0 ? void 0 : config.GitHubAccessToken) {
+            GitHubAccessToken = config.GitHubAccessToken;
+        }
     }
     /**
-     * NPMで公開されているテーマの一覧を取得
+     * npmのパッケージ名からGitHubへのアクセスオブジェクトを生成する
+     * @param packageName
+     * @returns
+     */
+    ThemeManager.prototype.npmToFs = function (packageName) {
+        return __awaiter(this, void 0, void 0, function () {
+            var pkgName, result, repository;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        pkgName = encodeURIComponent(packageName);
+                        return [4 /*yield*/, npm_api_js_1.default.getPackage(pkgName)];
+                    case 1:
+                        result = _a.sent();
+                        repository = result.collected.metadata.repository;
+                        if (repository) {
+                            if (repository.type === "git") {
+                                return [2 /*return*/, null];
+                                // new GitHubFs({
+                                //   octkitOrToken:GitHubAccessToken!, 
+                                //   ownerOrUrl:repository.url
+                                // });    
+                            }
+                        }
+                        else {
+                            console.error('not Git : ', result.collected.metadata.name, '\n', result.collected.npm, '\n', result.collected.source);
+                        }
+                        throw new Error("GitHub repository not found : " + pkgName);
+                }
+            });
+        });
+    };
+    /**
+     * npmで公開されているテーマの一覧を取得
      * @param query
      * @param max 最大取得件数
      * @returns
@@ -228,50 +101,78 @@ var ThemeManager = /** @class */ (function () {
         if (query === void 0) { query = this.serchQuery; }
         if (max === void 0) { max = 100; }
         return __awaiter(this, void 0, void 0, function () {
-            var results, promises, themes, error_3;
+            var results, promises, themes, error_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, npm_api_js_1.default.SearchPackage(query, max)];
+                    case 0: return [2 /*return*/, []];
                     case 1:
+                        _a.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, npm_api_js_1.default.SearchPackage(query, max)];
+                    case 2:
                         results = _a.sent();
+                        // [
+                        //   {
+                        //     package: {
+                        //       name: '@vivliostyle/theme-bunko',
+                        //       scope: 'vivliostyle',
+                        //       version: '0.5.0',
+                        //       description: '文庫用のテーマ',
+                        //       keywords: [Array],
+                        //       date: '2021-11-07T11:47:24.147Z',
+                        //       links: [Object],
+                        //       author: [Object],
+                        //       publisher: [Object],
+                        //       maintainers: [Array]
+                        //     },
+                        //     flags: { unstable: true },
+                        //     score: { final: 0.5837110266096406, detail: [Object] },
+                        //     searchScore: 0.00008372865
+                        //   },
+                        // ]
                         // console.log(results);
+                        // 検索結果が得られなければ例外を投げる
                         if (!results) {
-                            return [2 /*return*/, []];
+                            throw new Error('npm access error');
                         }
                         promises = results.map(function (result) { return __awaiter(_this, void 0, void 0, function () {
-                            var theme, error_4;
+                            var fs, theme, error_2;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, PackageTheme.fromNpm(result.package.name)];
+                                        return [4 /*yield*/, this.npmToFs(result.package.name)];
                                     case 1:
-                                        theme = _a.sent();
+                                        fs = _a.sent();
+                                        theme = new theme_1.PackageTheme(fs, result.package.name);
                                         return [2 /*return*/, theme];
                                     case 2:
-                                        error_4 = _a.sent();
+                                        error_2 = _a.sent();
+                                        console.error(error_2);
                                         return [2 /*return*/, null];
                                     case 3: return [2 /*return*/];
                                 }
                             });
                         }); });
                         return [4 /*yield*/, Promise.all(promises)];
-                    case 2:
-                        themes = (_a.sent()).filter(function (v) { return v; });
-                        this.themes = themes;
-                        return [2 /*return*/, this.themes];
                     case 3:
-                        error_3 = _a.sent();
-                        console.error(error_3);
+                        themes = (_a.sent()).filter(function (v) { return v; });
+                        this.themes = themes; // メモ化
+                        return [2 /*return*/, this.themes];
+                    case 4:
+                        error_1 = _a.sent();
+                        console.error(error_1);
                         return [2 /*return*/, []];
-                    case 4: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
+    /**
+     *
+     * @param themeName
+     * @returns
+     */
     ThemeManager.prototype.getPackageFromNpm = function (themeName) {
         return __awaiter(this, void 0, void 0, function () {
             var results, theme;
@@ -283,7 +184,7 @@ var ThemeManager = /** @class */ (function () {
                         if (results.length != 1) {
                             throw new Error("theme not found");
                         }
-                        return [4 /*yield*/, PackageTheme.fromNpm(results[0].package.name)];
+                        return [4 /*yield*/, theme_1.PackageTheme.fromNpm(results[0].package.name)];
                     case 2:
                         theme = _a.sent();
                         if (theme != null) {

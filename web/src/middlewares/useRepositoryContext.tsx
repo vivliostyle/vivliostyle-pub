@@ -1,3 +1,4 @@
+import { Dirent } from 'fs-extra';
 import React, {
   createContext,
   useCallback,
@@ -8,7 +9,6 @@ import React, {
 } from 'react';
 import {
   fetchBranches,
-  FileEntry,
   fetchFiles,
 } from './frontendFunctions';
 import {useAppContext} from './useAppContext';
@@ -16,19 +16,22 @@ import {CurrentFileContextProvider} from './useCurrentFileContext';
 import {useLogContext} from './useLogContext';
 import {useVivlioStyleConfig} from './useVivliostyleConfig';
 import {CoreProps} from './vivliostyle.config';
+import { WebApiFs } from './WebApiFS';
 
 export type Repository = {
   owner: string | null;
   repo: string | null;
   currentBranch: string | null;
-  currentFile: FileEntry | null;
+  currentFile: Dirent | null;
   currentConfig: CoreProps | null;
-  currentTree: FileEntry[];
+  currentTree: Dirent[];
   branches: string[];
-  files: FileEntry[];
+  files: Dirent[];
   selectBranch: (branch: string) => void;
-  selectTree: (tree: '..' | FileEntry) => void;
-  selectFile: (path: FileEntry | null, key: number) => void;
+  selectTree: (tree: '..' | Dirent) => void;
+  selectFile: (path: Dirent | null, key: number) => void;
+  fs:WebApiFs | null;
+  getFileContent:()=>Promise<any>;
 };
 
 const RepositoryContext = createContext({} as Repository);
@@ -44,15 +47,15 @@ type Actions =
       repo: string;
       branches: string[];
       defaultBranch: string;
-      files: FileEntry[];
+      files: Dirent[];
     }
   | {type: 'selectBranch'; branch: string}
-  | {type: 'selectBranchCallback'; branch: string; files: FileEntry[]}
-  | {type: 'selectTree'; tree: '..' | FileEntry}
-  | {type: 'selectTreeCallback'; tree: FileEntry[]; files: FileEntry[]}
-  | {type: 'setFiles'; files: FileEntry[]}
-  | {type: 'selectFile'; file: FileEntry | null; key: number}
-  | {type: 'selectFileCallback'; n: number; file: FileEntry | null};
+  | {type: 'selectBranchCallback'; branch: string; files: Dirent[]}
+  | {type: 'selectTree'; tree: '..' | Dirent}
+  | {type: 'selectTreeCallback'; tree: Dirent[]; files: Dirent[]}
+  | {type: 'setFiles'; files: Dirent[]}
+  | {type: 'selectFile'; file: Dirent | null; key: number}
+  | {type: 'selectFileCallback'; n: number; file: Dirent | null};
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -71,7 +74,7 @@ export function RepositoryContextProvider({
   console.log('[repositoryContext]', owner, repo);
   const log = useLogContext();
   const app = useAppContext();
-  const [file,setFile] = useState<FileEntry|null>(null);
+  const [file,setFile] = useState<Dirent|null>(null);
 
   const config = async () => {
     // const config = useVivlioStyleConfig({
@@ -102,7 +105,7 @@ export function RepositoryContextProvider({
    * フォルダを開く
    * @param tree
    */
-  const selectTree = (tree: '..' | FileEntry) => {
+  const selectTree = (tree: '..' | Dirent) => {
     console.log('selectTree', tree);
     if (dispatch) {
       dispatch({type: 'selectTree', tree});
@@ -112,7 +115,7 @@ export function RepositoryContextProvider({
    * 編集対象のファイルを選択する
    * @param path
    */
-  const selectFile = useCallback((file: FileEntry | null, key: number) => {
+  const selectFile = useCallback((file: Dirent | null, key: number) => {
     console.log('selectFile', key, file);
     if (dispatch) {
       dispatch({type: 'selectFile', file, key});
@@ -130,6 +133,9 @@ export function RepositoryContextProvider({
     // // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
   }, []);
 
+  const getFileContent = async()=>{
+  }
+
   const state = {
     owner: null,
     repo: null,
@@ -142,6 +148,8 @@ export function RepositoryContextProvider({
     selectBranch,
     selectTree,
     selectFile,
+    fs: null,
+    getFileContent
   } as Repository;
 
   // コールバックのディスパッチが多重に処理されるのを防ぐカウンタ
@@ -158,11 +166,16 @@ export function RepositoryContextProvider({
             repo: action.repo,
             branches: action.branches,
             currentBranch: action.defaultBranch,
-            files: action.files,
+            files: action.files
           };
         case 'selectBranch':
-          fetchFiles(app.user!, state.owner!, state.repo!, action.branch, '')
-            .then((files) => {
+          WebApiFs.open({
+            user:app.user!,
+            owner:state.owner!,
+            repo:state.repo!,
+            branch: action.branch
+          }).then((fs)=>{
+            fs.readdir('').then((files)=>{
               if (dispatch) {
                 dispatch({
                   type: 'selectBranchCallback',
@@ -170,8 +183,10 @@ export function RepositoryContextProvider({
                   files,
                 });
               }
-            })
-            .catch((e) => console.error(e));
+            }).catch((err)=>{
+              console.error(err);
+            });
+          });          
           return state;
         case 'selectBranchCallback':
           // TODO: ブランチ毎のカレントディレクトリを保持する
@@ -190,22 +205,23 @@ export function RepositoryContextProvider({
             }
             tree.pop();
           } else {
-            tree.push(action.tree as unknown as FileEntry);
+            tree.push(action.tree as unknown as Dirent);
           }
-          const tree_sha = tree.length == 0 ? '' : tree.slice(-1)[0].sha;
-          fetchFiles(
-            app.user!,
-            state.owner!,
-            state.repo!,
-            state.currentBranch!,
-            tree_sha,
-          )
-            .then((files) => {
+          WebApiFs.open({
+            user:app.user!,
+            owner:state.owner!,
+            repo:state.repo!,
+            branch:state.currentBranch!,
+          }).then((fs)=>{
+            fs.readdir('').then((files)=>{
               console.log('success');
               dispatch({type: 'selectTreeCallback', tree, files});
-            })
-            .catch((e) => console.error(e));
-          console.log('selectTreeAction2');
+            }).catch((err)=>{
+              throw err;
+            });
+          }).catch((err)=>{
+            throw err;
+          })
           return state;
         case 'selectTreeCallback':
           console.log('callback', action);
@@ -271,20 +287,23 @@ export function RepositoryContextProvider({
           owner,
           repo,
         );
-        fetchFiles(app.user!, owner, repo, defaultBranch, '')
-          .then((files) => {
-            if (dispatch) {
-              dispatch({
-                type: 'selectRepository',
-                owner,
-                repo,
-                branches,
-                defaultBranch,
-                files,
-              });
-            }
-          })
-          .catch((e) => console.error(e));
+        const fs:WebApiFs = await WebApiFs.open({user:app.user!,owner,repo,branch:defaultBranch});
+        const files = await fs.readdir('/');
+        if (dispatch) {
+          dispatch({
+            type: 'selectRepository',
+            owner,
+            repo,
+            branches,
+            defaultBranch,
+            files,
+          });
+        }
+        // fetchFiles(app.user!, owner, repo, defaultBranch, '')
+        //   .then((files) => {
+            
+        //   })
+        //   .catch((e) => console.error(e));
       })();
     },
     [app.isPending, app.user],
@@ -300,7 +319,7 @@ export function RepositoryContextProvider({
   /**
    * ファイルの内容を読み込み完了し、編集可能な状態になった
    */
-  const onReady = useCallback((currentFile:FileEntry|null)=>{
+  const onReady = useCallback((currentFile:Dirent|null)=>{
     console.log('onReady',currentFile);
     dispatch({type:'selectFileCallback',file:currentFile, n});
   },[n]);

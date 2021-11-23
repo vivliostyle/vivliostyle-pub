@@ -1,7 +1,8 @@
 import {useMemo, useState} from 'react';
 import * as UI from '@components/ui';
-import {FileEntry, useRepositoryContext} from '@middlewares/useRepositoryContext';
+import {useRepositoryContext} from '@middlewares/useRepositoryContext';
 import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
+import { Dirent } from 'fs-extra';
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
@@ -12,13 +13,13 @@ export function ProjectExplorer() {
 
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
-    console.log('proj.files',repository.files);
-    return repository.files.filter((f) => f.path.includes(filenamesFilterText));
+    // console.log('proj.files',repository.files);
+    return repository.files.filter((f) => f.name.includes(filenamesFilterText));
   }, [repository.files, filenamesFilterText]);
   
   // 表示用のカレントディレクトリ
   const currentDir = useMemo(()=>{
-    let path = repository.currentTree.map(f=>f.path).join('/');
+    let path = repository.currentTree.map(f=>f.name).join('/');
     // 流すぎるパスは省略
     if(path.length > 15) { path = '...'+path.slice(-15); } 
     return path;
@@ -29,11 +30,11 @@ export function ProjectExplorer() {
    * blob,treeはGit用語
    * @param file 
    */
-  const onClick = (file:FileEntry)=>{
+  const onClick = (file:Dirent)=>{
     console.log('proj.onclick',file);
-    if(file.type == 'blob') { // ファイル
+    if(file.isFile()) { // ファイル
       repository.selectFile(file,new Date().getTime());
-    }else if(file.type == 'tree') { // ディレクトリ
+    }else if(file.isDirectory()) { // ディレクトリ
       repository.selectTree(file);
     }
   }
@@ -68,16 +69,16 @@ export function ProjectExplorer() {
         {filteredFiles.map((file) => (
           <UI.Container
             paddingInlineStart={1}
-            key={file.path}
+            key={file.name}
             onClick={()=>{onClick(file);}}
             cursor="pointer"
           >
             <UI.Text
               mt={1}
               fontSize="sm"
-              fontWeight={file.path == currentFile?.path ? 'bold' : 'normal'}
+              fontWeight={file.name == currentFile?.file?.name ? 'bold' : 'normal'}
             >
-              {file.path}{file.type=='tree'?'/':''}
+              {file.name}{file.name=='tree'?'/':''}
             </UI.Text>
           </UI.Container>
         ))}

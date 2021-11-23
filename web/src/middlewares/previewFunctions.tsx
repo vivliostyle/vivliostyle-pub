@@ -65,33 +65,42 @@ export async function transpileMarkdown(
   console.log('transpiled', srcPath, '\n' /*, text*/);
   if (srcPath.endsWith('.html')) {
     const imagePaths = pickupHtmlResources(text);
-    Promise.all(
-      imagePaths.map((imagePath) =>
-        updateCacheFromPath(
+    const promises = imagePaths.map(async (imagePath) => {
+        console.log('imagePath in HTML',imagePath);
+        await updateCacheFromPath(
           repository.owner!,
           repository.repo!,
           repository.currentBranch!,
           srcPath!,
           imagePath,
           app.user!,
-        ),
-      ),
-    ).catch((error) => {
-      if (error.message.startsWith('403:')) {
-        console.error(error.message);
+        )
+    });
+    try {
+      await Promise.all(promises);
+    }catch(err:any) {
+      if (err.message.startsWith('403:')) {
+        console.error(err.message);
         // toast({
         //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
         //   status: "error"
         // });
       }
-    });
+    }
     console.log('imagePaths', imagePaths);
   }
-  updateCache(srcPath, text).then(() => {});
+  await updateCache(srcPath, text);
   const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
   return {vPubPath, text};
 }
 
+/**
+ * CSS形式のテーマに含まれるリソースを取得してアプリケーションキャッシュに保存する
+ * @param app 
+ * @param repository 
+ * @param theme 
+ * @returns 
+ */
 export const processThemeString = async (
   app: AppContext,
   repository: Repository,
@@ -130,7 +139,6 @@ export const processTheme = async (
 ): Promise<string> => {
   console.log('processTheme', app,path);
   if (! (app.user && path && !isURL(path)) ) { throw new Error('app.user or themePath not set'); }
-  try {
     const content = await getFileContentFromGithub(
       repository.owner!,
       repository.repo!,
@@ -139,47 +147,22 @@ export const processTheme = async (
       app.user!,
     );
     console.log('content',content);      
-    if ('content' in content) {
-      const stylesheet = content.content;
-      await updateCache(path, stylesheet);
-      const imagesOfStyle = pickupCSSResources(stylesheet);
-      await Promise.all(
-        imagesOfStyle.map((imageOfStyle) =>
-          updateCacheFromPath(
-            repository.owner!,
-            repository.repo!,
-            repository.currentBranch!,
-            stylesheet,
-            imageOfStyle,
-            app.user!,
-          ),
+    const stylesheet = content;
+    await updateCache(path, stylesheet);
+    const imagesOfStyle = pickupCSSResources(stylesheet);
+    await Promise.all(
+      imagesOfStyle.map((imageOfStyle) =>
+        updateCacheFromPath(
+          repository.owner!,
+          repository.repo!,
+          repository.currentBranch!,
+          stylesheet,
+          imageOfStyle,
+          app.user!,
         ),
-      ).catch((error) => {
-        throw error;
-      });
-    }
-  } catch (error) {
-    throw error;
-  }
+      ),
+    ).catch((error) => {
+      throw error;
+    });
   return path;
-};
-
-const fetchTheme = () => {
-  const VPUBFS_CACHE_NAME = 'vpubfs';
-  const VPUBFS_ROOT = '/vpubfs';
-  (async () => {
-    // const cache = await caches.open(VPUBFS_CACHE_NAME);
-    // const file: File = new File([theme.files[theme.style]], theme.style);
-    // const headers = new Headers();
-    // headers.append('content-type', 'text/css');
-    // const stylesheetPath = `${theme.name}/${theme.style}`;
-    // const vpubfsPath = `${VPUBFS_ROOT}/${stylesheetPath}`;
-    // await cache.delete(new Request(vpubfsPath));
-    // await cache.put(
-    //   vpubfsPath,
-    //   new Response(theme.files[theme.style], {headers}),
-    // );
-    // previewSource.changeTheme(stylesheetPath);
-    // setStylesheet(stylesheetPath);
-  })();
 };

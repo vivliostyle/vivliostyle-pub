@@ -60,29 +60,63 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = __importDefault(require("fs"));
 var path = __importStar(require("upath"));
-var _1 = require(".");
 var srcIO_1 = require("./srcIO");
-var ThemeManager_1 = __importStar(require("./ThemeManager"));
+var ThemeManager_1 = __importDefault(require("./ThemeManager"));
 var npm_api_js_1 = __importDefault(require("npm-api.js")); // npm-apiとnpm-api.jsという別のパッケージがあるので注意
 // GitHubAccessTokenなしだとAPIを叩けるのが60回/h
 // ひとつのパッケージごとに1アクセスするのですぐに限度が来るので注意
 // https://docs.github.com/ja/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
-//const GitHubAccessToken: string | null = null;
-var GitHubAccessToken = "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";
-test("GitHub I/O parseURL", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var component, component2;
-    return __generator(this, function (_a) {
-        component = srcIO_1.GitHubIO.parseURL("git+https://github.com/vivliostyle/themes.git/package.json");
-        expect(component.owner).toBe("vivliostyle");
-        expect(component.repo).toBe("themes");
-        expect(component.path).toBe("package.json");
-        component2 = srcIO_1.GitHubIO.parseURL("git+https://github.com/vivliostyle/themes.git");
-        expect(component2.owner).toBe("vivliostyle");
-        expect(component2.repo).toBe("themes");
-        expect(component2.path).toBe(undefined);
-        return [2 /*return*/];
-    });
-}); });
+var GitHubAccessToken = null;
+/*
+
+Fsインターフェースを実装するクラスは文字列をひとつ引数にとるコンストラクタが必要
+const fs = new LocalFs('myTheme');
+const fs = new NodeModuleFs('packageName');
+const fs = new AppCacheFs();
+
+const options = {
+  projectFs: localFs('./themes') // テーマを保存するためのFs localFsかAppCacheFs
+  searchOrder: [ // 与えられたテーマ名の検索順 Fsオブジェクトかnullを返すファクトリーメソッドを検索順に渡す
+    // projectFsに指定したFsは最初に探すので指定しなくても良いか。
+    LocalFs.ioFactory('/Users/.../themes'),     // cliの場合はローカルディスク
+    AppCacheFs.ioFactory('/vbuffs'),            // pubクライアントの場合はApplication Cache
+    NodeModuleFs.ioFactory('./node_modules'),   // node_modulesディレクトリの位置を指定する
+    NpmFs.ioFactory(),                          // npmは特に指定はないかな
+    GithubFs.ioFactory(octokit),                // octokitかトークン
+    HttpFs.ioFactory('http://example.com/theme/') // テーマのあるパスまでのURL
+  ],
+}
+const themeManager = new ThemeManager(options);
+
+
+*/
+/*
+test('GitHubFs FactoryMethod',()=>{
+  const octokit= new Octokit();
+  const fsConstructor = GitHubFs.create(octokit); // またはGitHubAccessToken
+  const owner = '';  // リポジトリのオーナー
+  const repo = '';   // リポジトリ名
+  const branch = ''; // ブランチ名
+  const fs = new fsConstructor({owner,repo,branch});  // またはURL
+  const filepath = ''; // ブランチのルートからの相対パス
+  const data = fs.readFile(filepath);
+  expect(data).toBe('test');
+});
+*/
+// test.skip("GitHub I/O parseURL", async () => {
+//   const component = GitHubIO.parseURL(
+//     "git+https://github.com/vivliostyle/themes.git/package.json"
+//   );
+//   expect(component.owner).toBe("vivliostyle");
+//   expect(component.repo).toBe("themes");
+//   expect(component.path).toBe("package.json");
+//   const component2 = GitHubIO.parseURL(
+//     "git+https://github.com/vivliostyle/themes.git"
+//   );
+//   expect(component2.owner).toBe("vivliostyle");
+//   expect(component2.repo).toBe("themes");
+//   expect(component2.path).toBe(undefined);
+// });
 /**
  * 全ファイル取得(未完成)
  */
@@ -100,80 +134,34 @@ test.skip("GitHub I/O findAll", function () { return __awaiter(void 0, void 0, v
         }
     });
 }); });
-test("PackageTheme.getPackageJson method", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var io, path, pkgJson;
+test.skip("PackageTheme.getPackageJson method", function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                io = new srcIO_1.GitHubIO("vivliostyle", "themes", GitHubAccessToken);
-                path = "packages/@vivliostyle/theme-bunko";
-                return [4 /*yield*/, _1.PackageTheme.getPackageJson(path, io)];
-            case 1:
-                pkgJson = (_a.sent());
-                expect(pkgJson).toStrictEqual({
-                    author: "Vivliostyle <mail@vivliostyle.org>",
-                    description: "文庫用のテーマ",
-                    devDependencies: {
-                        "@vivliostyle/cli": "^4.3.2",
-                        "npm-run-all": "^4.1.5",
-                        sass: "^1.32.8",
-                        "vivliostyle-theme-scripts": "^0.3.4",
-                    },
-                    files: ["*.css", "*.css.map", "scss", "example", "vivliostyle.config.js"],
-                    homepage: "https://github.com/vivliostyle/themes",
-                    keywords: ["vivliostyle", "vivliostyle-theme"],
-                    license: "CC0-1.0",
-                    name: "@vivliostyle/theme-bunko",
-                    publishConfig: {
-                        access: "public",
-                    },
-                    repository: {
-                        directory: "packages/@vivliostyle/theme-bunko",
-                        type: "git",
-                        url: "https://github.com/vivliostyle/themes.git",
-                    },
-                    scripts: {
-                        build: "run-p build:scss build:vivliostyle",
-                        "build:scss": "sass scss:.",
-                        "build:vivliostyle": "vivliostyle build",
-                        dev: "run-p preview watch:scss",
-                        preview: "vivliostyle preview",
-                        validate: "vivliostyle-theme-scripts validate",
-                        "watch:scss": "sass --watch scss:.",
-                    },
-                    version: "0.5.0",
-                    vivliostyle: {
-                        theme: {
-                            category: "novel",
-                            name: "Bunko",
-                            style: "./theme_common.css",
-                            topics: ["小説", "縦書き"],
-                        },
-                    },
-                });
-                return [2 /*return*/];
-        }
+        return [2 /*return*/];
+    });
+}); });
+var VPUBFS_CACHE_NAME = 'vpubfs';
+var VPUBFS_ROOT = '/vpubfs';
+test.skip('prototype', function () { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        return [2 /*return*/];
     });
 }); });
 /*
  * NpmApiの仕様確認
  */
-test.skip("NpmApi.getPackage", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var packageName, pkgName, results;
+test.only("NpmApi.getPackage", function () { return __awaiter(void 0, void 0, void 0, function () {
+    var packageName, pkgName, result;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                packageName = "@vivliostyle/theme-bunko";
+                packageName = "@vivliostyle/theme-gutenberg";
                 pkgName = encodeURIComponent(packageName);
                 return [4 /*yield*/, npm_api_js_1.default.getPackage(pkgName)];
             case 1:
-                results = _a.sent();
-                expect(results).not.toBeNull();
-                expect(results.collected.metadata.repository).toStrictEqual({
-                    directory: "packages/@vivliostyle/theme-bunko",
-                    type: "git",
-                    url: "git+https://github.com/vivliostyle/themes.git",
-                });
+                result = _a.sent();
+                expect(result).not.toBeNull();
+                console.log(result);
+                console.log(result.collected.metadata.links);
                 return [2 /*return*/];
         }
     });
@@ -194,8 +182,8 @@ test.skip("NpmApi.SearchPackage method", function () { return __awaiter(void 0, 
     });
 }); });
 // NPM からテーマを探す
-test("search vivliostyle-themes", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var themeManager, themes, theme;
+test.skip("search vivliostyle-themes", function () { return __awaiter(void 0, void 0, void 0, function () {
+    var themeManager, themes;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -205,56 +193,18 @@ test("search vivliostyle-themes", function () { return __awaiter(void 0, void 0,
                 return [4 /*yield*/, themeManager.searchFromNpm()];
             case 1:
                 themes = _a.sent();
-                theme = themes[0];
-                // console.log(theme);
-                expect(theme.name).toBe("@vivliostyle/theme-bunko");
-                expect(theme.description).toBe("文庫用のテーマ");
-                expect(theme.category).toBe("novel");
-                expect(theme.style).toBe("theme_common.css");
-                expect(theme.files['theme_common.css']).toContain('@charset "UTF-8"');
                 return [2 /*return*/];
         }
     });
 }); });
 // // package.jsonのvivliostyle/topicsを元に検索
-test('search themes by topic', function () { return __awaiter(void 0, void 0, void 0, function () {
-    var themeManager, themes, keyword, result, keyword2, result2, keyword3, result3;
+test.skip('search themes by topic', function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                themeManager = new ThemeManager_1.default(GitHubAccessToken);
-                return [4 /*yield*/, themeManager.searchFromNpm()];
-            case 1:
-                themes = _a.sent();
-                keyword = '小説';
-                result = themes.filter(function (theme) {
-                    return theme.topics.includes(keyword);
-                });
-                expect(result[0].name).toBe('@vivliostyle/theme-bunko');
-                keyword2 = 'Report';
-                result2 = themes.filter(function (theme) {
-                    // console.log(theme.name,theme.topics);
-                    return theme.topics.includes(keyword2);
-                });
-                // TODO: nameでソートしたほうが良いかも
-                expect(result2.length).toBe(1);
-                expect(result2[0].name).toBe('@vivliostyle/theme-academic');
-                keyword3 = 'hb';
-                result3 = themes.filter(function (theme) {
-                    var regexp = new RegExp(keyword3, 'i');
-                    var num = theme.topics.filter(function (topic) {
-                        return regexp.test(topic);
-                    }).length;
-                    return num > 0;
-                });
-                expect(result3.length).toBe(1);
-                expect(result3[0].name).toBe('@vivliostyle/theme-techbook');
-                return [2 /*return*/];
-        }
+        return [2 /*return*/];
     });
 }); });
 // テーマ名を指定してNPMから取得
-test("get package theme", function () { return __awaiter(void 0, void 0, void 0, function () {
+test.skip("get package theme", function () { return __awaiter(void 0, void 0, void 0, function () {
     var themeManager, theme, theme_1, e_1, err, theme_2, e_2, err;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -300,15 +250,11 @@ test("get package theme", function () { return __awaiter(void 0, void 0, void 0,
  * CSSファイル単体(未完成)
  */
 test.skip("single file theme", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var theme, style;
     return __generator(this, function (_a) {
-        theme = new ThemeManager_1.SingleFileTheme("https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css");
-        style = theme.files["style.css"];
-        expect(style).not.toBeNull();
         return [2 /*return*/];
     });
 }); });
-test("get file", function () { return __awaiter(void 0, void 0, void 0, function () {
+test.skip("get file", function () { return __awaiter(void 0, void 0, void 0, function () {
     var themeManager, theme, filepaths;
     return __generator(this, function (_a) {
         switch (_a.label) {

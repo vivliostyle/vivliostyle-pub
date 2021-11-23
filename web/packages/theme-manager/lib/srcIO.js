@@ -39,8 +39,100 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LocalIO = exports.AppCacheIO = exports.GitHubIO = void 0;
+exports.LocalIO = exports.GitHubIO = exports.DummyFs = exports.GitHubFs = void 0;
 var fetch_github_content_1 = __importDefault(require("fetch-github-content"));
+/**
+ * GitHubの特定のリポジトリを読み書きする
+ */
+var GitHubFs = /** @class */ (function () {
+    /**
+     * コンストラクタ
+     */
+    function GitHubFs(p) {
+        var _this = this;
+        var _a;
+        this.readdir = function (path, options) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+            return [2 /*return*/, []];
+        }); }); };
+        if (p.ownerOrUrl && p.repo) {
+            // ownerやrepoが渡された
+            this.owner = p.ownerOrUrl;
+            this.repo = p.repo;
+        }
+        else {
+            // URLが渡された場合
+            var path = GitHubFs.parseURL(p.ownerOrUrl);
+            this.owner = path.owner;
+            this.repo = path.repo;
+        }
+        this.dir = (_a = p.dir) !== null && _a !== void 0 ? _a : '';
+        this.token = p.octkitOrToken;
+    }
+    /**
+     * urlからowner, repo, pathを取り出す
+     * @param url
+     * @returns
+     */
+    GitHubFs.parseURL = function (url) {
+        var found = url.match(/https:\/\/github\.com\/([\w-\.]+)\/([\w-\.]+).git(?:\/(.*))?/);
+        if (found == null || !found[1] || !found[2]) {
+            throw new Error('invalid github url : ' + url);
+        }
+        var path = { owner: found[1], repo: found[2], path: found[3] };
+        return path;
+    };
+    GitHubFs.prototype.readFile = function (path, json) {
+        return __awaiter(this, void 0, void 0, function () {
+            var content;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, fetch_github_content_1.default)({
+                            owner: this.owner,
+                            repo: this.repo,
+                            path: path,
+                            token: this.token,
+                            json: json,
+                        })];
+                    case 1:
+                        content = _a.sent();
+                        return [2 /*return*/, content];
+                }
+            });
+        });
+    };
+    GitHubFs.prototype.writeFile = function () {
+        return __awaiter(this, void 0, void 0, function () { return __generator(this, function (_a) {
+            return [2 /*return*/];
+        }); });
+    };
+    return GitHubFs;
+}());
+exports.GitHubFs = GitHubFs;
+/**
+ * テスト用のファイルシステム
+ */
+var DummyFs = /** @class */ (function () {
+    function DummyFs() {
+        var _this = this;
+        this.readdir = function (path, options) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+            return [2 /*return*/, []];
+        }); }); };
+    }
+    DummyFs.prototype.readFile = function (path) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, path];
+            });
+        });
+    };
+    DummyFs.prototype.writeFile = function () {
+        return __awaiter(this, void 0, void 0, function () { return __generator(this, function (_a) {
+            return [2 /*return*/];
+        }); });
+    };
+    return DummyFs;
+}());
+exports.DummyFs = DummyFs;
 /**
  * テーマの本体がGitHubにある
  */
@@ -61,7 +153,7 @@ var GitHubIO = /** @class */ (function () {
      * @param data
      */
     GitHubIO.prototype.put = function (path, data) {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
     };
     /**
      * TODO: 全ファイル名の取得
@@ -76,7 +168,7 @@ var GitHubIO = /** @class */ (function () {
     GitHubIO.parseURL = function (url) {
         var found = url.match(/https:\/\/github\.com\/([\w-\.]+)\/([\w-\.]+).git(?:\/(.*))?/);
         if (found == null || !found[1] || !found[2]) {
-            throw new Error("invalid github url : " + url);
+            throw new Error('invalid github url : ' + url);
         }
         var path = { owner: found[1], repo: found[2], path: found[3] };
         return path;
@@ -110,18 +202,6 @@ var GitHubIO = /** @class */ (function () {
     return GitHubIO;
 }());
 exports.GitHubIO = GitHubIO;
-var AppCacheIO = /** @class */ (function () {
-    function AppCacheIO() {
-    }
-    AppCacheIO.prototype.get = function (path) {
-        throw new Error("Method not implemented.");
-    };
-    AppCacheIO.prototype.put = function (path, data) {
-        throw new Error("Method not implemented.");
-    };
-    return AppCacheIO;
-}());
-exports.AppCacheIO = AppCacheIO;
 /**
  * ローカルファイルの入出力
  */
@@ -129,10 +209,10 @@ var LocalIO = /** @class */ (function () {
     function LocalIO() {
     }
     LocalIO.prototype.get = function (path) {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
     };
     LocalIO.prototype.put = function (path, data) {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
     };
     return LocalIO;
 }());

@@ -15,7 +15,12 @@ import {useDisclosure} from '@chakra-ui/react';
 const GitHubAccessToken: string | null =
   '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';
 
-const themeManager = new ThemeManager(GitHubAccessToken);
+
+const themeManagerConfig = {
+  GitHubAccessToken: GitHubAccessToken
+};
+
+const themeManager = new ThemeManager(themeManagerConfig);
 
 export function MenuBar({
   isProcessing,
@@ -38,9 +43,9 @@ export function MenuBar({
 
   useEffect(() => {
     if(!app.user){return;}
-    themeManager.searchFromNpm().then((themeList)=>{
-      setThemes(themeList);
-    });
+    // themeManager.searchFromNpm().then((themeList)=>{
+    //   setThemes(themeList);
+    // });
   }, [app.user]);
 
   const onDidSaved = useCallback(() => {

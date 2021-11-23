@@ -2226,6 +2226,11 @@
   dependencies:
     fast-diff "^1.2.0"
 
+"@vivliostyle/theme-gutenberg@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/theme-gutenberg/-/theme-gutenberg-0.1.0.tgz#c0fbae2793a74e3d4550a491c75ca697578b2dbb"
+  integrity sha512-S6Yee4Y602LzPKMVk560EG3Ja6+B6MjSisClY5gi1Sk34rcU/ZE+xBs5FBsH37QG4T5B7FhMwkfI2q0AC3dJYQ==
+
 "@vivliostyle/vfm@1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-1.0.2.tgz#d7c813d80b2033de31018609842137f976eb73ed"
@@ -7167,9 +7172,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-theme-manager@../packages/theme-manager:
+theme-manager@./packages/theme-manager:
   version "1.0.0"
   dependencies:
+    "@vivliostyle/theme-gutenberg" "^0.1.0"
     cosmiconfig "^7.0.1"
     fetch-github-content "^1.2.4"
     live-plugin-manager "^0.16.0"

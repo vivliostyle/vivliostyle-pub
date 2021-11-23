@@ -35,8 +35,9 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
     setContentReady(true);
 
     if( iframeRef.current) { // TODO: 描画完了するまでは再描画しない
+      // 以下で検知できるのはHTMLのonload
       iframeRef.current!.onload = () => {
-        console.log("読込完了"); // 実際にはonloadの後にvivliostyle.jsの処理が走るのでどうやって検知するか。
+        // console.log("読込完了"); // 実際にはonloadの後にvivliostyle.jsの処理が走るのでどうやって検知するか。
       };  
     }
 
