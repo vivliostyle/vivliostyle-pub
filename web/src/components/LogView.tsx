@@ -10,7 +10,7 @@ export function LogView({
 }) {
   const logBuffer = useLogBufferContext();
   const log = useLogContext();
-  console.log('[LogView]',logBuffer);
+  console.log('[LogView]' /*,logBuffer*/);
 
   useEffect(() => {
     onLogging(logBuffer.length);

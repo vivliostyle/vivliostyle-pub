@@ -2,8 +2,6 @@ import React, {useMemo} from 'react';
 import Editor from '@monaco-editor/react';
 import {
   FileState,
-  getExt,
-  isEditableFile,
 } from '@middlewares/frontendFunctions';
 import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
 import * as UI from '@components/ui';
@@ -24,14 +22,13 @@ export const MarkdownEditor = ({
    * 自動判別するのでなくても良いような気がする
    */
   const language = useMemo(() => {
-    const ext = getExt(currentFile.file?.path);
-    if (ext === 'md') {
+    if (currentFile.ext === 'md') {
       return 'markdown';
-    } else if (ext === 'js') {
+    } else if (currentFile.ext === 'js') {
       return 'javascript';
-    } else if (ext === 'html') {
+    } else if (currentFile.ext === 'html') {
       return 'html';
-    } else if (ext === 'css') {
+    } else if (currentFile.ext === 'css') {
       return 'css';
     } else {
       return 'plain';
@@ -45,6 +42,7 @@ export const MarkdownEditor = ({
    */
   const onChange = (value: string | undefined, event: any) => {
     currentFile.modify(value ?? '');
+    onModified(value??'');
   };
 
   const display = currentFile.state == FileState.none ? 'block' : 'none';
@@ -54,7 +52,7 @@ export const MarkdownEditor = ({
       <Editor
         height="100%"
         language={language}
-        path={currentFile.file?.path}
+        path={currentFile.file?.name}
         options={{
           minimap: {enabled: false},
           wordWrap: 'on',

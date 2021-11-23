@@ -1,6 +1,3 @@
-import {NextApiRequest, NextApiResponse} from 'next';
-import firebaseAdmin from '@services/firebaseAdmin';
-import {decrypt} from '@utils/encryption';
 import { User } from 'firebase/auth';
 
 /**

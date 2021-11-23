@@ -17,7 +17,6 @@ import {useAppContext} from './useAppContext';
 import {Theme} from 'theme-manager';
 import {useCurrentFileContext} from './useCurrentFileContext';
 import {
-  processTheme,
   processThemeString,
   transpileMarkdown,
   VPUBFS_ROOT,
@@ -322,6 +321,7 @@ export function PreviewSourceContextProvider({
         commit(action.session!, action.branch);
         return state;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[app]);
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);

@@ -1,23 +1,30 @@
-import { DocumentReference } from 'firebase/firestore';
-import { Dirent } from 'fs-extra';
-import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
-import { FileState, getExt, isEditableFile } from './frontendFunctions';
-import { useAppContext } from './useAppContext';
-import { useLogContext } from './useLogContext';
-import { useRepositoryContext } from './useRepositoryContext';
-import { WebApiFs } from './WebApiFS';
+import {DocumentReference, updateDoc, serverTimestamp} from 'firebase/firestore';
+import {Dirent} from 'fs-extra';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+} from 'react';
+import {FileState, getExt, isEditableFile} from './frontendFunctions';
+import {useAppContext} from './useAppContext';
+import {useLogContext} from './useLogContext';
+import {useRepositoryContext} from './useRepositoryContext';
+import {WebApiFs} from './WebApiFS';
 
 /**
  * エディタで編集しているファイル情報
  */
- export type CurrentFile = {
-  file: Dirent | null;            // ファイル情報
-  text: string;                   // 現在のテキスト 
-  ext: string;                    // 拡張子
-  state: FileState;               // 状態
-  session?: DocumentReference;    // firestoreのセッションID
+export type CurrentFile = {
+  file: Dirent | null; // ファイル情報
+  text: string; // 現在のテキスト
+  ext: string; // 拡張子
+  state: FileState; // 状態
+  session?: DocumentReference; // firestoreのセッションID
   modify: (text: string) => void; // テキスト更新の更新メソッド
-  commit: () => void;             // ファイルのコミットメソッド
+  commit: () => void; // ファイルのコミットメソッド
+  timer?: NodeJS.Timeout;
 };
 
 const CurrentFileContext = createContext({} as CurrentFile);
@@ -27,10 +34,16 @@ export function useCurrentFileContext() {
 }
 
 type CurrentFileActions =
-| { type: 'modify'; text: string; }
-| { type: 'setFile'; file: Dirent | null; }
-| { type: 'setFileCallback'; seq:number; file: Dirent | null; content:string}
-| { type: 'commit'};
+  | {type: 'modify'; text: string}
+  | {type: 'setFile'; file: Dirent | null}
+  | {
+      type: 'setFileCallback';
+      seq: number;
+      file: Dirent | null;
+      content: string;
+      session: DocumentReference;
+    }
+  | {type: 'commit'};
 
 /**
  * テキスト編集ごとにかかる更新範囲を限定するため、
@@ -42,13 +55,13 @@ type CurrentFileActions =
 export function CurrentFileContextProvider({
   children,
   file,
-  onReady
+  onReady,
 }: {
   children: JSX.Element;
   file: Dirent | null;
-  onReady: (file:Dirent|null)=>void;
+  onReady: (file: Dirent | null) => void;
 }) {
-  console.log('[CurrentFileContextProvider]'/*, file, onReady*/);
+  console.log('[CurrentFileContextProvider]' /*, file, onReady*/);
   const app = useAppContext();
   const repository = useRepositoryContext();
   const log = useLogContext();
@@ -60,14 +73,18 @@ export function CurrentFileContextProvider({
     dispatch({type: 'modify', text: text});
   }, []);
 
+  /**
+   * 編集ファイルの保存
+   * TODO: ファイルリストの再読み込み
+   */
   const commit = useCallback(() => {
-    dispatch({type:"commit"});
+    dispatch({type: 'commit'});
   }, []);
 
-  useEffect(()=>{
-    console.log('call setFileDispatch',file);
-    dispatch({type:'setFile',file:file});
-  },[file]);
+  useEffect(() => {
+    console.log('call setFileDispatch', file);
+    dispatch({type: 'setFile', file: file});
+  }, [file]);
 
   /**
    * 初期値
@@ -83,53 +100,104 @@ export function CurrentFileContextProvider({
   const reducer = useCallback(
     (state: CurrentFile, action: CurrentFileActions): CurrentFile => {
       switch (action.type) {
-        case 'modify': // 内容の編集
-          return {...state, state: FileState.modified, text:action.text};
+
+        // 内容の編集
+        case 'modify':
+          console.log('modify');
+          // 2秒たっても次のmodifyがこなければsessionを更新する
+          if(state.timer) {
+            clearTimeout(state.timer);            
+          }
+          const timer = setTimeout(()=>{
+            console.log('modify uppdate session');
+            updateDoc(state.session!,{
+              userUpdatedAt: serverTimestamp(),
+              text: action.text,
+            })
+            .then(() => {
+            });
+          },2000);
+          return {...state, state: FileState.modified, text: action.text, timer};
+
+        // ファイルの選択
         case 'setFile':
-          console.log('setFile',action);
+          console.log('setFile', action);
           // 同じファイルを選択した場合何もしない
           // ファイルの切り替えの際にはコミットされている前提
-          if ((action.file == null && state.file == null)
-             || action.file?.name === state.file?.name
+          if (
+            (action.file == null && state.file == null) ||
+            action.file?.name === state.file?.name
           ) {
             return state;
           }
           if (!action.file) {
             // 選択解除
             onReady(null);
-            return {...state, file: null, state:FileState.none};
+            return {...state, file: null, state: FileState.none, timer:undefined};
           }
-          if(action.file) {log.info('ファイルが選択されました : '+action.file?.name)};
+          if (action.file) {
+            log.info('ファイルが選択されました : ' + action.file?.name);
+          }
           if (!isEditableFile(action.file.name)) {
             // 画像などのエディタで編集不可能なファイル
             // TODO: 画像ビューワー
-            log.error('編集できないファイル形式です : ' + action.file.name, 3000);
+            log.error(
+              '編集できないファイル形式です : ' + action.file.name,
+              3000,
+            );
             onReady(action.file);
-            return {...state, state: FileState.none};
+            return {...state, state: FileState.none, timer:undefined};
           }
           WebApiFs.open({
             user: app.user!,
             owner: repository.owner!,
             repo: repository.repo!,
             branch: repository.branch!,
-          }).then((fs)=>{
-            fs.readFile(action.file?.name!)
-            .then((content)=>{
-              // console.log('dispatch setFileCallback', seq,action.file,content);
-              if(!content) {
-                log.error('ファイルの取得が出来ませんでした(' + action.file?.name + ') : '+content, 3000);
-                return state;
-              }
-              dispatch({type: 'setFileCallback', seq, file:action.file, content:content.toString() });
+          })
+            .then((fs) => {
+              fs.readFile(action.file?.name!).then((content) => {
+                // console.log('dispatch setFileCallback', seq,action.file,content);
+                if (!content) {
+                  log.error(
+                    `ファイルの取得が出来ませんでした(${action.file?.name}) : ${content}`,
+                    3000,
+                  );
+                  return state;
+                }
+                fs.getFileSession(action.file!.name!)
+                  .then((session) => {
+                    dispatch({
+                      type: 'setFileCallback',
+                      seq,
+                      file: action.file,
+                      content: content.toString(),
+                      session,
+                    });
+                  })
+                  .catch((err) => {
+                    log.error(
+                      `セッション情報が取得できませんでした(${action.file?.name}): ${err.message}`,
+                      3000,
+                    );
+                  });
+              });
             })
-          }).catch((err)=>{
-            log.error('ファイルの取得が出来ませんでした(' + action.file?.name + ') : ' + err.message, 3000);
-            console.error(err);
-            onReady(action.file);
-          });
-          return {...state,state:FileState.none};
+            .catch((err) => {
+              log.error(
+                'ファイルの取得が出来ませんでした(' +
+                  action.file?.name +
+                  ') : ' +
+                  err.message,
+                3000,
+              );
+              console.error(err);
+              onReady(action.file);
+            });
+          return {...state, state: FileState.none};
+
+        // ファイルの選択が完了
         case 'setFileCallback':
-          console.log('setFileCallback',action);
+          console.log('setFileCallback' /*, action*/);
           // 多重処理をキャンセル
           if (action.seq != seq) {
             console.log('dispatch cancel');
@@ -138,25 +206,47 @@ export function CurrentFileContextProvider({
             seq++;
           }
           if (action.file) {
-            // ファイル情報が取得できたら対象ファイルを変更してstateをinitにする
-        //     // if (action.file.session) {
-        //     //   // setSession(file.session);
-        //     // }
-        //     // previewSource.changeFile(path, file.text);
             onReady(action.file);
-            return {...state, state:FileState.init, file: action.file, text: action.content, ext: getExt(action.file.name) /*action.file.file*/};
+            return {
+              ...state,
+              state: FileState.init,
+              file: action.file,
+              text: action.content,
+              ext: getExt(action.file.name),
+              session: action.session,
+            };
           } else {
             // ファイル情報が取得できなかった
-            console.error('file not found');
+            log.error(`ファイル情報が取得できませんでした(${action.file!.name!})`);
             onReady(action.file);
-            return {...state, state:FileState.none, file: null };
+            return {
+              ...state,
+              state: FileState.none,
+              file: null,
+              session: undefined,
+            };
           }
+        
+        // ファイルを保存
         case 'commit':
-          return { ...state, state:FileState.clean };
+          (async () => {
+          await fetch(
+              '/api/github/commitSession',
+              {
+                method: 'PUT',
+                body: JSON.stringify({sessionId:state.session?.id, branch:repository.branch}),
+                headers: {
+                  'content-type': 'application/json',
+                  'x-id-token': await app.user!.getIdToken(),
+                },
+              },
+            );
+          })();
+          return {...state, state: FileState.clean};
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app,repository],
+    [app, repository],
   );
   const [context, dispatch] = useReducer(reducer, initialState);
 

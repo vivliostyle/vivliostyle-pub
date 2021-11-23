@@ -120,14 +120,7 @@ export function RepositoryContextProvider({
       dispatch({type: 'selectFile', file, key});
     }
 
-    // // 現在の対象ファイルが未コミットなら警告を表示
-    // // if (
-    // // status !== 'clean' &&
-    // //   !confirm('ファイルが保存されていません。変更を破棄しますか?')
-    // // ) {
-    // //   // キャンセルなら何もしない
-    // //   return;
-    // // }
+
 
     // // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
   }, []);
@@ -231,9 +224,8 @@ export function RepositoryContextProvider({
         case 'selectFile':
           console.log('selectFileAction', action);
           setFile(action.file);
-        return state;
-          // return {...state,currentFile: action.file};
-          case 'selectFileCallback':
+          return state;
+        case 'selectFileCallback':
         //   console.log('selectFileCallback', action.n, n, action.file);
         //   if (action.n != n) {
         //     console.log('dispatch cancel');

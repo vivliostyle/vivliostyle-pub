@@ -1,6 +1,9 @@
 import {User} from '@firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { doc, DocumentReference, getFirestore } from 'firebase/firestore';
 import {Dirent} from 'fs-extra';
 import {ContentOfRepositoryApiResponse} from 'pages/api/github/contentOfRepository';
+import { GithubRequestSessionApiResponse } from 'pages/api/github/requestSession';
 import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {Fs} from 'theme-manager';
 
@@ -55,7 +58,7 @@ export class WebApiFs implements Fs {
    * リポジトリからファイルを読み込む
    * Application Cacheの場合は使用しないかも
    * @param path
-   * @param json // jsonをオブジェクト化して取得するならtrue
+   * @param json // 現在非対応 TODO: 必要があれば対応する
    * @returns
    */
   public async readFile(
@@ -89,7 +92,43 @@ export class WebApiFs implements Fs {
   }
 
   /**
+   * ファイルパスからfirestoreのsession idを取得する
+   * @param filePath 
+   * @returns 
+   */
+  private async getSessionId(filePath:string){
+    const {id} = await fetch('/api/github/requestSession',
+      {
+        method: 'POST',
+        body: JSON.stringify({owner:this.owner, repo:this.repo, branch:this.branch, path:filePath}),
+        headers: {
+          'content-type': 'application/json',
+          'x-id-token': await this.user.getIdToken(),
+        },
+      },
+    ).then(r => r.json()) as GithubRequestSessionApiResponse;
+    return id;
+  }
+
+  /**
+   * ファイルパスに対応するfirestoreのsessionオブジェクトを取得する
+   * @param filePath
+   * @returns 
+   */
+  public async getFileSession(filePath:string):Promise<DocumentReference> {
+    // Firebase Web version 9対応
+    const id = await this.getSessionId(filePath);
+    const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+    const docRef = doc( db, "users", this.user.uid, "sessions", id);
+   return docRef;
+  }
+
+  /**
    * リポジトリにファイルを追加してコミットする
+   * 編集したファイルのコミットとは別処理なので注意
+   * 編集ファイルのコミットはuseCurrentFileを参照
    * @param file filename or file descriptor
    * @param data
    * @param options encoding|mode|flag|signal
@@ -99,7 +138,7 @@ export class WebApiFs implements Fs {
     data: any,
     options?: any,
   ): Promise<void> {
-    
+
   }
 
   /**
