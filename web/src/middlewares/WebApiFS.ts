@@ -99,13 +99,7 @@ export class WebApiFs implements Fs {
     data: any,
     options?: any,
   ): Promise<void> {
-    //   const filePath = upath.join(this.root, file);
-    //   const contentType = (mime.lookup(filePath) ?? '') as string;
-    //   const headers = new Headers();
-    //   headers.append('content-type', contentType);
-    // //   console.log('headers', file, contentType);
-    //   await this.cache.delete(filePath);
-    //   await this.cache.put(filePath, new Response(data, {headers}));
+    
   }
 
   /**

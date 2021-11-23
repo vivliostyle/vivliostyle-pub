@@ -16,7 +16,7 @@ export const BranchSelecter = () => {
   return (
     <UI.Select
       onChange={onChangeBranch} 
-      value={repository.currentBranch ?? ""}
+      value={repository.branch ?? ""}
     >
         { repository.branches.map(name => <option value={name} key={name}>{name}</option>) }
     </UI.Select>

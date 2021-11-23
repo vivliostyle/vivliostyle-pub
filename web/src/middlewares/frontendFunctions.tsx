@@ -1,15 +1,10 @@
 import {User} from 'firebase/auth';
 import useSWR from 'swr';
 import {GithubReposApiResponse} from '../pages/api/github/repos';
-import firebase, {db} from '@services/firebase';
-import {collection, doc, DocumentReference, getDoc} from 'firebase/firestore';
 import path from 'path';
 import {BranchesApiResponse} from 'pages/api/github/branches';
 import {AppCacheFs} from './AppCacheFS';
 import {WebApiFs} from './WebApiFS';
-import { Dirent } from 'fs-extra';
-
-const VPUBFS_CACHE_NAME = 'vpubfs';
 
 /**
  * URL判別
@@ -81,18 +76,7 @@ type RepositoryPath = {
   path: string;
 };
 
-/**
- * エディタで編集しているファイル情報
- */
-export type CurrentFile = {
-  file: Dirent | null;
-  text: string;
-  ext: string; // 拡張子
-  state: FileState;
-  // session?: DocumentReference;
-  modify: (text: string) => void;
-  commit: () => void;
-};
+
 
 export async function updateFile() {}
 

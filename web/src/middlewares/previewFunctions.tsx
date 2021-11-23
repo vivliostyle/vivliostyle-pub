@@ -70,7 +70,7 @@ export async function transpileMarkdown(
         await updateCacheFromPath(
           repository.owner!,
           repository.repo!,
-          repository.currentBranch!,
+          repository.branch!,
           srcPath!,
           imagePath,
           app.user!,
@@ -119,7 +119,7 @@ export const processThemeString = async (
       updateCacheFromPath(
         repository.owner!,
         repository.repo!,
-        repository.currentBranch!,
+        repository.branch!,
         stylesheet,
         imageOfStyle,
         app.user!,
@@ -149,7 +149,7 @@ export const processTheme = async (
     user:app.user!,
     owner:repository.owner!,
     repo:repository.repo!,
-    branch:repository.currentBranch!,
+    branch:repository.branch!,
   });
   const stylesheet = await webApifs.readFile(themePath);
   await app.vpubFs!.writeFile(themePath,stylesheet);

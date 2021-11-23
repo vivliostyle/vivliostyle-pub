@@ -49,7 +49,7 @@ export const FileUploadModal = ({
             user,
             owner: repository.owner!,
             repo: repository.repo!,
-            branch: repository.currentBranch!,
+            branch: repository.branch!,
             path: fileName,
           },
           file,
@@ -58,7 +58,7 @@ export const FileUploadModal = ({
           return;
         }
         if (response.status === 201) {
-          repository.selectBranch(repository.currentBranch!); // ファイル一覧の更新
+          repository.selectBranch(repository.branch!); // ファイル一覧の更新
           log.success('image uploaded', 3000);
         } else if (response.status === 400 || response.status === 401) {
           log.error('authentication error', 3000);

@@ -1,10 +1,24 @@
+import { DocumentReference } from 'firebase/firestore';
 import { Dirent } from 'fs-extra';
 import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
-import { CurrentFile, FileState, getExt, isEditableFile } from './frontendFunctions';
+import { FileState, getExt, isEditableFile } from './frontendFunctions';
 import { useAppContext } from './useAppContext';
 import { useLogContext } from './useLogContext';
 import { useRepositoryContext } from './useRepositoryContext';
 import { WebApiFs } from './WebApiFS';
+
+/**
+ * エディタで編集しているファイル情報
+ */
+ export type CurrentFile = {
+  file: Dirent | null;            // ファイル情報
+  text: string;                   // 現在のテキスト 
+  ext: string;                    // 拡張子
+  state: FileState;               // 状態
+  session?: DocumentReference;    // firestoreのセッションID
+  modify: (text: string) => void; // テキスト更新の更新メソッド
+  commit: () => void;             // ファイルのコミットメソッド
+};
 
 const CurrentFileContext = createContext({} as CurrentFile);
 
@@ -15,7 +29,8 @@ export function useCurrentFileContext() {
 type CurrentFileActions =
 | { type: 'modify'; text: string; }
 | { type: 'setFile'; file: Dirent | null; }
-| { type: 'setFileCallback'; seq:number; file: Dirent | null; content:string};
+| { type: 'setFileCallback'; seq:number; file: Dirent | null; content:string}
+| { type: 'commit'};
 
 /**
  * テキスト編集ごとにかかる更新範囲を限定するため、
@@ -45,7 +60,9 @@ export function CurrentFileContextProvider({
     dispatch({type: 'modify', text: text});
   }, []);
 
-  const commit = useCallback(() => {}, []);
+  const commit = useCallback(() => {
+    dispatch({type:"commit"});
+  }, []);
 
   useEffect(()=>{
     console.log('call setFileDispatch',file);
@@ -67,17 +84,13 @@ export function CurrentFileContextProvider({
     (state: CurrentFile, action: CurrentFileActions): CurrentFile => {
       switch (action.type) {
         case 'modify': // 内容の編集
-          // ここでfile.textを更新するとフィードバックループが発生する?
-          // monaco-edtitorのdefaultValueに指定するなら大丈夫か?
-          // currentFile.text = action.text;
           return {...state, state: FileState.modified, text:action.text};
         case 'setFile':
           console.log('setFile',action);
           // 同じファイルを選択した場合何もしない
           // ファイルの切り替えの際にはコミットされている前提
-          if (
-            (action.file == null && state.file == null)
-             // || action.file?.sha === state.file?.sha
+          if ((action.file == null && state.file == null)
+             || action.file?.name === state.file?.name
           ) {
             return state;
           }
@@ -98,7 +111,7 @@ export function CurrentFileContextProvider({
             user: app.user!,
             owner: repository.owner!,
             repo: repository.repo!,
-            branch: repository.currentBranch!, // TODO: なぜこれだけcurrent?
+            branch: repository.branch!,
           }).then((fs)=>{
             fs.readFile(action.file?.name!)
             .then((content)=>{
@@ -138,6 +151,8 @@ export function CurrentFileContextProvider({
             onReady(action.file);
             return {...state, state:FileState.none, file: null };
           }
+        case 'commit':
+          return { ...state, state:FileState.clean };
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

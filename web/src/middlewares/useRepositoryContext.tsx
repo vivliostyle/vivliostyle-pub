@@ -20,7 +20,7 @@ import { WebApiFs } from './WebApiFS';
 export type Repository = {
   owner: string | null;
   repo: string | null;
-  currentBranch: string | null;
+  branch: string | null;
   currentFile: Dirent | null;
   currentConfig: CoreProps | null;
   currentTree: Dirent[];
@@ -140,7 +140,7 @@ export function RepositoryContextProvider({
     repo: null,
     branches: [],
     files: [],
-    currentBranch: null,
+    branch: null,
     currentTree: [],
     currentFile: null,
     currentConfig: null,
@@ -164,7 +164,7 @@ export function RepositoryContextProvider({
             owner: action.owner,
             repo: action.repo,
             branches: action.branches,
-            currentBranch: action.defaultBranch,
+            branch: action.defaultBranch,
             files: action.files
           };
         case 'selectBranch':
@@ -191,7 +191,7 @@ export function RepositoryContextProvider({
           // TODO: ブランチ毎のカレントディレクトリを保持する
           return {
             ...state,
-            currentBranch: action.branch,
+            branch: action.branch,
             currentTree: [],
             files: action.files,
           };
@@ -210,7 +210,7 @@ export function RepositoryContextProvider({
             user:app.user!,
             owner:state.owner!,
             repo:state.repo!,
-            branch:state.currentBranch!,
+            branch:state.branch!,
           }).then((fs)=>{
             fs.readdir('').then((files)=>{
               console.log('success');
