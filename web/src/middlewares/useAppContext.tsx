@@ -3,6 +3,7 @@ import firebase from '@services/firebase';
 import { onAuthStateChanged, User,getAuth, signInWithRedirect, GithubAuthProvider } from "@firebase/auth";
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
+import { AppCacheFs } from "./AppCacheFS";
 
 
 const provider = new GithubAuthProvider();
@@ -13,12 +14,12 @@ export type AppContext = {
     isPending:boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
     signIn:()=>void;
     signOut:()=>void;
-
+    vpubFs?:AppCacheFs;
     // TODO: リポジトリのリストを持つ
 }
 
 type Actions = 
-| { type:'setUser'; user:User|null; };
+| { type:'setUser'; user:User|null; fs?:AppCacheFs };
 
 const AppContext = createContext({} as AppContext);
 
@@ -33,8 +34,6 @@ export function useAppContext() {
  */
 export function AppContextProvider({children}:{children:JSX.Element}){
 
-    let dispatcher: Dispatch<Actions> | undefined;
-
     /**
      * ユーザ情報の取得
      */
@@ -42,20 +41,17 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         const auth = getAuth(firebase);
         const unsubscriber = onAuthStateChanged(auth,user => {
             if(user) {
-                user.getIdToken(true);
-                // console.log('providerData', user.providerData);
-                user.getIdTokenResult(true).then((data) => {
-                    // console.log('idTokenResult',data);
-                    if(dispatcher){
-                        dispatcher({type:"setUser",user});      
-                    }
-                }).catch((error)=>{
-                    console.error(error);
-                });
+                (async ()=>{
+                    user.getIdToken(true);
+                    // console.log('providerData', user.providerData);
+                    await user.getIdTokenResult(true);
+                    const fs = await AppCacheFs.open(); 
+                    dispatch({type:"setUser", user, fs});
+                })();
             }
         });
         return () => unsubscriber();
-    },[dispatcher]);
+    },[]);
 
     /**
      * 
@@ -68,17 +64,11 @@ export function AppContextProvider({children}:{children:JSX.Element}){
      * 
      */
     const signOut = ()=>{
-        const auth = getAuth(firebase);
-        auth.signOut()
-        .then(()=>{
-            if(dispatcher){
-                console.log('signOut');
-                dispatcher({type:'setUser',user:null});
-            }
-        })
-        .catch((e)=>{
-            console.error(e);
-        });
+        (async()=>{
+            const auth = getAuth(firebase);
+            await auth.signOut();
+            dispatch({type:'setUser',user:null});
+        })();            
     }; 
 
     /**
@@ -88,7 +78,7 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         user: null,
         isPending: true,
         signIn: signIn,
-        signOut: signOut
+        signOut: signOut,
     });
     
     /**
@@ -97,15 +87,14 @@ export function AppContextProvider({children}:{children:JSX.Element}){
     const reducer = (state: AppContext, action:Actions):AppContext => {
         switch(action.type) {
             case 'setUser':
-                return {...state,user:action.user,isPending:false};
+                if(action.user === null) {
+                    state.vpubFs?.delete();
+                }
+                return {...state,user:action.user,isPending:false,vpubFs:action.fs};
         }
     }
 
     const [app, dispatch] = useReducer(reducer, state);
-    useEffect(()=>{
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        dispatcher = dispatch;
-    },[dispatch]);
 
     return app.isPending ? (
         <UI.Container mt={6}>

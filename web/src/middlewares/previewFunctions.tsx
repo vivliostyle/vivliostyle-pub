@@ -89,8 +89,7 @@ export async function transpileMarkdown(
     }
     console.log('imagePaths', imagePaths);
   }
-  const fs = await AppCacheFs.open();
-  await fs.writeFile(srcPath, text);
+  await app.vpubFs!.writeFile(srcPath, text);
   console.log(`updateCache : ${srcPath}`);
   const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
   return {vPubPath, text};
@@ -111,8 +110,7 @@ export const processThemeString = async (
   const themePath = `${theme.name}/${theme.style}`;
   const stylesheet = theme.files[theme.style];
 
-  const fs = await AppCacheFs.open();
-  await fs.writeFile(themePath, stylesheet);
+  await app.vpubFs!.writeFile(themePath, stylesheet);
   console.log(`updateCache : ${themePath}`);
   
   const imagesOfStyle = pickupCSSResources(stylesheet);
@@ -154,8 +152,7 @@ export const processTheme = async (
     branch:repository.currentBranch!,
   });
   const stylesheet = await webApifs.readFile(themePath);
-  const appCacheFs = await AppCacheFs.open();
-  await appCacheFs.writeFile(themePath,stylesheet);
+  await app.vpubFs!.writeFile(themePath,stylesheet);
 
   // stylesheetが参照している画像を取得してApplicationCacheに追加
   const imagesOfStyle = pickupCSSResources(stylesheet.toString());
@@ -165,7 +162,7 @@ export const processTheme = async (
         if (isURL(imageOfStyle)) return;
         const contentPath = path.join(basePath, imageOfStyle);
         const content = await webApifs.readFile(contentPath);
-        await appCacheFs.writeFile(imageOfStyle, content);
+        await app.vpubFs!.writeFile(imageOfStyle, content);
       })
     ).catch((error) => {
       throw error;

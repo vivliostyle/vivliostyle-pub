@@ -29,8 +29,8 @@ export class AppCacheFs implements Fs {
      * @param cacheName キャッシュ名
      * @returns 
      */
-    public static async delete(cacheName: string):Promise<boolean> {
-        return caches.delete(cacheName);
+    public async delete():Promise<boolean> {
+        return caches.delete(this.cacheName);
     }
 
     /**
@@ -71,13 +71,20 @@ export class AppCacheFs implements Fs {
       data: any,
       options?: any,
     ): Promise<void> {
-      const filePath = upath.join(this.root, file);
-      const contentType = (mime.lookup(filePath) ?? '') as string;
-      const headers = new Headers();
-      headers.append('content-type', contentType);
-    //   console.log('headers', file, contentType);
-      await this.cache.delete(filePath);
-      await this.cache.put(filePath, new Response(data, {headers}));
+      try {
+        await caches.open(this.cacheName);
+        const filePath = upath.join(this.root, file);
+        const contentType = (mime.lookup(filePath) ?? '') as string;
+        console.log('appCacheFs.writeFile', filePath, contentType);
+        const headers = new Headers();
+        headers.append('content-type', contentType);
+        console.log('headers', file, contentType);
+        await this.cache.delete(filePath);
+        await this.cache.put(filePath, new Response(data, {headers}));          
+        console.log('appCacheFs.writeFile complete');
+      } catch (error) {
+        console.error(error);
+      }
     }
   
     /**

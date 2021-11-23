@@ -221,23 +221,22 @@ export function PreviewSourceContextProvider({
   const transpile = useCallback(
     (srcPath: string, text: string): void => {
       (async () => {
-        await transpileMarkdown(app, repository, srcPath, text)
-          .then(({vPubPath, text}) => {
-            // 準備が終わったら状態を変化させる
-            // console.log('call dispatcher', dispatch);
-            dispatch({
-              type: 'changeFileCallback',
-              path: srcPath,
-              vPubPath: vPubPath,
-              text: text,
-            });
-          })
-          .catch((err) => {
+        try{
+          const {vPubPath, text:resultText} =await transpileMarkdown(app, repository, srcPath, text);
+          // 準備が終わったら状態を変化させる
+          // console.log('call dispatcher', dispatch);
+          dispatch({
+            type: 'changeFileCallback',
+            path: srcPath,
+            vPubPath: vPubPath,
+            text: resultText,
+          });
+        } catch(err:any) {
             log.error(
               'プレビュー変換に失敗しました(' + srcPath + ') ： ' + err.message, 
               3000
             );
-          });
+        };
       })();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

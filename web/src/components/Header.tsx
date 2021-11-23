@@ -30,7 +30,7 @@ const HeaderUserInfo: React.FC = () => {
 };
 
 export const Header: React.FC = () => {
-  console.log('Header');
+  console.log('[Header]');
   return (
   <UI.Flex w="100%" h={16} backgroundColor="gray.200">
     <UI.Container w="100%" justify="space-between" align="center">

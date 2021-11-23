@@ -33,7 +33,7 @@ export function CurrentFileContextProvider({
   file: Dirent | null;
   onReady: (file:Dirent|null)=>void;
 }) {
-  console.log('[CurrentFileContextProvider]', file,onReady);
+  console.log('[CurrentFileContextProvider]'/*, file, onReady*/);
   const app = useAppContext();
   const repository = useRepositoryContext();
   const log = useLogContext();
@@ -102,7 +102,7 @@ export function CurrentFileContextProvider({
           }).then((fs)=>{
             fs.readFile(action.file?.name!)
             .then((content)=>{
-              console.log('dispatch setFileCallback', seq,action.file,content);
+              // console.log('dispatch setFileCallback', seq,action.file,content);
               if(!content) {
                 log.error('ファイルの取得が出来ませんでした(' + action.file?.name + ') : '+content, 3000);
                 return state;
