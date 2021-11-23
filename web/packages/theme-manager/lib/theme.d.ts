@@ -11,6 +11,7 @@ export interface Theme {
         [filepath: string]: any;
     };
     fs: Fs;
+    getStylePath: () => string | null;
 }
 export declare type PackageJson = {
     name: string;
@@ -59,6 +60,7 @@ export declare class PackageTheme implements Theme {
     };
     fs: Fs;
     constructor(fs: Fs, packageName: string);
+    getStylePath(): string | null;
     /**
      * テーマに含まれるファイルを取得する
      */
@@ -91,5 +93,6 @@ export declare class SingleFileTheme implements Theme {
     };
     fs: Fs;
     constructor(fs: Fs, packageName: string);
+    getStylePath(): string | null;
 }
 //# sourceMappingURL=theme.d.ts.map

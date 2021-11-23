@@ -22,7 +22,8 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
       previewSource.vpubPath
     }`;
-    if (previewSource.stylePath) url += `&style=${previewSource.stylePath}`;
+    const stylePath = previewSource.theme ? previewSource.theme.getStylePath(): null;
+    if (stylePath) { url += `&style=${stylePath}` };
     return url;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewSource, previewSource.stylePath]);

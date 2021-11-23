@@ -107,8 +107,13 @@ export const processThemeString = async (
   repository: Repository,
   theme: Theme
 ):Promise<string> => {
+  console.log('processingThemeString',theme.style);
+  if( !theme.style ) { console.log('empty theme'); return ''; }
   const themePath = `${theme.name}/${theme.style}`;
   const stylesheet = theme.files[theme.style];
+  if(!stylesheet) {
+    return '';
+  }
 
   await app.vpubFs!.writeFile(themePath, stylesheet);
   console.log(`updateCache : ${themePath}`);

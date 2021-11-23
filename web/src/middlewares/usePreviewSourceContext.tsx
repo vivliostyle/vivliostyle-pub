@@ -55,7 +55,7 @@ export type PreviewSource = {
   path: string | null;
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
-  theme: string | null;
+  theme: Theme | null;
   stylePath: string | null; // viewer.jsのstyle= に渡すパス
   // パブリック メソッドに相当
   changeFile: (path: string | null, text: string | null) => void;
@@ -74,7 +74,7 @@ type Actions =
       vPubPath: string | null;
       text: string | null;
     }
-  | {type: 'changeThemeCallback'; theme: string | null}
+  | {type: 'changeThemeCallback'; theme: Theme | null; stylePath:string; }
   | {type: 'modifyText'; text: string | null}
   | {
       type: 'commit';
@@ -138,12 +138,13 @@ export function PreviewSourceContextProvider({
    * @param theme
    */
   const changeTheme = useCallback((theme: Theme | null) => {
+    console.log('changeTheme', theme);
     if (theme) {
       processThemeString(app, repository, theme)
         .then((themePath) => {
           // 準備が終わったら状態を変化させる
           if (dispatch) {
-            dispatch({type: 'changeThemeCallback', theme: themePath});
+            dispatch({type: 'changeThemeCallback', theme:theme, stylePath: themePath});
           }
         })
         .catch((err) => {
@@ -287,11 +288,11 @@ export function PreviewSourceContextProvider({
         };
       case 'changeThemeCallback': // テーマの準備が完了
         console.log('changeThemeCallback', action.theme);
-        let stylePath: string = '';
+        let stylePath: string | null = null;
         if (action.theme) {
-          stylePath = isURL(action.theme)
-            ? action.theme
-            : path.join(VPUBFS_ROOT, action.theme);
+          stylePath = !action.stylePath ? null : isURL(action.stylePath)
+            ? action.stylePath
+            : path.join(VPUBFS_ROOT, action.stylePath);
         }
         return {...state, theme: action.theme!, stylePath};
       case 'modifyText': // テキストが変更された

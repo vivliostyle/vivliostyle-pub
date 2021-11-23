@@ -139,8 +139,6 @@ test.skip("PackageTheme.getPackageJson method", function () { return __awaiter(v
         return [2 /*return*/];
     });
 }); });
-var VPUBFS_CACHE_NAME = 'vpubfs';
-var VPUBFS_ROOT = '/vpubfs';
 test.skip('prototype', function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         return [2 /*return*/];

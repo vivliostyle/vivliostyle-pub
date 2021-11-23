@@ -1,4 +1,4 @@
-import React, {Dispatch, useCallback, useEffect, useState} from 'react';
+import React, {Dispatch, useCallback, useEffect, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
@@ -8,9 +8,10 @@ import {
 } from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
 
-import {Theme, ThemeManager} from 'theme-manager';
+import { Fs, Theme, ThemeManager} from 'theme-manager';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
+import { WebApiFs } from '@middlewares/WebApiFS';
 
 const GitHubAccessToken: string | null =
   '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';
@@ -39,14 +40,56 @@ export function MenuBar({
   const repository = useRepositoryContext();
   const previewSource = usePreviewSourceContext();
 
-  const [themes, setThemes] = useState<Theme[]>([]);
+  const themes = useMemo(()=>{
+    const fs = {} as Fs;
 
-  useEffect(() => {
-    if(!app.user){return;}
-    // themeManager.searchFromNpm().then((themeList)=>{
-    //   setThemes(themeList);
-    // });
-  }, [app.user]);
+    // Viewerのデフォルトスタイルを使用するテーマ
+    const planeTheme = {
+      name:'plane-theme',
+      category:'',
+      topics:[],
+      style:'',
+      description:'Plane theme',
+      version:'1.0',
+      author:'Vivliostyle',
+      files: {},
+      fs: fs,
+      getStylePath: ()=>{
+        return null;
+      }
+    } as Theme;
+    
+    // vivliostyle.config.jsのthemeを使用する
+    const customeTheme ={
+      name:'custom-theme',
+      category:'',
+      topics:[],
+      style:'',
+      description:'Custom theme',
+      version:'1.0',
+      author:'Vivliostyle',
+      files: {},
+      fs: fs,
+      getStylePath: ()=>{
+        // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
+        // リポジトリからstylesheetを取得してApplicationCacheに追加
+        WebApiFs.open({
+          user:app.user!,
+          owner:repository.owner!,
+          repo:repository.repo!,
+          branch:repository.branch!,
+        }).then(fs=>{
+          fs.readFile('theme.css').then((stylesheet)=>{
+            app.vpubFs!.writeFile('theme.css',stylesheet).then(()=>{
+              console.log('setup custom theme');
+            });      
+          })
+        })
+        return '/vpubfs/theme.css';
+      }
+    } as Theme;
+    return [planeTheme,customeTheme];
+  },[app,repository]);
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
@@ -64,8 +107,9 @@ export function MenuBar({
    * @param theme
    */
   const onThemeSelected = useCallback((theme: Theme)=>{
+    console.log('theme selected',theme);
     previewSource.changeTheme(theme);
-  },[]);
+  },[previewSource]);
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
@@ -104,7 +148,7 @@ export function MenuBar({
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
                 >
-                  {theme.description}
+                  {theme.name === previewSource.theme?.name ? '✔ ' : ' '}{theme.description}
                 </UI.MenuItem>
               ))}
             </UI.MenuGroup>

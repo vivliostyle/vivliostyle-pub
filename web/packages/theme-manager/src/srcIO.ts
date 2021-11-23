@@ -94,7 +94,14 @@ export class GitHubFs implements Fs {
  * テスト用のファイルシステム
  */
 export class DummyFs implements Fs {
-  public constructor() {}
+
+  public static open(){
+    return new DummyFs();
+  }
+
+  private constructor() {
+
+  }
 
   public readdir = async (
     path: string,

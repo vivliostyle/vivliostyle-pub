@@ -81,6 +81,9 @@ var PackageTheme = /** @class */ (function () {
             }
         }
     }
+    PackageTheme.prototype.getStylePath = function () {
+        return null;
+    };
     /**
      * テーマに含まれるファイルを取得する
      */
@@ -216,6 +219,9 @@ var SingleFileTheme = /** @class */ (function () {
         // TODO: コメントから取得
         this.category = "";
     }
+    SingleFileTheme.prototype.getStylePath = function () {
+        return null;
+    };
     return SingleFileTheme;
 }());
 exports.SingleFileTheme = SingleFileTheme;

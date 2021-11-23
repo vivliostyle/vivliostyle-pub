@@ -11,6 +11,7 @@ export interface Theme {
   author?: string;
   files: { [filepath: string]: any };
   fs: Fs;
+  getStylePath: ()=>string|null;
 }
 
 export type PackageJson = {
@@ -72,6 +73,10 @@ export class PackageTheme implements Theme {
         this.style = upath.normalize(t.style ?? "");
       }
     }
+  }
+
+  public getStylePath():string|null{
+    return null;
   }
 
   /**
@@ -209,5 +214,9 @@ export class PackageTheme implements Theme {
     this.style = packageName;
     // TODO: コメントから取得
     this.category = "";
+  }
+
+  public getStylePath():string|null{
+    return null;
   }
 }

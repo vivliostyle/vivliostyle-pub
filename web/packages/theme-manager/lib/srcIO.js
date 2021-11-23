@@ -118,6 +118,9 @@ var DummyFs = /** @class */ (function () {
             return [2 /*return*/, []];
         }); }); };
     }
+    DummyFs.open = function () {
+        return new DummyFs();
+    };
     DummyFs.prototype.readFile = function (path) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

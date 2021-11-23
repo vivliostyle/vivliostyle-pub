@@ -55,8 +55,11 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
       installationId: installationId,
     },
   });
-  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'))
-  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), Buffer.from(stringify(text), 'utf8').toString('base64'))
+
+  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'));
+  if((path as string).endsWith('.md')) {
+    await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), Buffer.from(stringify(text), 'utf8').toString('base64'));
+  }
   res.status(201).send(null);
 };
 

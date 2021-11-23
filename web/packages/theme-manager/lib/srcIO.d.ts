@@ -43,7 +43,8 @@ export declare class GitHubFs implements Fs {
  * テスト用のファイルシステム
  */
 export declare class DummyFs implements Fs {
-    constructor();
+    static open(): DummyFs;
+    private constructor();
     readdir: (path: string, options?: string | Object | undefined) => Promise<Dirent[]>;
     readFile(path: string): Promise<string | Buffer>;
     writeFile(): Promise<void>;
