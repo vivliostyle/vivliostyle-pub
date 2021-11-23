@@ -3,8 +3,8 @@ import fetch from 'isomorphic-unfetch';
 
 import type {VivliostyleConfigSchema} from './vivliostyle.config'
 import branches from 'pages/api/github/branches';
-import { getFileContentFromGithub } from './frontendFunctions';
 import { User } from 'firebase/auth';
+import { WebApiFs } from './WebApiFS';
 
 const parseConfig = (configString: string) => {
   // 
@@ -54,13 +54,19 @@ export function useVivlioStyleConfig({
   useEffect(() => {
     if (!user || !branch) return
     (async () => {
-      const content = await getFileContentFromGithub(owner,repo,branch,'vivliostyle.config.js',user);
+      const fs = await WebApiFs.open({
+        user,
+        owner,
+        repo,
+        branch
+      });
+      const content = await fs.readFile('vivliostyle.config.js');
       if( Array.isArray(content) ) {
         // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
         throw new Error(`Content type is not file`);
       }
       console.log('config',content);
-      const parsedContent = parseConfig(content); //Buffer.from(content.content, 'base64').toString('utf8'))
+      const parsedContent = parseConfig(content.toString()); //Buffer.from(content.content, 'base64').toString('utf8'))
       setConfig(parsedContent);
     })();
   }, [owner, repo, user, branch]);

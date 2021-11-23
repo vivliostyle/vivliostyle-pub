@@ -3,6 +3,7 @@ import mime from 'mime-types';
 import upath from 'upath';
 import { Dirent } from "fs-extra";
 
+const VPUBFS_CACHE_NAME = 'vpubfs';
 /**
  * Application Cacheを抽象化して提供するクラス
  */
@@ -16,7 +17,7 @@ export class AppCacheFs implements Fs {
      * @param cacheName キャッシュ名
      * @returns 
      */
-    public static async open(cacheName: string):Promise<AppCacheFs> {
+    public static async open(cacheName: string=VPUBFS_CACHE_NAME):Promise<AppCacheFs> {
         // キャッシュを開く
       const cache = await caches.open(cacheName);
       const fs:AppCacheFs = new AppCacheFs(cacheName,cache);

@@ -126,11 +126,8 @@ test.skip("PackageTheme.getPackageJson method", async () => {
   // });
 });
 
-const VPUBFS_CACHE_NAME = 'vpubfs';
-const VPUBFS_ROOT = '/vpubfs';
-
 test.skip('prototype', async ()=>{
-  // const fs = AppCacheFs.open(VPUBFS_CACHE_NAME);
+  // const fs = AppCacheFs.open();
   // const config = {
   //   GitHubAccessToken,
   //   projectFs: fs,

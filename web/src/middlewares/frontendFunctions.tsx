@@ -5,7 +5,6 @@ import firebase, {db} from '@services/firebase';
 import {collection, doc, DocumentReference, getDoc} from 'firebase/firestore';
 import path from 'path';
 import {BranchesApiResponse} from 'pages/api/github/branches';
-import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {AppCacheFs} from './AppCacheFS';
 import {WebApiFs} from './WebApiFS';
 import { Dirent } from 'fs-extra';
@@ -156,17 +155,6 @@ export function GetRepsitoryList(idToken: string | null) {
 
 /**
  *
- * @param cachePath
- * @param content
- */
-export async function updateCache(cachePath: string, content: any) {
-  const fs = await AppCacheFs.open(VPUBFS_CACHE_NAME);
-  await fs.writeFile(cachePath, content);
-  console.log(`updateCache : ${cachePath}`);
-}
-
-/**
- *
  * @param owner
  * @param repo
  * @param branch
@@ -192,7 +180,9 @@ export const updateCacheFromPath = async (
     contentPath,
     user,
   );
-  await updateCache(contentPath, Buffer.from(content, 'base64'));
+  const fs = await AppCacheFs.open();
+  await fs.writeFile(contentPath, Buffer.from(content, 'base64'));
+  console.log(`updateCache : ${contentPath}`);
 };
 
 /**
@@ -234,46 +224,3 @@ export const fetchBranches = async (
   }
 };
 
-/**
- * ブランチに存在する全てのファイル名を取得
- */
-export const fetchFiles = async (
-  user: User,
-  owner: string,
-  repo: string,
-  branch: string,
-  tree_sha: string,
-): Promise<FileEntry[]> => {
-  // console.log('fetchFiles', owner, repo, branch);
-  if (!owner || !repo || !branch) {
-    return [];
-  }
-  try {
-    const token = await user.getIdToken();
-    const resp = await fetch(
-      `/api/github/tree?${new URLSearchParams({
-        owner,
-        repo,
-        branch,
-        tree_sha,
-      })}`,
-      {
-        method: 'GET',
-        headers: {
-          'x-id-token': token,
-        },
-      },
-    );
-    const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-    // console.log('data', data.tree);
-    const files = data.tree.map((tree) => {
-      // console.log(tree);
-      return tree as FileEntry;
-    });
-    // console.log('files',files);
-    return files;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-};

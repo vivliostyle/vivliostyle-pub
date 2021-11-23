@@ -1,14 +1,14 @@
 import {stringify} from '@vivliostyle/vfm';
 import {
-  getFileContentFromGithub,
   isURL,
-  updateCache,
   updateCacheFromPath,
 } from './frontendFunctions';
 import {AppContext} from './useAppContext';
 import {Repository} from './useRepositoryContext';
 import path from 'path';
 import { Theme } from 'theme-manager';
+import { WebApiFs } from './WebApiFS';
+import { AppCacheFs } from './AppCacheFS';
 
 export const VPUBFS_ROOT = '/vpubfs';
 
@@ -89,7 +89,9 @@ export async function transpileMarkdown(
     }
     console.log('imagePaths', imagePaths);
   }
-  await updateCache(srcPath, text);
+  const fs = await AppCacheFs.open();
+  await fs.writeFile(srcPath, text);
+  console.log(`updateCache : ${srcPath}`);
   const vPubPath = path.join(VPUBFS_ROOT, srcPath ?? '');
   return {vPubPath, text};
 }
@@ -108,7 +110,11 @@ export const processThemeString = async (
 ):Promise<string> => {
   const themePath = `${theme.name}/${theme.style}`;
   const stylesheet = theme.files[theme.style];
-  await updateCache(themePath, stylesheet);
+
+  const fs = await AppCacheFs.open();
+  await fs.writeFile(themePath, stylesheet);
+  console.log(`updateCache : ${themePath}`);
+  
   const imagesOfStyle = pickupCSSResources(stylesheet);
   await Promise.all(
     imagesOfStyle.map((imageOfStyle) =>
@@ -135,34 +141,34 @@ export const processThemeString = async (
 export const processTheme = async (
   app: AppContext,
   repository: Repository,
-  path: string,
+  themePath: string,
 ): Promise<string> => {
   console.log('processTheme', app,path);
-  if (! (app.user && path && !isURL(path)) ) { throw new Error('app.user or themePath not set'); }
-    const content = await getFileContentFromGithub(
-      repository.owner!,
-      repository.repo!,
-      repository.currentBranch!,
-      path,
-      app.user!,
-    );
-    console.log('content',content);      
-    const stylesheet = content;
-    await updateCache(path, stylesheet);
-    const imagesOfStyle = pickupCSSResources(stylesheet);
-    await Promise.all(
-      imagesOfStyle.map((imageOfStyle) =>
-        updateCacheFromPath(
-          repository.owner!,
-          repository.repo!,
-          repository.currentBranch!,
-          stylesheet,
-          imageOfStyle,
-          app.user!,
-        ),
-      ),
+  if (! (app.user && path && !isURL(themePath)) ) { throw new Error('app.user or themePath not set'); }
+
+  // リポジトリからstylesheetを取得してApplicationCacheに追加
+  const webApifs = await WebApiFs.open({
+    user:app.user!,
+    owner:repository.owner!,
+    repo:repository.repo!,
+    branch:repository.currentBranch!,
+  });
+  const stylesheet = await webApifs.readFile(themePath);
+  const appCacheFs = await AppCacheFs.open();
+  await appCacheFs.writeFile(themePath,stylesheet);
+
+  // stylesheetが参照している画像を取得してApplicationCacheに追加
+  const imagesOfStyle = pickupCSSResources(stylesheet.toString());
+  const basePath = path.dirname(themePath); // スタイルシートのパスを基準とする
+  await Promise.all(
+      imagesOfStyle.map(async (imageOfStyle) =>{
+        if (isURL(imageOfStyle)) return;
+        const contentPath = path.join(basePath, imageOfStyle);
+        const content = await webApifs.readFile(contentPath);
+        await appCacheFs.writeFile(imageOfStyle, content);
+      })
     ).catch((error) => {
       throw error;
     });
-  return path;
+  return themePath;
 };

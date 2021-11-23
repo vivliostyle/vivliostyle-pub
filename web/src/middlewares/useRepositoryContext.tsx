@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import {
   fetchBranches,
-  fetchFiles,
 } from './frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {CurrentFileContextProvider} from './useCurrentFileContext';
