@@ -52,13 +52,13 @@ export function AppContextProvider({children}:{children:JSX.Element}){
                     const fs = await AppCacheFs.open();
 
                     // オンラインテーマの取得
-                    const GitHubAccessToken: string | null = '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';
-                    const themeManagerConfig = {
-                    GitHubAccessToken: GitHubAccessToken
-                    };
-                    const themeManager = new ThemeManager(themeManagerConfig);
-                    const themes = await themeManager.searchFromNpm();
-
+                    // const GitHubAccessToken: string | null = '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';
+                    // const themeManagerConfig = {
+                    // GitHubAccessToken: GitHubAccessToken
+                    // };
+                    // const themeManager = new ThemeManager(themeManagerConfig);
+                    // const themes = await themeManager.searchFromNpm();
+                    const themes:Theme[] = [];
                     dispatch({type:"init", user, fs, themes});
                 })();
             }

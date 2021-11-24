@@ -21,6 +21,20 @@ import {useLogContext} from '@middlewares/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
 
+// Apollo ----
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+  useQuery,
+  gql
+} from "@apollo/client";
+import { connectFirestoreEmulator } from '@firebase/firestore';
+// ---- Apollo
+
+
+
+
 interface BuildRecord {
   url: string | null;
   repo: {
@@ -60,6 +74,31 @@ const GitHubOwnerRepo = () => {
 
   const log = useLogContext();
   const app = useAppContext();
+
+  // graphql sample
+  useEffect(()=>{
+    (async ()=>{
+      console.log('graphql begin');
+      const client = new ApolloClient({
+        uri: '/api/graphql',
+        cache: new InMemoryCache()
+      });
+      client.query({
+        query: gql`
+          query { themes {style}, users {name} }
+        `}).then(result => console.log('graphql',result));
+      /*
+      const response = await fetch('/api/graphql',{
+        method: 'POST',
+        headers: {'Content-type': 'application/json'},
+        body: JSON.stringify({ query: '{ themes {name, style} }'})
+      });
+
+      const { data: { themes }} = await response.json();
+      console.log('graphql', themes);
+      */
+    })();
+  },[app]);
 
   // check login
   useEffect(() => {
