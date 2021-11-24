@@ -1,6 +1,6 @@
 import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
 import { PluginManager } from "../node_modules/live-plugin-manager/dist/index";
-import { Fs, GitHubFs } from "./srcIO";
+import { Fs } from "./srcIO";
 import { Theme } from ".";
 import { PackageTheme } from "./theme";
 
@@ -96,7 +96,6 @@ export default class ThemeManager {
    * @returns
    */
   public async searchFromNpm(query: string = this.serchQuery, max = 100) {
-    return [];
     try {
       // npmのAPIを叩いて情報を取得する
       // {package:{name:string}}
@@ -130,9 +129,9 @@ export default class ThemeManager {
       const promises: Promise<PackageTheme | null>[] = results.map(
         async (result: any) => {
           try {
-            // リポジトリにアクセスするためのfsのサブセットオブジェクトを返す
+            // リポジトリにアクセスするためのIOオブジェクトを返す
             const fs = await this.npmToFs(result.package.name);
-            // npmの場合はNodeパッケージ型のテーマのみ
+            // npmの場合はNodeパッケージ型のテーマのみ対応
             const theme = new PackageTheme(fs!, result.package.name);
             return theme;
           } catch (error) {

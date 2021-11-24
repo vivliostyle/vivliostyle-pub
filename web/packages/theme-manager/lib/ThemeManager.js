@@ -105,11 +105,10 @@ var ThemeManager = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [2 /*return*/, []];
-                    case 1:
-                        _a.trys.push([1, 4, , 5]);
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, npm_api_js_1.default.SearchPackage(query, max)];
-                    case 2:
+                    case 1:
                         results = _a.sent();
                         // [
                         //   {
@@ -155,15 +154,15 @@ var ThemeManager = /** @class */ (function () {
                             });
                         }); });
                         return [4 /*yield*/, Promise.all(promises)];
-                    case 3:
+                    case 2:
                         themes = (_a.sent()).filter(function (v) { return v; });
                         this.themes = themes; // メモ化
                         return [2 /*return*/, this.themes];
-                    case 4:
+                    case 3:
                         error_1 = _a.sent();
                         console.error(error_1);
                         return [2 /*return*/, []];
-                    case 5: return [2 /*return*/];
+                    case 4: return [2 /*return*/];
                 }
             });
         });

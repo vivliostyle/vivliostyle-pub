@@ -13,16 +13,6 @@ import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
 import { WebApiFs } from '@middlewares/WebApiFS';
 
-const GitHubAccessToken: string | null =
-  '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';
-
-
-const themeManagerConfig = {
-  GitHubAccessToken: GitHubAccessToken
-};
-
-const themeManager = new ThemeManager(themeManagerConfig);
-
 export function MenuBar({
   isProcessing,
   isPresentationMode,
@@ -88,7 +78,7 @@ export function MenuBar({
         return '/vpubfs/theme.css';
       }
     } as Theme;
-    return [planeTheme,customeTheme];
+    return [planeTheme,customeTheme,...app.onlineThemes];
   },[app,repository]);
 
   const onDidSaved = useCallback(() => {

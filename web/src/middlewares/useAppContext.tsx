@@ -4,22 +4,23 @@ import { onAuthStateChanged, User,getAuth, signInWithRedirect, GithubAuthProvide
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
 import { AppCacheFs } from "./AppCacheFS";
+import { Theme, ThemeManager } from "theme-manager";
 
 
 const provider = new GithubAuthProvider();
-
 
 export type AppContext = {
     user:User|null;
     isPending:boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
     signIn:()=>void;
     signOut:()=>void;
+    onlineThemes:Theme[];
     vpubFs?:AppCacheFs;
     // TODO: リポジトリのリストを持つ
 }
 
 type Actions = 
-| { type:'setUser'; user:User|null; fs?:AppCacheFs };
+| { type:'init'; user:User|null; fs?:AppCacheFs; themes?:Theme[] };
 
 const AppContext = createContext({} as AppContext);
 
@@ -35,18 +36,30 @@ export function useAppContext() {
 export function AppContextProvider({children}:{children:JSX.Element}){
 
     /**
-     * ユーザ情報の取得
+     * 初期化
      */
     useEffect(()=>{
         const auth = getAuth(firebase);
         const unsubscriber = onAuthStateChanged(auth,user => {
             if(user) {
                 (async ()=>{
+                    // ユーザアカウントの初期化
                     user.getIdToken(true);
                     // console.log('providerData', user.providerData);
                     await user.getIdTokenResult(true);
-                    const fs = await AppCacheFs.open(); 
-                    dispatch({type:"setUser", user, fs});
+
+                    // Application CacheへのI/O
+                    const fs = await AppCacheFs.open();
+
+                    // オンラインテーマの取得
+                    const GitHubAccessToken: string | null = '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';
+                    const themeManagerConfig = {
+                    GitHubAccessToken: GitHubAccessToken
+                    };
+                    const themeManager = new ThemeManager(themeManagerConfig);
+                    const themes = await themeManager.searchFromNpm();
+
+                    dispatch({type:"init", user, fs, themes});
                 })();
             }
         });
@@ -67,7 +80,7 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         (async()=>{
             const auth = getAuth(firebase);
             await auth.signOut();
-            dispatch({type:'setUser',user:null});
+            dispatch({type:'init',user:null});
         })();            
     }; 
 
@@ -79,6 +92,7 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         isPending: true,
         signIn: signIn,
         signOut: signOut,
+        onlineThemes: []
     });
     
     /**
@@ -86,11 +100,11 @@ export function AppContextProvider({children}:{children:JSX.Element}){
      */
     const reducer = (state: AppContext, action:Actions):AppContext => {
         switch(action.type) {
-            case 'setUser':
+            case 'init':
                 if(action.user === null) {
                     state.vpubFs?.delete();
                 }
-                return {...state,user:action.user,isPending:false,vpubFs:action.fs};
+                return {...state,user:action.user,isPending:false,vpubFs:action.fs,onlineThemes:action.themes??[]};
         }
     }
 
