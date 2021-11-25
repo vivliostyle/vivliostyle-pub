@@ -1,10 +1,11 @@
-import React, { createContext, Dispatch, useContext, useEffect, useReducer, useState } from "react";
+import React, { createContext, Dispatch, useCallback, useContext, useEffect, useReducer, useState } from "react";
 import firebase from '@services/firebase';
 import { onAuthStateChanged, User,getAuth, signInWithRedirect, GithubAuthProvider } from "@firebase/auth";
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
 import { AppCacheFs } from "./AppCacheFS";
 import { Theme, ThemeManager } from "theme-manager";
+import { ApolloClient, ApolloQueryResult, DocumentNode, InMemoryCache, NetworkStatus, OperationVariables, TypedDocumentNode } from "@apollo/client";
 
 
 const provider = new GithubAuthProvider();
@@ -16,6 +17,7 @@ export type AppContext = {
     signOut:()=>void;
     onlineThemes:Theme[];
     vpubFs?:AppCacheFs;
+    query: (query:DocumentNode | TypedDocumentNode<any, OperationVariables>)=>Promise<ApolloQueryResult<any>>;
     // TODO: リポジトリのリストを持つ
 }
 
@@ -84,6 +86,8 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         })();            
     }; 
 
+
+
     /**
      * 初期値
      */
@@ -92,7 +96,8 @@ export function AppContextProvider({children}:{children:JSX.Element}){
         isPending: true,
         signIn: signIn,
         signOut: signOut,
-        onlineThemes: []
+        onlineThemes: [],
+        query:async (query:DocumentNode | TypedDocumentNode<any, OperationVariables>):Promise<ApolloQueryResult<any>> => { return {data:null,loading:false,networkStatus:NetworkStatus.ready}; }
     });
     
     /**
@@ -104,7 +109,17 @@ export function AppContextProvider({children}:{children:JSX.Element}){
                 if(action.user === null) {
                     state.vpubFs?.delete();
                 }
-                return {...state,user:action.user,isPending:false,vpubFs:action.fs,onlineThemes:action.themes??[]};
+                const query = async (query:DocumentNode | TypedDocumentNode<any, OperationVariables>):Promise<ApolloQueryResult<any>> => {
+                    const client = new ApolloClient({
+                        uri: '/api/graphql',
+                        cache: new InMemoryCache(),
+                        headers: {
+                          'x-id-token': await action.user!.getIdToken(),
+                        }
+                    });
+                    return client.query({query});
+                };
+                return {...state,user:action.user,isPending:false,vpubFs:action.fs,onlineThemes:action.themes??[],query};
         }
     }
 

@@ -77,27 +77,11 @@ const GitHubOwnerRepo = () => {
 
   // graphql sample
   useEffect(()=>{
-    (async ()=>{
-      console.log('graphql begin');
-      const client = new ApolloClient({
-        uri: '/api/graphql',
-        cache: new InMemoryCache()
-      });
-      client.query({
-        query: gql`
-          query { themes {style}, users {name} }
-        `}).then(result => console.log('graphql',result));
-      /*
-      const response = await fetch('/api/graphql',{
-        method: 'POST',
-        headers: {'Content-type': 'application/json'},
-        body: JSON.stringify({ query: '{ themes {name, style} }'})
-      });
-
-      const { data: { themes }} = await response.json();
-      console.log('graphql', themes);
-      */
-    })();
+    app.query(gql`
+      query { repositories {owner, repo ,defaultBranch} }
+    `)
+    .then(result=>console.log(result))
+    .catch(err=>console.error(err));
   },[app]);
 
   // check login
