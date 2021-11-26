@@ -115,10 +115,14 @@ const typeDefs = gql`
     name: String
   }
   type Repository @auth {
-    owner: String
-    repo: String
+    owner: String!
+    repo: String!
     branches: [String]!
-    defaultBranch: String
+    defaultBranch: String!
+    full_name: String!
+    id: Int!
+    node_id: String!
+    private: Boolean!
   }
   type Branch @auth {
     name: String
@@ -151,7 +155,14 @@ const resolvers = {
       context: queryContext,
       info: any,
     ) {
-      return await getRepositories(parent, args, context, info);
+      try {
+        const repositories = await getRepositories(parent, args, context, info);
+        console.log('sv repositories',repositories);
+        return repositories;
+      }catch(err){
+        console.error(err);
+        return [];
+      }
     },
     async themes(parent: {}, args: {}, context: queryContext) {
       return [
@@ -222,7 +233,7 @@ const getRepositories = async (
   const props = info.fieldNodes[0].selectionSet.selections.map(
     (f: any) => f.name.value,
   );
-  console.log('getRepositories', parent, args, context, props);
+  // console.log('getRepositories', parent, args, context, props);
   const octokit = new Octokit({
     auth: `token ${context.token}`,
   });
@@ -241,6 +252,7 @@ const getRepositories = async (
   const repositoriesPromisses = repos
     .reduce((acc, v) => [...acc, ...v], [])
     .map(async (r) => {
+      // branchesが取得リストに含まれていれば
       const branchesData = props.includes('branches')
         ? (
             await octokit.repos.listBranches({
@@ -250,20 +262,26 @@ const getRepositories = async (
           ).data
         : undefined;
       const branches = branchesData?.map((b) => b.name);
+      // defaultBranchが取得リストに含まれていれば
       const defaultBranch = props.includes('defaultBranch')
         ? await (
             await octokit.repos.get({owner: r.owner!.login, repo: r.name!})
           ).data.default_branch
         : undefined;
+      
       return {
         owner: r.owner!.login,
         repo: r.name,
-        branches,
+        full_name: r.full_name,
+        id: r.id,
+        node_id: r.node_id,
+        private: r.private,
+        branches,   
         defaultBranch,
       };
     });
   const repositories = await Promise.all(repositoriesPromisses);
-  console.log(repositories);
+  // console.log(repositories);
   return repositories;
 };
 

@@ -18,6 +18,9 @@ import {CoreProps} from './vivliostyle.config';
 import { WebApiFs } from './WebApiFS';
 
 export type Repository = {
+  id: number;
+  node_id: string;
+  private: boolean;
   owner: string | null;
   repo: string | null;
   branch: string | null;
@@ -25,6 +28,8 @@ export type Repository = {
   currentConfig: CoreProps | null;
   currentTree: Dirent[];
   branches: string[];
+  full_name: string;
+
   files: Dirent[];
   selectBranch: (branch: string) => void;
   selectTree: (tree: '..' | Dirent) => void;
@@ -129,8 +134,12 @@ export function RepositoryContextProvider({
   }
 
   const state = {
+    id: 0,
+    node_id: '',
+    private: false,
     owner: null,
     repo: null,
+    full_name: '',
     branches: [],
     files: [],
     branch: null,

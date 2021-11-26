@@ -1,34 +1,41 @@
 import React, {useState, useEffect} from 'react';
 import Link from 'next/link';
 import * as UI from './ui';
-import { GetRepsitoryList } from '@middlewares/frontendFunctions';
-import { useAppContext } from '@middlewares/useAppContext';
+import {useAppContext} from '@middlewares/useAppContext';
+import { RepeatIcon } from '@chakra-ui/icons';
 
 export const GithubReposList: React.FC<{}> = ({}) => {
   const app = useAppContext();
-  const [idToken, setIdToken] = useState<string | null>(null);
-  useEffect(() => {
-    if(!app.user) {return;}
-    app.user
-      .getIdToken(true)
-      .then(setIdToken)
-      .catch(() => setIdToken(null));
-  }, [app.user]);
-  const {data, isValidating} = GetRepsitoryList(idToken);
-  if (!data) {
-    return isValidating ? (
-      <UI.Text>Loading</UI.Text>
-    ) : (
-      <UI.Text>No repositories<br/>
-        <br/>
-        1. Push [Install GitHub Apps] for check and edit install status for GitHub Apps.<br/>
-        2. Push [Refresh GitHub Access Token] for refresh GitHub Access Token.<br/> 
-      </UI.Text>
-    );
+  console.log('rep list', app.repositories);
+
+  const reload = ()=>{
+    console.log('reload repositories');
+    app.reload();
   }
-  return (
-    <UI.Flex direction="column">
-      {data.map((repo) => (
+
+  if (app.repositories == null) { // リポジトリリスト取得中
+    return <UI.Text>Loading</UI.Text>;
+  } else if (app.repositories.length == 0) { // ログイン済み リポジトリリストが0件
+    return (
+    <UI.Text>
+      <UI.Button>
+          <RepeatIcon onClick={reload} />
+      </UI.Button>
+      &nbsp; No repositories
+      <br />
+      <br />
+      1. Push [Install GitHub Apps] for check and edit install status for GitHub
+      Apps.
+      <br />
+      2. Push [Refresh GitHub Access Token] for refresh GitHub Access Token.
+      <br />
+    </UI.Text>);
+  } else {
+    return (<UI.Flex direction="column">
+      <UI.Button w="2em">
+        <RepeatIcon onClick={reload} />
+      </UI.Button><br />
+      {app.repositories.map((repo) => (
         <Link
           href="github/[owner]/[repo]"
           as={`/github/${repo.full_name}`}
@@ -42,6 +49,6 @@ export const GithubReposList: React.FC<{}> = ({}) => {
           </a>
         </Link>
       ))}
-    </UI.Flex>
-  );
+    </UI.Flex>);
+  }
 };
