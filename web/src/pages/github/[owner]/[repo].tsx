@@ -252,7 +252,7 @@ const GitHubOwnerRepo = () => {
                         </ReflexElement>
                       )}
                       {isPresentationMode || !isEditorVisible ? null : <ReflexSplitter />}
-                      {!isEditorVisible ? null : (
+                      {isPresentationMode || !isEditorVisible ? null : (
                         <ReflexElement className="middle-pane">
                           <UI.Box height={'100%'}>
                             <MarkdownEditor {...{onModified}} />
