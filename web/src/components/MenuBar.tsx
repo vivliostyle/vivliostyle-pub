@@ -1,17 +1,22 @@
-import React, {Dispatch, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {
+  Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import * as UI from '@components/ui';
 import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
-import {
-  useRepositoryContext,
-} from '@middlewares/useRepositoryContext';
+import {useRepositoryContext} from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
 
-import { Fs, Theme, ThemeManager} from 'theme-manager';
+import {Fs, Theme, ThemeManager} from 'theme-manager';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
-import { WebApiFs } from '@middlewares/WebApiFS';
+import {WebApiFs} from '@middlewares/WebApiFS';
+import {EditIcon, HamburgerIcon, RepeatIcon, ViewIcon} from '@chakra-ui/icons';
 
 export function MenuBar({
   isProcessing,
@@ -19,67 +24,79 @@ export function MenuBar({
   setPresentationMode,
   setWarnDialog,
   onBuildPDFButtonClicked,
+  isExplorerVisible,
+  onToggleExplorer,
+  isEditorVisible,
+  onToggleEditor,
+  isPreviewerVisible,
+  onTogglePreviewer
 }: {
   isProcessing: boolean;
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
   onBuildPDFButtonClicked: () => void;
+  isExplorerVisible: boolean;
+  onToggleExplorer: (f:boolean)=>void;
+  isEditorVisible: boolean;
+  onToggleEditor: (f:boolean)=>void;
+  isPreviewerVisible: boolean;
+  onTogglePreviewer: (f:boolean)=>void;
 }) {
   const app = useAppContext();
   const repository = useRepositoryContext();
   const previewSource = usePreviewSourceContext();
 
-  const themes = useMemo(()=>{
+  const themes = useMemo(() => {
     const fs = {} as Fs;
 
     // Viewerのデフォルトスタイルを使用するテーマ
     const planeTheme = {
-      name:'plane-theme',
-      category:'',
-      topics:[],
-      style:'',
-      description:'Plane theme',
-      version:'1.0',
-      author:'Vivliostyle',
+      name: 'plane-theme',
+      category: '',
+      topics: [],
+      style: '',
+      description: 'Plane theme',
+      version: '1.0',
+      author: 'Vivliostyle',
       files: {},
       fs: fs,
-      getStylePath: ()=>{
+      getStylePath: () => {
         return null;
-      }
+      },
     } as Theme;
-    
+
     // vivliostyle.config.jsのthemeを使用する
-    const customeTheme ={
-      name:'custom-theme',
-      category:'',
-      topics:[],
-      style:'',
-      description:'Custom theme',
-      version:'1.0',
-      author:'Vivliostyle',
+    const customeTheme = {
+      name: 'custom-theme',
+      category: '',
+      topics: [],
+      style: '',
+      description: 'Custom theme',
+      version: '1.0',
+      author: 'Vivliostyle',
       files: {},
       fs: fs,
-      getStylePath: ()=>{
+      getStylePath: () => {
         // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
         // リポジトリからstylesheetを取得してApplicationCacheに追加
         WebApiFs.open({
-          user:app.user!,
-          owner:repository.owner!,
-          repo:repository.repo!,
-          branch:repository.branch!,
-        }).then(fs=>{
-          fs.readFile('theme.css').then((stylesheet)=>{
-            app.vpubFs!.writeFile('theme.css',stylesheet).then(()=>{
+          user: app.user!,
+          owner: repository.owner!,
+          repo: repository.repo!,
+          branch: repository.branch!,
+        }).then((fs) => {
+          fs.readFile('theme.css').then((stylesheet) => {
+            app.vpubFs!.writeFile('theme.css', stylesheet).then(() => {
               console.log('setup custom theme');
-            });      
-          })
-        })
+            });
+          });
+        });
         return '/vpubfs/theme.css';
-      }
+      },
     } as Theme;
-    return [planeTheme,customeTheme,...app.onlineThemes];
-  },[app,repository]);
+    return [planeTheme, customeTheme, ...app.onlineThemes];
+  }, [app, repository]);
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
@@ -96,10 +113,18 @@ export function MenuBar({
    * スタイルシートが変更された
    * @param theme
    */
-  const onThemeSelected = useCallback((theme: Theme)=>{
-    console.log('theme selected',theme);
-    previewSource.changeTheme(theme);
-  },[previewSource]);
+  const onThemeSelected = useCallback(
+    (theme: Theme) => {
+      console.log('theme selected', theme);
+      previewSource.changeTheme(theme);
+    },
+    [previewSource],
+  );
+
+  /**
+   * プレビューをリロードする
+   */
+  const previewReload = () => {};
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
@@ -110,14 +135,47 @@ export function MenuBar({
         </UI.Box>
         {app.user /*&& session?.id*/ && (
           <div>
-            <CommitSessionButton
-              {...{onDidSaved}}
-            />
+            <CommitSessionButton {...{onDidSaved}} />
           </div>
         )}
       </UI.Flex>
       <UI.Flex align="center">
         {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
+        <UI.ButtonGroup>
+          <UI.Button
+            title="Project Explorer Visiblity"
+            onClick={()=>onToggleExplorer(!isExplorerVisible)}
+            border={
+              isExplorerVisible ? 'solid 2px black' : 'solid 2px lightgray'
+            }
+          >
+            <HamburgerIcon />
+          </UI.Button>
+          <UI.Button
+            title="Editor Visiblity"
+            onClick={()=>onToggleEditor(!isEditorVisible)}
+            border={isEditorVisible ? 'solid 2px black' : 'solid 2px lightgray'}
+          >
+            <EditIcon />
+          </UI.Button>
+          <UI.Button
+            title="Preview Visiblity"
+            onClick={()=>onTogglePreviewer(!isPreviewerVisible)}
+            border={
+              isPreviewerVisible ? 'solid 2px black' : 'solid 2px lightgray'
+            }
+          >
+            <ViewIcon />
+          </UI.Button>
+          <UI.Button
+            title="Preview Reload"
+            onClick={previewReload}
+            disabled={!isPreviewerVisible}
+          >
+            <RepeatIcon />
+          </UI.Button>
+        </UI.ButtonGroup>{' '}
+        &nbsp;
         <UI.Menu>
           <UI.MenuButton as={UI.Button}>
             <UI.Icon name="chevron-down" /> Actions
@@ -138,7 +196,8 @@ export function MenuBar({
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
                 >
-                  {theme.name === previewSource.theme?.name ? '✔ ' : ' '}{theme.description}
+                  {theme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                  {theme.description}
                 </UI.MenuItem>
               ))}
             </UI.MenuGroup>

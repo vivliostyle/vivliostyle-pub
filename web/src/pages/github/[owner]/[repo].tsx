@@ -12,7 +12,10 @@ import {Previewer} from '@components/MarkdownPreviewer';
 
 import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
-import {PreviewSourceContextProvider, usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
+import {
+  PreviewSourceContextProvider,
+  usePreviewSourceContext,
+} from '@middlewares/usePreviewSourceContext';
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
@@ -61,14 +64,9 @@ const GitHubOwnerRepo = () => {
   const log = useLogContext();
   const app = useAppContext();
 
-  // graphql sample
-  // const client = new ApolloClient({
-  //   uri: '/api/graphql',
-  //   cache: new InMemoryCache(),
-  //   headers: {
-  //     'x-id-token': await user!.getIdToken(),
-  //   },
-  // });
+  const [isExplorerVisible, setExplorerVisible] = useState<boolean>(true);
+  const [isEditorVisible, setEditorVisible] = useState<boolean>(true);
+  const [isPreviewerVisible, setPreviewerVisible] = useState<boolean>(true);
 
   // check login
   useEffect(() => {
@@ -211,6 +209,18 @@ const GitHubOwnerRepo = () => {
                 setPresentationMode={setPresentationMode}
                 setWarnDialog={setWarnDialog}
                 onBuildPDFButtonClicked={onBuildPDFButtonClicked}
+                isEditorVisible={isEditorVisible}
+                onToggleEditor={(f: boolean) => {
+                  setEditorVisible(f);
+                }}
+                isExplorerVisible={isExplorerVisible}
+                onToggleExplorer={(f: boolean) => {
+                  setExplorerVisible(f);
+                }}
+                isPreviewerVisible={isPreviewerVisible}
+                onTogglePreviewer={(f: boolean) => {
+                  setPreviewerVisible(f);
+                }}
               />
               <UI.Box
                 height={'calc(100vh - 8rem)'}
@@ -226,7 +236,7 @@ const GitHubOwnerRepo = () => {
                       orientation="vertical"
                       windowResizeAware={true}
                     >
-                      {isPresentationMode ? null : (
+                      {isPresentationMode || !isExplorerVisible ? null : (
                         <ReflexElement
                           className="left-pane"
                           flex={0.15}
@@ -241,21 +251,24 @@ const GitHubOwnerRepo = () => {
                           </UI.Box>
                         </ReflexElement>
                       )}
-                      {isPresentationMode ? null : <ReflexSplitter />}
-                      {isPresentationMode ? null : (
+                      {isPresentationMode || !isEditorVisible ? null : <ReflexSplitter />}
+                      {!isEditorVisible ? null : (
                         <ReflexElement className="middle-pane">
                           <UI.Box height={'100%'}>
                             <MarkdownEditor {...{onModified}} />
                           </UI.Box>
                         </ReflexElement>
                       )}
+
                       {isPresentationMode ? null : <ReflexSplitter />}
+                      {!isPreviewerVisible ? null : (
                       <ReflexElement className="right-pane">
-                        <UI.Box height={'100%'}>
-                          <Previewer />
-                        </UI.Box>
+                          <UI.Box height={'100%'}>
+                            <Previewer />
+                          </UI.Box>
                       </ReflexElement>
-                    </ReflexContainer>
+                        )}
+                        </ReflexContainer>
                   </ReflexElement>
 
                   <ReflexSplitter />
@@ -269,7 +282,7 @@ const GitHubOwnerRepo = () => {
               <Footer />
               {/* Wrapper */}
             </UI.Box>
-            </PreviewSourceContextProvider>
+          </PreviewSourceContextProvider>
         </RepositoryContextProvider>
       ) : null}
     </UI.Box>
