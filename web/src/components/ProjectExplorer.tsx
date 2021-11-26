@@ -1,11 +1,14 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {useRepositoryContext} from '@middlewares/useRepositoryContext';
 import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
 import { Dirent } from 'fs-extra';
+import { RepeatIcon } from '@chakra-ui/icons';
+import { useLogContext } from '@middlewares/useLogContext';
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
+  const log = useLogContext();
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
@@ -46,6 +49,15 @@ export function ProjectExplorer() {
     repository.selectTree('..');
   }
 
+  /**
+   * リポジトリからファイルリストを取得しなおす
+   * TODO: GitHubのリポジトリに直接変更を加えた場合にリロードしてもらうようマニュアルに追加
+   */
+  const reload = useCallback(async () => {
+    // repository.reloadFiles();
+    log.info("!!未実装!!プロジェクトをリロードしました");
+  },[repository]);
+
   return (
     <UI.Box w={'100%'} resize="horizontal" p={1}>
       <UI.Input
@@ -54,9 +66,12 @@ export function ProjectExplorer() {
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setFilenamesFilterText(event.target.value);
         }}
+        w={'calc(100% - 3em)'}
       />
+      <UI.Button textAlign="right" onClick={reload}><RepeatIcon /></UI.Button>
+
       <UI.Box>
-        {currentDir}/
+        {currentDir}/ 
         <hr />
       </UI.Box>
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>

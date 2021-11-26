@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useMemo} from 'react';
+import React, {useEffect, useCallback, useState, useMemo, useRef} from 'react';
 import {ReflexContainer, ReflexSplitter, ReflexElement} from 'react-reflex';
 
 import {useRouter} from 'next/router';
@@ -14,7 +14,6 @@ import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
 import {
   PreviewSourceContextProvider,
-  usePreviewSourceContext,
 } from '@middlewares/usePreviewSourceContext';
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
@@ -67,6 +66,8 @@ const GitHubOwnerRepo = () => {
   const [isExplorerVisible, setExplorerVisible] = useState<boolean>(true);
   const [isEditorVisible, setEditorVisible] = useState<boolean>(true);
   const [isPreviewerVisible, setPreviewerVisible] = useState<boolean>(true);
+
+  const [isAutoReload, setAutoReload] = useState<boolean>(true);
 
   // check login
   useEffect(() => {
@@ -200,7 +201,7 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <RepositoryContextProvider owner={owner} repo={repo}>
-          <PreviewSourceContextProvider>
+          <PreviewSourceContextProvider isAutoReload={isAutoReload}>
             <UI.Box height={'calc(100vh - 4rem)'}>
               {/* Wrapper  サイズ固定*/}
               <MenuBar
@@ -221,6 +222,9 @@ const GitHubOwnerRepo = () => {
                 onTogglePreviewer={(f: boolean) => {
                   setPreviewerVisible(f);
                 }}
+                isAutoReload={isAutoReload}
+                setAutoReload={(f: boolean)=>{ setAutoReload(f); }}
+                onReload={()=>{ /* TODO: 手動リロード */ }}
               />
               <UI.Box
                 height={'calc(100vh - 8rem)'}

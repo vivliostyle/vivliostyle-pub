@@ -9,7 +9,7 @@ const VIVLIOSTYLE_VIEWER_HTML_URL =
 
 interface PreviewerProps {}
 
-export const Previewer: React.FC<PreviewerProps> = ({}) => {
+export const Previewer: React.FC<PreviewerProps> = ({ }) => {
   const app = useAppContext();
   const repository = useRepositoryContext();
   const [contentReady, setContentReady] = useState<boolean>(false);
@@ -22,26 +22,37 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
       previewSource.vpubPath
     }`;
-    const stylePath = previewSource.theme ? previewSource.theme.getStylePath(): null;
-    if (stylePath) { url += `&style=${stylePath}` };
+    const stylePath = previewSource.theme
+      ? previewSource.theme.getStylePath()
+      : null;
+    if (stylePath) {
+      url += `&style=${stylePath}`;
+    }
     return url;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewSource, previewSource.stylePath]);
 
   useEffect(() => {
     console.log('rerendering', previewSource.path); //, previewSource.text,repository,user);
-    if (!app.user || previewSource.text == null || previewSource.path == null)
+    if (
+      !app.user ||
+      previewSource.text == null ||
+      previewSource.path == null
+    ){
+      console.log('reload cancel');
+      setContentReady(false);
       return;
+    }
     console.log('iframe reload', viewerURL);
     setContentReady(true);
 
-    if( iframeRef.current) { // TODO: 描画完了するまでは再描画しない
+    if (iframeRef.current) {
+      // TODO: 描画完了するまでは再描画しない
       // 以下で検知できるのはHTMLのonload
       iframeRef.current!.onload = () => {
         // console.log("読込完了"); // 実際にはonloadの後にvivliostyle.jsの処理が走るのでどうやって検知するか。
-      };  
+      };
     }
-
   }, [app.user, previewSource, repository, viewerURL]);
 
   return (

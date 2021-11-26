@@ -29,7 +29,10 @@ export function MenuBar({
   isEditorVisible,
   onToggleEditor,
   isPreviewerVisible,
-  onTogglePreviewer
+  onTogglePreviewer,
+  isAutoReload,
+  setAutoReload,
+  onReload,
 }: {
   isProcessing: boolean;
   isPresentationMode: boolean;
@@ -42,6 +45,9 @@ export function MenuBar({
   onToggleEditor: (f:boolean)=>void;
   isPreviewerVisible: boolean;
   onTogglePreviewer: (f:boolean)=>void;
+  isAutoReload: boolean;
+  setAutoReload: (f:boolean)=>void;
+  onReload:()=>void;
 }) {
   const app = useAppContext();
   const repository = useRepositoryContext();
@@ -121,11 +127,6 @@ export function MenuBar({
     [previewSource],
   );
 
-  /**
-   * プレビューをリロードする
-   */
-  const previewReload = () => {};
-
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
       <UI.Flex align="center">
@@ -167,14 +168,14 @@ export function MenuBar({
           >
             <ViewIcon />
           </UI.Button>
-          <UI.Button
+          {/* <UI.Button
             title="Preview Reload"
-            onClick={previewReload}
+            onClick={onReload}
             disabled={!isPreviewerVisible}
           >
             <RepeatIcon />
-          </UI.Button>
-        </UI.ButtonGroup>{' '}
+          </UI.Button> */}
+        </UI.ButtonGroup>
         &nbsp;
         <UI.Menu>
           <UI.MenuButton as={UI.Button}>
@@ -188,6 +189,14 @@ export function MenuBar({
               }}
             >
               {isPresentationMode ? '✔ ' : ' '}Presentation Mode
+            </UI.MenuItem>
+            <UI.MenuItem
+              key="autoReload"
+              onClick={() => {
+                setAutoReload(!isAutoReload);
+              }}
+            >
+              {isAutoReload ? '✔ ' : ' '}Auto reload
             </UI.MenuItem>
             <UI.MenuDivider />
             <UI.MenuGroup title="Theme">
