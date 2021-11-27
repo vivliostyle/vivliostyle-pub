@@ -1,10 +1,7 @@
 import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
-import { PluginManager } from "../node_modules/live-plugin-manager/dist/index";
 import { Fs } from "./srcIO";
 import { Theme } from ".";
 import { PackageTheme } from "./theme";
-
-let GitHubAccessToken: string | null;
 
 // テーマの検索
 // DONE: keywords:vivliostyle-themeで一覧取得
@@ -42,16 +39,17 @@ let GitHubAccessToken: string | null;
 
 // MEMO: テーマには形式(Package,CSSファイル)と保存場所(GitHub, NPM repository, ローカルファイル, ApplicationCache)の組合せが存在する
 
+export type FsFactory = (themeLocation:any)=>Promise<Fs|false>;
 
 export type ThemeManagerConfig = {
-  GitHubAccessToken?: string | null;
-  // octokit?: octokit;
+  searchOrder: FsFactory[];
 }
 
 /**
  *
  */
 export default class ThemeManager {
+  config: ThemeManagerConfig | null;
   themes: Theme[] = [];
   serchQuery: string = "keywords:vivliostyle-theme";
 
@@ -60,9 +58,10 @@ export default class ThemeManager {
    * @param token GitHubAccessToken
    */
   public constructor(config: ThemeManagerConfig | null = null) {
-    if (config?.GitHubAccessToken) {
-      GitHubAccessToken = config.GitHubAccessToken;
-    }
+    // if (config?.GitHubAccessToken) {
+    //   GitHubAccessToken = config.GitHubAccessToken;
+    // }
+    this.config = config;
   }
 
   /**
@@ -97,9 +96,26 @@ export default class ThemeManager {
    */
   public async searchFromNpm(query: string = this.serchQuery, max = 100) {
     try {
+      if( ! this.config?.searchOrder ) { throw new Error('no FsFactory'); }
       // npmのAPIを叩いて情報を取得する
       // {package:{name:string}}
       const results = await NpmApi.SearchPackage(query, max);
+      const themes:Theme[] = [];
+      for (const pkg of results) {
+        // 優先順に読み込みを試みる
+        for(const factory of this.config.searchOrder) {
+          // console.log('pkg',pkg);
+          const fs = await factory(pkg);
+          if(fs !== false) {
+            // アクセス可能
+            const theme = await PackageTheme.create(fs,pkg.package.name);
+            themes.push(theme);
+            break; // 処理できたら次のパッケージへ
+          }
+        }
+      }
+      // console.log(themes);
+      return themes;
       // [
       //   {
       //     package: {
@@ -120,30 +136,6 @@ export default class ThemeManager {
       //   },
       // ]
       // console.log(results);
-      // 検索結果が得られなければ例外を投げる
-      if (!results) { 
-        throw new Error('npm access error');
-      }
-
-      // 得られた検索結果を元にファイルアクセスのためのfsオブジェクトを生成して返す
-      const promises: Promise<PackageTheme | null>[] = results.map(
-        async (result: any) => {
-          try {
-            // リポジトリにアクセスするためのIOオブジェクトを返す
-            const fs = await this.npmToFs(result.package.name);
-            // npmの場合はNodeパッケージ型のテーマのみ対応
-            const theme = new PackageTheme(fs!, result.package.name);
-            return theme;
-          } catch (error) {
-            console.error(error);
-            return null;
-          }
-        }
-      );
-      // Promise.allを実行し、実行結果からnullを除去
-      const themes = (await Promise.all(promises)).filter((v) => v) as Theme[];
-      this.themes = themes; // メモ化
-      return this.themes;
     } catch (error) {
       console.error(error);
       return [] as Theme[];

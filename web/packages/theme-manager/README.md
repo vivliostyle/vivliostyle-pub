@@ -1,2 +1,0 @@
-# thememanager
-Vivliostyle theme manager

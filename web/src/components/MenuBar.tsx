@@ -12,11 +12,11 @@ import {FileUploadModal} from './FileUploadModal';
 import {useRepositoryContext} from '@middlewares/useRepositoryContext';
 import {useAppContext} from '@middlewares/useAppContext';
 
-import {Fs, Theme, ThemeManager} from 'theme-manager';
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
 import {WebApiFs} from '@middlewares/WebApiFS';
 import {EditIcon, HamburgerIcon, RepeatIcon, ViewIcon} from '@chakra-ui/icons';
+import { Fs, Theme } from 'theme-manager';
 
 export function MenuBar({
   isProcessing,
@@ -168,7 +168,8 @@ export function MenuBar({
           >
             <ViewIcon />
           </UI.Button>
-          {/* <UI.Button
+          {/* リロードボタンはうまく動かないのでとりあえず無効化
+            <UI.Button
             title="Preview Reload"
             onClick={onReload}
             disabled={!isPreviewerVisible}

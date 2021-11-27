@@ -55,13 +55,17 @@ export class PackageTheme implements Theme {
   files: { [filepath: string]: any } = {};
   fs:Fs;
 
-  public constructor(fs:Fs, packageName:string) {
-    this.fs = fs;
-    this.name = packageName;
+  public static async create(fs: Fs, packageName: string):Promise<Theme> {
     const repo_dir = '';
-    const pkgJson = this.getPackageJson(repo_dir) as unknown as PackageJson;
-    // console.log(pkgJson);
-    this.name = packageName;
+    const pkgJson = await PackageTheme.getPackageJson(fs) as unknown as PackageJson;
+    console.log(pkgJson);
+    const theme = new PackageTheme(fs, pkgJson);
+    return theme;
+  }
+
+  public constructor(fs:Fs, pkgJson:PackageJson) {
+    this.fs = fs;
+    this.name = pkgJson.name;
     this.description = pkgJson.description;
     this.version = pkgJson.version;
     this.author = pkgJson.author;
@@ -172,11 +176,11 @@ export class PackageTheme implements Theme {
     return null;
   }
 
-  private async getPackageJson(
-    repo_directory?: string
+  private static async getPackageJson(
+    fs: Fs
   ): Promise<string | object> {
-    const path = `${repo_directory ?? ""}/package.json`;
-    const pkg_json = await this.fs.readFile(path, true);
+    const path = `package.json`;
+    const pkg_json = await fs.readFile(path, true);
     return pkg_json;
   }
 }

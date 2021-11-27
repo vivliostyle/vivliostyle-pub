@@ -41,8 +41,7 @@
     "react-reflex": "^4.0.3",
     "react-split-pane": "^2.0.3",
     "scss-parser": "^1.0.5",
-    "swr": "^1.0.1",
-    "theme-manager": "./packages/theme-manager"
+    "swr": "^1.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
