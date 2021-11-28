@@ -123,12 +123,22 @@ export function CurrentFileContextProvider({
         // ファイルの選択
         case 'setFile':
           console.log('setFile', action);
+          if(state.state == FileState.modified || state.state == FileState.saved) {
+            if(! confirm('ファイルを保存していません。変更を破棄しますか?')){
+              // ファイルの切り替えをキャンセル
+              return state;
+            }
+          }
           // 同じファイルを選択した場合何もしない
-          // ファイルの切り替えの際にはコミットされている前提
           if (
             (action.file == null && state.file == null) ||
             action.file?.name === state.file?.name
           ) {
+            if(isEditableFile(action.file?.name)) {
+              // 同じファイルを選択していても編集可能ファイルならスピナーを解除する
+              onReady(action.file);
+              return {...state, state: FileState.init};
+            }
             return state;
           }
           if (!action.file) {
