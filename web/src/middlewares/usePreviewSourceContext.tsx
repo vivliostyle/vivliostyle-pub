@@ -144,7 +144,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
       console.log('changeTheme', theme);
       if (theme) {
         // TODO: テーマオブジェクトのメソッド呼び出し
-        processThemeString(app, repository, theme)
+        processThemeString(app, theme)
           .then((themePath) => {
             // 準備が終わったら状態を変化させる
             if (dispatch) {

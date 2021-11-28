@@ -106,7 +106,7 @@ export const processThemeString = async (
   app: AppContext,
   theme: Theme
 ):Promise<string> => {
-  console.log('processingThemeString',theme.style);
+  console.log('processingThemeString',theme);
   if( !theme.style ) { console.log('empty theme'); return ''; }
   const themePath = `${theme.name}/${theme.style}`;
   const stylesheet = await theme.fs.readFile(theme.style) as string;
