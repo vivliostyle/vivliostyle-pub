@@ -77,7 +77,7 @@ export function ProjectExplorer() {
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
         <UI.Box height={'100vh'} overflowY="scroll" backgroundColor="white">
         {repository.currentTree.length > 0?(
-          <UI.Container p={0} onClick={upTree} cursor="default">
+          <UI.Container p={0} onClick={upTree} cursor="pointer">
             <UI.Text mt={3} fontSize="sm">..</UI.Text>
           </UI.Container>
         ):null}
@@ -93,7 +93,7 @@ export function ProjectExplorer() {
               fontSize="sm"
               fontWeight={file.name == currentFile?.file?.name ? 'bold' : 'normal'}
             >
-              {file.name}{file.name=='tree'?'/':''}
+              {file.name}{file.isDirectory()?'/':''}
             </UI.Text>
           </UI.Container>
         ))}
