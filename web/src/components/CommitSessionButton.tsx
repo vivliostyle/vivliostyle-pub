@@ -19,7 +19,7 @@ export const CommitSessionButton = ({
       setBusy(true);
       try {
         currentFile.commit();
-        log.success('ファイルを保存しました : '+currentFile.file?.name);
+        // log.success('ファイルを保存しました : '+currentFile.file?.name);
         onDidSaved();
       } catch (err:any) {
          log.error(err.message);

@@ -44,7 +44,8 @@ type CurrentFileActions =
       content: string;
       session: DocumentReference;
     }
-  | {type: 'commit'};
+  | {type: 'commit'}
+  | {type: 'commitCallback'};
 
 /**
  * テキスト編集ごとにかかる更新範囲を限定するため、
@@ -132,7 +133,7 @@ export function CurrentFileContextProvider({
           // 同じファイルを選択した場合何もしない
           if (
             (action.file == null && state.file == null) ||
-            action.file?.name === state.file?.name
+            action.file?.name === state.file?.name // TODO: 違うブランチ/ディレクトリの同名ファイルに注意 ブランチやディレクトリ変更でリセットすること
           ) {
             if(isEditableFile(action.file?.name)) {
               // 同じファイルを選択していても編集可能ファイルならスピナーを解除する
@@ -146,14 +147,18 @@ export function CurrentFileContextProvider({
             onReady(null);
             return {...state, file: null, state: FileState.none, timer:undefined};
           }
+          const filePath = action.file?.name!;
+          const dir = repository.currentTree.map(t=>t.name).join('/');
+          const path = upath.join(dir,filePath);
+          console.log('setFile filePath', path);
           if (action.file) {
-            log.info('ファイルが選択されました : ' + action.file?.name);
+            log.info('ファイルが選択されました : ' + path);
           }
-          if (!isEditableFile(action.file.name)) {
+          if (!isEditableFile(path)) {
             // 画像などのエディタで編集不可能なファイル
             // TODO: 画像ビューワー
             log.error(
-              '編集できないファイル形式です : ' + action.file.name,
+              '編集できないファイル形式です : ' + path,
               3000,
             );
             onReady(action.file);
@@ -166,23 +171,20 @@ export function CurrentFileContextProvider({
             branch: repository.branch!,
           };
           console.log('setFile props',props);
+
           WebApiFs.open(props)
             .then((fs) => {
-              const filePath = action.file?.name!;
-              const dir = repository.currentTree.map(t=>t.name).join('/');
-              const path = upath.join(dir,filePath);
-              console.log('setFile filePath', path);
               fs.readFile(path)
               .then((content) => {
                 // console.log('dispatch setFileCallback', seq,action.file,content);
                 if (!content) {
                   log.error(
-                    `ファイルの取得が出来ませんでした(${action.file?.name}) : ${content}`,
+                    `ファイルの取得が出来ませんでした(${path}) : ${content}`,
                     3000,
                   );
                   return state;
                 }
-                fs.getFileSession(action.file!.name!)
+                fs.getFileSession(path)
                   .then((session) => {
                     dispatch({
                       type: 'setFileCallback',
@@ -194,7 +196,7 @@ export function CurrentFileContextProvider({
                   })
                   .catch((err) => {
                     log.error(
-                      `セッション情報が取得できませんでした(${action.file?.name}): ${err.message}`,
+                      `セッション情報が取得できませんでした(${path}): ${err.message}`,
                       3000,
                     );
                   });
@@ -202,10 +204,7 @@ export function CurrentFileContextProvider({
             })
             .catch((err) => {
               log.error(
-                'ファイルの取得が出来ませんでした(' +
-                  action.file?.name +
-                  ') : ' +
-                  err.message,
+                `ファイルの取得が出来ませんでした(${path}) : ${err.messsage}`,
                 3000,
               );
               console.error(err);
@@ -258,8 +257,15 @@ export function CurrentFileContextProvider({
                   'x-id-token': await app.user!.getIdToken(),
                 },
               },
-            );
+            ).then(()=>{
+              log.success(`ファイルを保存しました(${path})`);
+              dispatch({type:"commitCallback"});
+            }).catch((err)=>{
+              log.error(`ファイルの保存に失敗しました。(${path}) : ${err.message}`);
+            });
           })();
+          return state;
+        case 'commitCallback':
           return {...state, state: FileState.clean};
       }
     },
