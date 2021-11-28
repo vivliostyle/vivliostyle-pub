@@ -22,7 +22,7 @@ export const Previewer: React.FC<PreviewerProps> = ({ }) => {
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
       previewSource.vpubPath
     }`;
-    const stylePath = previewSource.theme
+    const stylePath = previewSource.theme?.getStylePath()
       ? '/vpubfs/'+previewSource.theme.getStylePath()
       : null;
     if (stylePath) {
