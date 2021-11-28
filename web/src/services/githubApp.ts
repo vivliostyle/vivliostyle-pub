@@ -1,7 +1,7 @@
-import {App} from '@octokit/app';
+import {createAppAuth} from '@octokit/auth-app';
 import {githubAppPrivateKey} from '@utils/keys';
 
-export default new App({
-  id: +process.env.GH_APP_ID,
+export default createAppAuth({
+  appId: +process.env.GH_APP_ID,
   privateKey: githubAppPrivateKey,
 });

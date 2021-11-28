@@ -1,45 +1,39 @@
+import { FileState } from '@middlewares/frontendFunctions';
+import { useAppContext } from '@middlewares/useAppContext';
+import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
+import { useLogContext } from '@middlewares/useLogContext';
+import { useRepositoryContext } from '@middlewares/useRepositoryContext';
 import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
 
 export const CommitSessionButton = ({
-  user,
-  sessionId,
-  branch,
-  disabled,
   onDidSaved = () => {},
 }: {
-  user: firebase.User;
-  sessionId: string;
-  branch: string | undefined;
-  disabled?: boolean;
   onDidSaved?: () => void;
 }) => {
+  const log = useLogContext();
+  const currentFile = useCurrentFileContext();
   const [busy, setBusy] = useState(false);
   const onClick = useCallback(() => {
     (async () => {
       setBusy(true);
       try {
-        await fetch('/api/github/commitSession', {
-          method: 'PUT',
-          body: JSON.stringify({ sessionId, branch }),
-          headers: {
-            'content-type': 'application/json',
-            'x-id-token': await user.getIdToken(),
-          },
-        });
+        currentFile.commit();
+        // log.success('ファイルを保存しました : '+currentFile.file?.name);
         onDidSaved();
-      } catch (error) {
-        console.error(error);
+      } catch (err:any) {
+         log.error(err.message);
       } finally {
         setBusy(false);
       }
     })();
-  }, [user, sessionId, branch, onDidSaved]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFile, onDidSaved]);
 
   return (
     <UI.Button
       {...{ onClick }}
-      isDisabled={disabled}
+      disabled={!(currentFile?.state == FileState.saved || currentFile?.state == FileState.modified)}
       isLoading={busy}
       loadingText="Saving document"
     >

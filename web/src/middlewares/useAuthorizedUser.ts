@@ -1,18 +1,19 @@
 import {useState, useEffect} from 'react';
-
-import firebase from '@services/firebase';
+import { User,onAuthStateChanged, getAuth } from 'firebase/auth';
+import firebase from "@services/firebase";
 
 export const useAuthorizedUser = () => {
   const [isPending, setPending] = useState(true);
-  const [user, setUser] = useState<firebase.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscriber = firebase.auth().onAuthStateChanged(user => {
+    const auth = getAuth(firebase);
+    const unsubscriber = onAuthStateChanged(auth,user => {
       if(user) user.getIdToken(true);
       setUser(user);
       setPending(false);
     });
-    return () => unsubscriber()
+    return () => unsubscriber();
   }, []);
 
   return {user, isPending};

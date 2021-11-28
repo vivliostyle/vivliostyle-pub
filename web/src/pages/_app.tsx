@@ -1,11 +1,19 @@
 import React from 'react';
-import { AppProps } from 'next/app';
-import { ChakraProvider, CSSReset } from '@chakra-ui/react';
+import {AppProps} from 'next/app';
+import {ChakraProvider, CSSReset} from '@chakra-ui/react';
+import {AppContextProvider} from '@middlewares/useAppContext';
+import {LogContextProvider} from '@middlewares/useLogContext';
 
-const MyApp = ({ Component, pageProps }: AppProps) => (
+import '../styles/styles.css';
+
+const MyApp = ({Component, pageProps}: AppProps) => (
   <ChakraProvider>
     <CSSReset />
-    <Component {...pageProps} />
+    <LogContextProvider>
+      <AppContextProvider>
+        <Component {...pageProps} />
+      </AppContextProvider>
+    </LogContextProvider>
   </ChakraProvider>
 );
 

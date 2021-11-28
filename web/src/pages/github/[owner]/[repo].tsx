@@ -1,43 +1,27 @@
-import React, {useEffect, useCallback, useState, useMemo} from 'react';
-import {useRouter} from 'next/router';
-import { useToast, RenderProps, useDisclosure } from "@chakra-ui/react"
+import React, {useEffect, useCallback, useState, useMemo, useRef} from 'react';
+import {ReflexContainer, ReflexSplitter, ReflexElement} from 'react-reflex';
 
-import firebase from '@services/firebase';
-import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
-import {useEditorSession} from '@middlewares/useEditorSession';
+import {useRouter} from 'next/router';
+import {RenderProps} from '@chakra-ui/react';
+
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
-import {useVivlioStyleConfig} from '@middlewares/useVivliostyleConfig'
 
 import * as UI from '@components/ui';
-import {Header} from '@components/Header';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
-import {CommitSessionButton} from '@components/CommitSessionButton';
-import {FileUploadModal} from '@components/FileUploadModal';
-import {BranchSelecter} from '@components/BranchSelecter';
 
-const themes = [
-  {
-    name: '縦書き小説',
-    css:
-      'https://vivliostyle.github.io/vivliostyle_doc/samples/gingatetsudo/style.css',
-  },
-  {
-    name: '横書き欧文',
-    css:
-      'https://vivliostyle.github.io/vivliostyle_doc/samples/gutenberg/gutenberg.css',
-  },
-  {
-    name: 'Viola',
-    css:
-      'https://raw.githubusercontent.com/youchan/viola-project/master/main.css',
-  },
-  {
-    name: '@vivliostyle/theme-slide',
-    css:
-    'https://raw.githubusercontent.com/vivliostyle/themes/master/packages/%40vivliostyle/theme-slide/theme_common.css',
-  }
-];
+import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
+import {useAppContext} from '@middlewares/useAppContext';
+import {
+  PreviewSourceContextProvider,
+} from '@middlewares/usePreviewSourceContext';
+
+import {ProjectExplorer} from '@components/ProjectExplorer';
+import {MenuBar} from '@components/MenuBar';
+import {FileState} from '@middlewares/frontendFunctions';
+import {useLogContext} from '@middlewares/useLogContext';
+import {LogView} from '@components/LogView';
+import {Footer} from '@components/Footer';
 
 interface BuildRecord {
   url: string | null;
@@ -54,46 +38,67 @@ function useBuildStatus(
 ) {
   useEffect(() => {
     if (!buildID) return;
-    const unsubscribe = firebase
-      .firestore()
-      .collection('builds')
-      .doc(buildID)
-      .onSnapshot(function (doc) {
-        const {url} = doc.data() as BuildRecord;
-        console.log('Current data: ', doc.data());
-        if (!url) return;
-        unsubscribe();
-        if (onBuildFinished) onBuildFinished(url);
-      });
-    return unsubscribe;
+    // const unsubscribe = firebase
+    //   .firestore()
+    //   .collection('builds')
+    //   .doc(buildID)
+    //   .onSnapshot(function (doc) {
+    //     const {url} = doc.data() as BuildRecord;
+    //     console.log('Current data: ', doc.data());
+    //     if (!url) return;
+    //     unsubscribe();
+    //     if (onBuildFinished) onBuildFinished(url);
+    //   });
+    // return unsubscribe;
   }, [buildID, onBuildFinished]);
 }
 
-const GitHubOwnerRepo =  () => {
-  const {user, isPending} = useAuthorizedUser();
+/**
+ * メインコンポーネント
+ * @returns
+ */
+const GitHubOwnerRepo = () => {
   const router = useRouter();
-  const {owner, repo} = router.query;
-  const ownerStr = Array.isArray(owner) ? owner[0] : owner;
-  const repoStr = Array.isArray(repo) ? repo[0] : repo;
-  const [filePath, setFilePath] = useState('');
-  const [branch, setBranch] = useState<string | undefined>()
-  const {session, sessionId} = useEditorSession({
-    user,
-    owner: ownerStr!,
-    repo: repoStr!,
-    branch: branch,
-    path: filePath,
-  });
-  const [text, setText] = useState('');
-  const [status, setStatus] = useState<'init' | 'clean' | 'modified' | 'saved'>(
-    'init',
-  );
-  const [stylesheet, setStylesheet] = useState<string>(themes[2].css);
+
+  const log = useLogContext();
+  const app = useAppContext();
+
+  const [isExplorerVisible, setExplorerVisible] = useState<boolean>(true);
+  const [isEditorVisible, setEditorVisible] = useState<boolean>(true);
+  const [isPreviewerVisible, setPreviewerVisible] = useState<boolean>(true);
+
+  const [isAutoReload, setAutoReload] = useState<boolean>(true);
+
+  // check login
+  useEffect(() => {
+    if (!app.user) {
+      router.replace('/');
+    }
+  }, [app.user, app.isPending, router]);
+
+  const {owner, repo} = useMemo(() => {
+    if (app.user) {
+      const owner = Array.isArray(router.query.owner)
+        ? router.query.owner[0]
+        : router.query.owner ?? null;
+      const repo = Array.isArray(router.query.repo)
+        ? router.query.repo[0]
+        : router.query.repo ?? null;
+      return {owner, repo: repo};
+    }
+    return {};
+  }, [app.user, router.query]);
+  console.log('[GitHubOwnerRepo]', app.isPending, owner, repo);
+
+  // const [session, setSession] =
+  //   useState<DocumentReference<DocumentData> | null>(null);
+
+  const [status, setStatus] = useState<FileState>(FileState.init);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
-  const toast = useToast();
+  // const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
-  const [isPresentationMode,setPresentationMode] = useState<boolean>(false);
+  const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
@@ -103,246 +108,187 @@ const GitHubOwnerRepo =  () => {
           View PDF
         </UI.Link>
       </UI.Box>
-    )
-    toast({
-      duration: 9000,
-      isClosable: true,
-      render: ViewPDFToast,
-    });
+    );
+    log.info('View PDF'); // TODO リンクにする
+    // toast({
+    //   duration: 9000,
+    //   isClosable: true,
+    //   render: ViewPDFToast,
+    // });
   });
 
-  // check login
-  useEffect(() => {
-    if (!user && !isPending) {
-      router.replace('/');
-    }
-  }, [user, isPending, router]);
-
   // set text
-  useEffect(() => {
-    if (!session) {
-      return;
-    }
-    return session.onSnapshot((doc) => {
-      const data = doc.data();
-      if (!data?.text || data.text === text || doc.metadata.hasPendingWrites) {
-        return;
-      }
-      setText(data.text);
-      setStatus('clean');
-    });
-  }, [session, text]);
+  // useEffect(() => {
+  //   if (!session) {
+  //     return;
+  //   }
+  //   // console.log('setOnSnapshot', session, currentFile);
+  //   return session.onSnapshot((doc) => {
+  //     const data = doc.data();
+  //     if(data?.path !== currentFile.path) {
+  //       return;
+  //     }
+  //     // console.log(
+  //     //   'session(' + session.id + ').onSnapshot(state:',
+  //     //   data?.state,
+  //     //   ' path:',
+  //     //   data?.path,
+  //     //   ', hasPendingWrites:',
+  //     //   doc.metadata.hasPendingWrites,
+  //     //   ')',
+  //     // );
+  //     if (data?.state === 'update') { // update content
+  //       setStatus('saved');
+  //     } else if (data?.state === 'commit') { // commit file
+  //       setStatus('clean');
+  //     }
 
-  const onModified = useCallback(() => {
-    setStatus('modified');
-    setWarnDialog(true);
-  }, [setWarnDialog]);
+  //     if (
+  //       !data?.text ||
+  //       data.text === currentFile.text ||
+  //       doc.metadata.hasPendingWrites
+  //     ) {
+  //       return;
+  //     }
+  //     // console.log('setText');
+  //     // setCurrentFile({...currentFile, text: data.text});
+  //     //      setText(data.text);
+  //     // setStatus('clean');
+  //   });
+  // }, [session, currentFile]);
 
-  const onUpdate = useCallback(
+  const onModified = useCallback(
     (updatedText) => {
-      if (!session || updatedText === text) {
-        return;
-      }
-      setText(updatedText);
-      session
-        .update({
-          userUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          text: updatedText,
-        })
-        .then(() => {
-          setStatus('saved');
-        });
+      setWarnDialog(true);
     },
-    [text, session],
+    [setWarnDialog],
   );
-
-  const onDidSaved = useCallback(() => {
-    setStatus('clean');
-    setWarnDialog(false);
-  }, [setWarnDialog]);
 
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);
 
-    const buildPDF = firebase.functions().httpsCallable('buildPDF');
-    buildPDF({owner, repo, stylesheet})
-      .then((result) => {
-        console.log(result);
-        const buildID = result.data.buildID;
-        setBuildID(buildID);
-        toast({
-          title: 'Build started',
-          description: 'Your build has been started',
-          status: 'success',
-          duration: 5000,
-          isClosable: false,
-        });
-      })
-      .catch((err) => {
-        toast({
-          title: err.message,
-          description: err.details,
-          status: 'error',
-          duration: 9000,
-          isClosable: true,
-        });
-      });
+    // const buildPDF = firebase.functions().httpsCallable('buildPDF');
+    // buildPDF({owner, repo, stylesheet})
+    //   .then((result:any) => {
+    //     console.log(result);
+    //     const buildID = result.data.buildID;
+    //     setBuildID(buildID);
+    //     toast({
+    //       title: 'Build started',
+    //       description: 'Your build has been started',
+    //       status: 'success',
+    //       duration: 5000,
+    //       isClosable: false,
+    //     });
+    //   })
+    //   .catch((err:any) => {
+    //     toast({
+    //       title: err.message,
+    //       description: err.details,
+    //       status: 'error',
+    //       duration: 9000,
+    //       isClosable: true,
+    //     });
+    //   });
   }
 
-  function onThemeSelected(themeURL: string) {
-    setStylesheet(themeURL);
-  }
-
-  const config = useVivlioStyleConfig({
-    user,
-    owner: ownerStr!,
-    repo: repoStr!,
-    branch: branch
-  })
-  const filenames = useMemo(() => {
-    if(!config || !config.entry) return []
-    const ret = [] as string[]
-    if(Array.isArray(config.entry)) {
-      config.entry.forEach(e => {
-        if(typeof e == 'string') ret.push(e)
-        else if('path' in e) ret.push(e.path)
-      })
-    } else {
-      if(typeof config.entry == 'string') ret.push(config.entry)
-      else if('path' in config.entry) ret.push(config.entry.path)
-    }
-    return ret
-  }, [config])
-  const [filenamesFilterText, setFilenamesFilterText] = useState("")
-  const filterdFilenames = useMemo(() => {
-    return filenames.filter(f => f.includes(filenamesFilterText))
-  }, [filenames, filenamesFilterText])
-
-  useEffect(() => {
-    if(config){
-      setStylesheet(config.theme??'');
-    }
-  }, [config]);
-
-  const {
-    isOpen:isOpenFileUploadModal,
-    onOpen:onOpenFileUploadModal,
-    onClose:onCloseFileUploadModal
-  } = useDisclosure()
-
-  const onBranchUpdate = useCallback((branch:string) => {
-    setBranch(branch)
-  }, [] );
+  const onLogging = (num: number) => {
+    console.log('onLogging', num);
+    // TODO: ログが追加されたらLogViewを表示する。 手動で大きさを変えたあとでも対応できるようにする。
+  };
 
   return (
-    <UI.Box>
-      <Header />
-      <UI.Flex
-        w="100%"
-        h={12}
-        borderBottomWidth={1}
-        borderBottomColor="gray.300"
-      >
-        <UI.Flex w="100%" px={8} justify="space-between" align="center">
-          <UI.Flex align="center">
-            {owner} / {repo} /
-            <UI.Box w="180px" px="4">
-              <BranchSelecter
-                user={user}
-                owner={ownerStr!}
-                repo={repoStr!}
-                onChange={onBranchUpdate}
+    <UI.Box h={'calc(100vh - 4rem)'}>
+      {owner && owner != '' && repo && repo != '' ? (
+        <RepositoryContextProvider owner={owner} repo={repo}>
+          <PreviewSourceContextProvider isAutoReload={isAutoReload}>
+            <UI.Box height={'calc(100vh - 4rem)'}>
+              {/* Wrapper  サイズ固定*/}
+              <MenuBar
+                isProcessing={isProcessing}
+                isPresentationMode={isPresentationMode}
+                setPresentationMode={setPresentationMode}
+                setWarnDialog={setWarnDialog}
+                onBuildPDFButtonClicked={onBuildPDFButtonClicked}
+                isEditorVisible={isEditorVisible}
+                onToggleEditor={(f: boolean) => {
+                  setEditorVisible(f);
+                }}
+                isExplorerVisible={isExplorerVisible}
+                onToggleExplorer={(f: boolean) => {
+                  setExplorerVisible(f);
+                }}
+                isPreviewerVisible={isPreviewerVisible}
+                onTogglePreviewer={(f: boolean) => {
+                  setPreviewerVisible(f);
+                }}
+                isAutoReload={isAutoReload}
+                setAutoReload={(f: boolean)=>{ setAutoReload(f); }}
+                onReload={()=>{ /* TODO: 手動リロード */ }}
               />
-            </UI.Box>
-            {status === 'saved' && <UI.Text>Document updated : </UI.Text>}
-            {user && sessionId && (
-              <CommitSessionButton
-                {...{user, sessionId, onDidSaved, branch}}
-                disabled={status !== 'saved'}
-              />
-            )}
-          </UI.Flex>
-          <UI.Flex align="center">
-            {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
-            <UI.Menu>
-              <UI.MenuButton as={UI.Button}>
-                <UI.Icon name="chevron-down" /> Actions
-              </UI.MenuButton>
-              <UI.MenuList>
-                <UI.MenuItem key="presen" onClick={()=>{ setPresentationMode(!isPresentationMode) }}>{isPresentationMode?'✔ ':' '}Presentation Mode</UI.MenuItem>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Theme">
-                  {themes.map((theme) => (
-                    <UI.MenuItem
-                      key={theme.name}
-                      onClick={() => onThemeSelected(theme.css)}
+              <UI.Box
+                height={'calc(100vh - 8rem)'}
+                borderTop={'solid 1px gray'}
+              >
+                {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
+                <ReflexContainer
+                  orientation="horizontal"
+                  windowResizeAware={true}
+                >
+                  <ReflexElement className="top-pane" flex={1.0}>
+                    <ReflexContainer
+                      orientation="vertical"
+                      windowResizeAware={true}
                     >
-                      {theme.name}
-                    </UI.MenuItem>
-                  ))}
-                </UI.MenuGroup>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Add Files">
-                  <UI.MenuItem onClick={onOpenFileUploadModal}>
-                    Add Image
-                  </UI.MenuItem>
-                  <FileUploadModal
-                    user={user}
-                    owner={ownerStr!}
-                    repo={repoStr!} 
-                    branch={branch}
-                    isOpen={isOpenFileUploadModal}
-                    onOpen={onOpenFileUploadModal}
-                    onClose={onCloseFileUploadModal}
-                  />
-                </UI.MenuGroup>
-                <UI.MenuDivider />
-                <UI.MenuGroup title="Export">
-                  <UI.MenuItem onClick={onBuildPDFButtonClicked}>
-                    PDF
-                  </UI.MenuItem>
-                </UI.MenuGroup>
-              </UI.MenuList>
-            </UI.Menu>
-          </UI.Flex>
-        </UI.Flex>
-      </UI.Flex>
-      <UI.Flex w="100vw" h={isPresentationMode ? 'calc(100vh - 115px)' : ''}>
-        { isPresentationMode ? '': (
-        <UI.Box w="180px" resize="horizontal" overflowX="hidden" p="4">
-          <UI.Input
-            placeholder="search file" 
-            value={filenamesFilterText}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>)=> {
-              setFilenamesFilterText(event.target.value)
-            }}
-          />
-          <UI.Box h="calc(100vh - 200px)" overflowY="auto">
-            { filterdFilenames.map( path =>(
-              <UI.Container p={0} key={path} onClick={() => setFilePath(path)} cursor="default">
-                <UI.Text mt={3} fontSize="sm" fontWeight={path == filePath ? "bold":"normal"}>{path}</UI.Text>
-              </UI.Container>
-            )) }
-          </UI.Box>
-        </UI.Box>
-        )}
-        {!isPending && status !== 'init' ? (
-          <UI.Flex flex="1">
-            {! isPresentationMode ? (
-            <UI.Box flex="1">
-              <MarkdownEditor value={text} {...{onModified, onUpdate}} />
-            </UI.Box>)
-            :''}
-            <UI.Box width={isPresentationMode ? '100%' : '40%'} overflow="scroll">
-              <Previewer basename={filePath.replace(/\.md$/, '.html')} body={text} stylesheet={stylesheet} owner={ownerStr!} repo={repoStr!} branch={branch!} user={user} />
+                      {isPresentationMode || !isExplorerVisible ? null : (
+                        <ReflexElement
+                          className="left-pane"
+                          flex={0.15}
+                          minSize={150}
+                        >
+                          <UI.Box
+                            height={'100%'}
+                            backgroundColor="white"
+                            overflow={'hidden'}
+                          >
+                            <ProjectExplorer />
+                          </UI.Box>
+                        </ReflexElement>
+                      )}
+                      {isPresentationMode || !isEditorVisible ? null : <ReflexSplitter />}
+                      {isPresentationMode || !isEditorVisible ? null : (
+                        <ReflexElement className="middle-pane">
+                          <UI.Box height={'100%'}>
+                            <MarkdownEditor {...{onModified}} />
+                          </UI.Box>
+                        </ReflexElement>
+                      )}
+
+                      {isPresentationMode ? null : <ReflexSplitter />}
+                      {!isPreviewerVisible ? null : (
+                      <ReflexElement className="right-pane">
+                          <UI.Box height={'100%'}>
+                            <Previewer />
+                          </UI.Box>
+                      </ReflexElement>
+                        )}
+                        </ReflexContainer>
+                  </ReflexElement>
+
+                  <ReflexSplitter />
+
+                  <ReflexElement className="bottom-pane" minSize={0} flex={0}>
+                    <LogView onLogging={onLogging} />
+                  </ReflexElement>
+                </ReflexContainer>
+                {/* Main */}
+              </UI.Box>
+              <Footer />
+              {/* Wrapper */}
             </UI.Box>
-          </UI.Flex>
-        ) : (
-          <UI.Container flex="1">
-            <UI.Text mt={6}>Loading</UI.Text>
-          </UI.Container>
-        )}
-      </UI.Flex>
+          </PreviewSourceContextProvider>
+        </RepositoryContextProvider>
+      ) : null}
     </UI.Box>
   );
 };

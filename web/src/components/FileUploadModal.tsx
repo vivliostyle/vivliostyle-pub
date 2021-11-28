@@ -1,110 +1,81 @@
-import React, { useCallback, useState, useRef, useMemo } from 'react';
+import React, {useCallback, useState, useRef, useMemo} from 'react';
 import * as UI from './ui';
-import firebase from '@services/firebase';
-import { useToast } from "@chakra-ui/react"
-
-
-const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
-  const reader = new FileReader()
-  return new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file)
-  })
-}
+import {useRepositoryContext} from '@middlewares/useRepositoryContext';
+import {User} from 'firebase/auth';
+import {createFile} from '@services/serverSideFunctions';
+import {useLogContext} from '@middlewares/useLogContext';
 
 export const FileUploadModal = ({
   user,
-  owner,
-  repo,
-  branch,
   isOpen,
   onOpen,
   onClose,
 }: {
-  user: firebase.User | null;
-  owner: string;
-  repo: string;
-  branch: string | undefined;
+  user: User | null;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
 }) => {
+  const repository = useRepositoryContext();
+  const log = useLogContext();
+
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const fileName = useMemo(() => {
-    if (!file) return ""
-    return file.name
-  }, [file])
+    if (!file) return '';
+    return file.name;
+  }, [file]);
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFile(e.target.files?.item(0))
+    if (e.target.files) setFile(e.target.files?.item(0));
   };
 
-  const toast = useToast()
   const onUploadButtonClick = useCallback(() => {
     (async () => {
       if (file === null) {
-        toast({
-          title: "file not selected",
-          status: "warning",
-        })
-        return
+        log.warning('file not selected', 3000);
+        return;
       }
       if (user === null) {
-        toast({
-          title: "user not found",
-          status: "warning",
-        })
-        return
+        log.warning('user not found', 3000);
+        return;
       }
-      setBusy(true)
+      setBusy(true);
       try {
-        const response = await fetch('/api/github/createOrUpdateFileContents', {
-          method: 'POST',
-          body: JSON.stringify({
-            owner,
-            repo,
-            branch,
+        const response = await createFile(
+          {
+            user,
+            owner: repository.owner!,
+            repo: repository.repo!,
+            branch: repository.branch!,
             path: fileName,
-            content: (await getBase64(file))?.toString().split(',')[1] // remove dataURL's prefix
-          }),
-          headers: {
-            'content-type': 'application/json',
-            'x-id-token': await user.getIdToken(),
           },
-        });
-        if (response.status === 201) {
-          toast({
-            title: "image uploaded",
-            status: "success",
-          })
-        } else if (response.status === 400 || response.status === 401) {
-          toast({
-            title: "authentication error",
-            status: "error"
-          })
-        } else if (response.status === 413) {
-          toast({
-            title: "image size too large",
-            status: "error"
-          })
-        } else {
-          toast({
-            title: "error:" + response.status,
-            status: "error"
-          })
+          file,
+        );
+        if (!response) {
+          return;
         }
-        onClose()
+        if (response.status === 201) {
+          repository.selectBranch(repository.branch!); // ファイル一覧の更新
+          log.success('image uploaded', 3000);
+        } else if (response.status === 400 || response.status === 401) {
+          log.error('authentication error', 3000);
+        } else if (response.status === 413) {
+          log.error('image size too large', 3000);
+        } else {
+          log.error('error : ' + response.status, 3000);
+        }
+        onClose();
       } catch (error) {
         console.error(error);
       } finally {
         setBusy(false);
       }
-    })()
-  }, [user, owner, repo, branch, file, fileName, onClose, toast])
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, repository, file, fileName, onClose]);
 
   return (
     <UI.Modal isOpen={isOpen} onClose={onClose}>
@@ -113,17 +84,32 @@ export const FileUploadModal = ({
         <UI.ModalHeader>Upload Image</UI.ModalHeader>
         <UI.ModalCloseButton />
         <UI.ModalBody>
-
           <UI.InputGroup>
-            <UI.Button onClick={() => inputRef.current?.click()}>Select File</UI.Button>
-            <UI.Input placeholder="Your file ..." value={fileName} isDisabled={true} />
-            <input type='file' accept={'image/*'} ref={inputRef} style={{ display: 'none' }} onChange={onFileInputChange}></input>
+            <UI.Button onClick={() => inputRef.current?.click()}>
+              Select File
+            </UI.Button>
+            <UI.Input
+              placeholder="Your file ..."
+              value={fileName}
+              isDisabled={true}
+            />
+            <input
+              type="file"
+              accept={'image/*'}
+              ref={inputRef}
+              style={{display: 'none'}}
+              onChange={onFileInputChange}
+            ></input>
           </UI.InputGroup>
-
         </UI.ModalBody>
 
         <UI.ModalFooter>
-          <UI.Button colorScheme="blue" mr={3} onClick={onUploadButtonClick} isLoading={busy}>
+          <UI.Button
+            colorScheme="blue"
+            mr={3}
+            onClick={onUploadButtonClick}
+            isLoading={busy}
+          >
             Upload
           </UI.Button>
         </UI.ModalFooter>
