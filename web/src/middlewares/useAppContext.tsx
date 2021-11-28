@@ -172,17 +172,18 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    */
   const init = (user: User | null) => {
     console.log('init', user);
-    if (!user) {
-      return;
-    }
+    if (user) {
     (async () => {
+      console.log('init',1);
       // ユーザアカウントの初期化
       user.getIdToken(true);
       // console.log('providerData', user.providerData);
       await user.getIdTokenResult(true);
+      console.log('init',2);
 
       // Application CacheへのI/O
       const fs = await AppCacheFs.open();
+      console.log('init',3);
 
       // リポジトリリストの取得
       // GraphQLのクエリメソッド
@@ -193,6 +194,8 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           'x-id-token': await user!.getIdToken(),
         },
       });
+      console.log('init',4);
+
       const query = async (
         query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
       ): Promise<ApolloQueryResult<any>> => {
@@ -214,20 +217,26 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           }
         `,
       );
+      console.log('init',5);
       const repositories: Repository[] = result.data.repositories;
       console.log('repositories\n', repositories);
       // テーマ一覧を取得
+      console.log('init',6);
       const themes: Theme[] = await getOfficialThemes();
       console.log('themes', themes);
       // 
+      console.log('init',7);
       dispatch({type: 'init', user, fs, themes, repositories, query});
     })();
+    }
   };
   /**
    * 初期化
    */
   useEffect(() => {
+    console.log('[App init]');
     const auth = getAuth(firebase);
+    console.log('auth',auth);
     const unsubscriber = onAuthStateChanged(auth, (user) => init(user));
     return () => unsubscriber();
   }, []);
@@ -276,10 +285,6 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
   const reducer = (state: AppContext, action: Actions): AppContext => {
     switch (action.type) {
       case 'init':
-        if (action.user === null) {
-          // Sign out
-          state.vpubFs?.delete();
-        }
         return {
           ...state,
           user: action.user,
@@ -290,6 +295,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           repositories: action.repositories,
         };
       case 'signOut':
+        state.vpubFs?.delete().then(()=>{});
         return {...state,user:null,isPending:true,query:undefined,repositories:undefined};
       case 'reload':
         init(state.user);

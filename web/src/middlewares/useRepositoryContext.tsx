@@ -167,12 +167,14 @@ export function RepositoryContextProvider({
             files: action.files,
           };
         case 'selectBranch':
-          WebApiFs.open({
+          const props = {
             user: app.user!,
             owner: state.owner!,
             repo: state.repo!,
             branch: action.branch,
-          }).then((fs) => {
+          };
+          console.log('selectBranch',props);
+          WebApiFs.open(props).then((fs) => {
             fs.readdir('')
               .then((files) => {
                 if (dispatch) {
@@ -207,12 +209,14 @@ export function RepositoryContextProvider({
           } else {
             tree.push(action.tree as unknown as Dirent);
           }
-          WebApiFs.open({
+          const treeProps = {
             user: app.user!,
             owner: state.owner!,
             repo: state.repo!,
             branch: state.branch!,
-          })
+          };
+          console.log('selectTree props',treeProps);
+          WebApiFs.open(treeProps)
             .then((fs) => {
               fs.readdir('')
                 .then((files) => {
@@ -289,12 +293,14 @@ export function RepositoryContextProvider({
         if(!repository) {return;}
         const branches = repository.branches;
         const defaultBranch = repository.defaultBranch;
-        const fs: WebApiFs = await WebApiFs.open({
+        const props = {
           user: app.user!,
           owner,
           repo,
           branch: defaultBranch,
-        });
+        };
+        console.log('selectRepository',props);
+        const fs: WebApiFs = await WebApiFs.open(props);
         const files = await fs.readdir('/');
         if (dispatch) {
           dispatch({

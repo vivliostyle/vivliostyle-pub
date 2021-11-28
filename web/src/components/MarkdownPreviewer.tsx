@@ -23,10 +23,12 @@ export const Previewer: React.FC<PreviewerProps> = ({ }) => {
       previewSource.vpubPath
     }`;
     const stylePath = previewSource.theme
-      ? previewSource.theme.getStylePath()
+      ? '/vpubfs/'+previewSource.theme.getStylePath()
       : null;
     if (stylePath) {
       url += `&style=${stylePath}`;
+    }else{
+      console.log('no stylesheet');
     }
     return url;
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -33,7 +33,7 @@ export class WebApiFs implements Fs {
     branch: string;
   }): Promise<WebApiFs> {
     if (!(user && owner && repo && branch)) {
-      throw new Error('invalid repository');
+      throw new Error(`WebApiFs:invalid repository:${user}/${owner}/${repo}/${branch}`);
     }
     const fs: WebApiFs = new WebApiFs(user, owner, repo, branch);
     return fs;
@@ -86,7 +86,7 @@ export class WebApiFs implements Fs {
       (await response.json()) as unknown as ContentOfRepositoryApiResponse;
     if (Array.isArray(content) || !('content' in content)) {
       // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
-      throw new Error(`Content type is not file`);
+      throw new Error(`WebApiFs:Content type is not file`);
     }
     return content.content;
   }

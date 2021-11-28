@@ -148,12 +148,14 @@ export function CurrentFileContextProvider({
             onReady(action.file);
             return {...state, state: FileState.none, timer:undefined};
           }
-          WebApiFs.open({
+          const props = {
             user: app.user!,
             owner: repository.owner!,
             repo: repository.repo!,
             branch: repository.branch!,
-          })
+          };
+          console.log('setFile props',props);
+          WebApiFs.open(props)
             .then((fs) => {
               fs.readFile(action.file?.name!).then((content) => {
                 // console.log('dispatch setFileCallback', seq,action.file,content);

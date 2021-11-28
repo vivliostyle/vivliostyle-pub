@@ -8,7 +8,6 @@ import {Repository} from './useRepositoryContext';
 import path from 'path';
 import { Theme } from 'theme-manager';
 import { WebApiFs } from './WebApiFS';
-import { AppCacheFs } from './AppCacheFS';
 
 export const VPUBFS_ROOT = '/vpubfs';
 
@@ -81,6 +80,7 @@ export async function transpileMarkdown(
     }catch(err:any) {
       if (err.message.startsWith('403:')) {
         console.error(err.message);
+        // TODO: ログ表示
         // toast({
         //   title: "file size too large (Max 1MB) : " + error.message.split(':')[1],
         //   status: "error"
@@ -104,13 +104,13 @@ export async function transpileMarkdown(
  */
 export const processThemeString = async (
   app: AppContext,
-  repository: Repository,
   theme: Theme
 ):Promise<string> => {
   console.log('processingThemeString',theme.style);
   if( !theme.style ) { console.log('empty theme'); return ''; }
   const themePath = `${theme.name}/${theme.style}`;
-  const stylesheet = theme.files[theme.style];
+  const stylesheet = await theme.fs.readFile(theme.style) as string;
+  // console.log('stylesheet',stylesheet);
   if(!stylesheet) {
     return '';
   }
@@ -120,57 +120,15 @@ export const processThemeString = async (
   
   const imagesOfStyle = pickupCSSResources(stylesheet);
   await Promise.all(
-    imagesOfStyle.map((imageOfStyle) =>
-      updateCacheFromPath(
-        repository.owner!,
-        repository.repo!,
-        repository.branch!,
-        stylesheet,
-        imageOfStyle,
-        app.user!,
-      ),
-    ),
+    imagesOfStyle.map(async(imageOfStyle) => {
+      const contentPath = path.join(path.dirname(stylesheet),imageOfStyle);
+      const content = await theme.fs.readFile(contentPath);
+      app.vpubFs?.writeFile(contentPath, content);
+    }),
   ).catch((error) => {
     console.log(error);
     throw error;
   });
 
-  return themePath;
+  return app.vpubFs?.root+'/'+themePath;
 }
-
-/**
- * テーマの準備
- */
-export const processTheme = async (
-  app: AppContext,
-  repository: Repository,
-  themePath: string,
-): Promise<string> => {
-  console.log('processTheme', app,path);
-  if (! (app.user && path && !isURL(themePath)) ) { throw new Error('app.user or themePath not set'); }
-
-  // リポジトリからstylesheetを取得してApplicationCacheに追加
-  const webApifs = await WebApiFs.open({
-    user:app.user!,
-    owner:repository.owner!,
-    repo:repository.repo!,
-    branch:repository.branch!,
-  });
-  const stylesheet = await webApifs.readFile(themePath);
-  await app.vpubFs!.writeFile(themePath,stylesheet);
-
-  // stylesheetが参照している画像を取得してApplicationCacheに追加
-  const imagesOfStyle = pickupCSSResources(stylesheet.toString());
-  const basePath = path.dirname(themePath); // スタイルシートのパスを基準とする
-  await Promise.all(
-      imagesOfStyle.map(async (imageOfStyle) =>{
-        if (isURL(imageOfStyle)) return;
-        const contentPath = path.join(basePath, imageOfStyle);
-        const content = await webApifs.readFile(contentPath);
-        await app.vpubFs!.writeFile(imageOfStyle, content);
-      })
-    ).catch((error) => {
-      throw error;
-    });
-  return themePath;
-};

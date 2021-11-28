@@ -80,7 +80,7 @@ export class PackageTheme implements Theme {
   }
 
   public getStylePath():string|null{
-    return null;
+    return `${this.name}/${this.style}`;
   }
 
   /**

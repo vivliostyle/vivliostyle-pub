@@ -9,14 +9,73 @@ import * as UI from '@components/ui';
 import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
-import {useRepositoryContext} from '@middlewares/useRepositoryContext';
-import {useAppContext} from '@middlewares/useAppContext';
+import {
+  Repository,
+  useRepositoryContext,
+} from '@middlewares/useRepositoryContext';
+import {AppContext, useAppContext} from '@middlewares/useAppContext';
 
 import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
 import {WebApiFs} from '@middlewares/WebApiFS';
 import {EditIcon, HamburgerIcon, RepeatIcon, ViewIcon} from '@chakra-ui/icons';
-import { Fs, Theme } from 'theme-manager';
+import {Fs, Theme} from 'theme-manager';
+
+const fs = {} as Fs;
+
+// vivliostyle.config.jsのthemeを使用する
+class CustomTheme implements Theme {
+  name: string = 'custom-theme';
+  category: string = '';
+  topics: string[] = [];
+  style: string = 'theme.css';
+  description: string = 'Custom theme';
+  version: string = '1.0';
+  author: string = 'Vivliostyle';
+  files: {[filepath: string]: any} = {};
+  fs: Fs;
+
+  app: AppContext;
+  repository: Repository;
+
+  private constructor(fs:Fs,app: AppContext, repository: Repository) {
+    this.app = app;
+    this.repository = repository;
+    this.fs = fs;
+    console.log('new CustomTheme',app.user,repository);
+  }
+
+  private async process(){
+    const path = 'theme.css';
+    console.log('CustomTheme process');
+    const stylesheet = await this.fs.readFile(path);
+    await this.app.vpubFs!.writeFile(path, stylesheet);
+    console.log('setup custom theme');
+  }
+
+  public static async create(app: AppContext, repository: Repository) {
+    if(!(app.user && repository.owner && repository.repo)) {
+      return null;
+    }
+    const props = {
+      user: app.user!,
+      owner: repository.owner!,
+      repo: repository.repo!,
+      branch: repository.branch!,
+    };
+    console.log('props',props);
+    const fs = await WebApiFs.open(props);
+    const theme = new CustomTheme(fs, app, repository);
+    await theme.process();
+    return theme;
+  }
+
+  public getStylePath() {
+    // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
+    // リポジトリからstylesheetを取得してApplicationCacheに追加
+    return 'theme.css';
+  }
+}
 
 export function MenuBar({
   isProcessing,
@@ -40,29 +99,26 @@ export function MenuBar({
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
   onBuildPDFButtonClicked: () => void;
   isExplorerVisible: boolean;
-  onToggleExplorer: (f:boolean)=>void;
+  onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
-  onToggleEditor: (f:boolean)=>void;
+  onToggleEditor: (f: boolean) => void;
   isPreviewerVisible: boolean;
-  onTogglePreviewer: (f:boolean)=>void;
+  onTogglePreviewer: (f: boolean) => void;
   isAutoReload: boolean;
-  setAutoReload: (f:boolean)=>void;
-  onReload:()=>void;
+  setAutoReload: (f: boolean) => void;
+  onReload: () => void;
 }) {
   const app = useAppContext();
   const repository = useRepositoryContext();
   const previewSource = usePreviewSourceContext();
-
-  const themes = useMemo(() => {
-    const fs = {} as Fs;
-
+  const plainTheme = useMemo(()=>{
     // Viewerのデフォルトスタイルを使用するテーマ
-    const planeTheme = {
-      name: 'plane-theme',
+    const plainTheme = {
+      name: 'plain-theme',
       category: '',
       topics: [],
       style: '',
-      description: 'Plane theme',
+      description: 'Plain theme',
       version: '1.0',
       author: 'Vivliostyle',
       files: {},
@@ -71,38 +127,15 @@ export function MenuBar({
         return null;
       },
     } as Theme;
+    return plainTheme;
+  },[]);
 
-    // vivliostyle.config.jsのthemeを使用する
-    const customeTheme = {
-      name: 'custom-theme',
-      category: '',
-      topics: [],
-      style: '',
-      description: 'Custom theme',
-      version: '1.0',
-      author: 'Vivliostyle',
-      files: {},
-      fs: fs,
-      getStylePath: () => {
-        // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
-        // リポジトリからstylesheetを取得してApplicationCacheに追加
-        WebApiFs.open({
-          user: app.user!,
-          owner: repository.owner!,
-          repo: repository.repo!,
-          branch: repository.branch!,
-        }).then((fs) => {
-          fs.readFile('theme.css').then((stylesheet) => {
-            app.vpubFs!.writeFile('theme.css', stylesheet).then(() => {
-              console.log('setup custom theme');
-            });
-          });
-        });
-        return '/vpubfs/theme.css';
-      },
-    } as Theme;
-    return [planeTheme, customeTheme, ...app.onlineThemes];
-  }, [app, repository]);
+  const [customTheme,setCustomTheme] = useState<Theme|null>(null);
+  useEffect(()=>{
+      CustomTheme.create(app, repository).then((theme)=>{
+        setCustomTheme(theme);
+      });
+  },[app, repository]);
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
@@ -145,7 +178,7 @@ export function MenuBar({
         <UI.ButtonGroup>
           <UI.Button
             title="Project Explorer Visiblity"
-            onClick={()=>onToggleExplorer(!isExplorerVisible)}
+            onClick={() => onToggleExplorer(!isExplorerVisible)}
             border={
               isExplorerVisible ? 'solid 2px black' : 'solid 2px lightgray'
             }
@@ -154,14 +187,14 @@ export function MenuBar({
           </UI.Button>
           <UI.Button
             title="Editor Visiblity"
-            onClick={()=>onToggleEditor(!isEditorVisible)}
+            onClick={() => onToggleEditor(!isEditorVisible)}
             border={isEditorVisible ? 'solid 2px black' : 'solid 2px lightgray'}
           >
             <EditIcon />
           </UI.Button>
           <UI.Button
             title="Preview Visiblity"
-            onClick={()=>onTogglePreviewer(!isPreviewerVisible)}
+            onClick={() => onTogglePreviewer(!isPreviewerVisible)}
             border={
               isPreviewerVisible ? 'solid 2px black' : 'solid 2px lightgray'
             }
@@ -201,7 +234,22 @@ export function MenuBar({
             </UI.MenuItem>
             <UI.MenuDivider />
             <UI.MenuGroup title="Theme">
-              {themes.map((theme) => (
+              <UI.MenuItem
+                  key={plainTheme.name}
+                  onClick={() => onThemeSelected(plainTheme)}
+                >
+                  {plainTheme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                  {plainTheme.description}
+                </UI.MenuItem>
+                {!customTheme?null:
+                (<UI.MenuItem
+                  key={customTheme.name}
+                  onClick={() => onThemeSelected(customTheme)}
+                >
+                  {customTheme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                  {customTheme.description}
+                </UI.MenuItem>)}
+              {app.onlineThemes.map((theme) => (
                 <UI.MenuItem
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}

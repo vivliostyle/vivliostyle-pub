@@ -54,12 +54,14 @@ export function useVivlioStyleConfig({
   useEffect(() => {
     if (!user || !branch) return
     (async () => {
-      const fs = await WebApiFs.open({
+      const props = {
         user,
         owner,
         repo,
         branch
-      });
+      };
+      console.log('config props',props);
+      const fs = await WebApiFs.open(props);
       const content = await fs.readFile('vivliostyle.config.js');
       if( Array.isArray(content) ) {
         // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples

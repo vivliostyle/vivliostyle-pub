@@ -102,7 +102,7 @@ export default class ThemeManager {
       const results = await NpmApi.SearchPackage(query, max);
       const themes:Theme[] = [];
       for (const pkg of results) {
-        // 優先順に読み込みを試みる
+        // searchOrderリストの順に読み込みを試みる
         for(const factory of this.config.searchOrder) {
           // console.log('pkg',pkg);
           const fs = await factory(pkg);

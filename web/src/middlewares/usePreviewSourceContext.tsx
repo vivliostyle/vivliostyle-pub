@@ -143,6 +143,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     (theme: Theme | null) => {
       console.log('changeTheme', theme);
       if (theme) {
+        // TODO: テーマオブジェクトのメソッド呼び出し
         processThemeString(app, repository, theme)
           .then((themePath) => {
             // 準備が終わったら状態を変化させる
@@ -152,6 +153,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
                 theme: theme,
                 stylePath: themePath,
               });
+              log.success('テーマを変更しました:'+theme.name+":"+themePath,1000);
             }
           })
           .catch((err) => {
@@ -319,7 +321,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           }
           return {...state, theme: action.theme!, stylePath};
         case 'reload':
-          transpile(action.filePath, action.text);
+          transpile(action.path, action.text);
           return {...state};
         case 'commit': // コミット
           commit(action.session!, action.branch);

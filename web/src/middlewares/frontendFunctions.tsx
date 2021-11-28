@@ -100,7 +100,9 @@ export async function getFileContentFromGithub(
   path: string,
   user: User,
 ): Promise<any> {
-  const fs: WebApiFs = await WebApiFs.open({user, owner, repo, branch});
+  const props = {user, owner, repo, branch};
+  console.log('getFileContent props',props);
+  const fs: WebApiFs = await WebApiFs.open(props);
   const content = await fs.readFile(path);
   if (Array.isArray(content)) {
     // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
