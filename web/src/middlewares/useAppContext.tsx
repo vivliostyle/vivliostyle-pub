@@ -59,6 +59,7 @@ type Actions = {
   query?: GraphQlQueryMethod;
   repositories?: Repository[];
 } 
+| {type: 'notSignedIn'}
 | {type: 'signOut'}
 | {type: 'reload'};
 
@@ -172,7 +173,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    */
   const init = (user: User | null) => {
     console.log('init', user);
-    if (user) {
+    if (!user) { dispatch({type:'notSignedIn'}); return;}
     (async () => {
       console.log('init',1);
       // ユーザアカウントの初期化
@@ -228,15 +229,12 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       console.log('init',7);
       dispatch({type: 'init', user, fs, themes, repositories, query});
     })();
-    }
   };
   /**
    * 初期化
    */
   useEffect(() => {
-    console.log('[App init]');
     const auth = getAuth(firebase);
-    console.log('auth',auth);
     const unsubscriber = onAuthStateChanged(auth, (user) => init(user));
     return () => unsubscriber();
   }, []);
@@ -294,9 +292,12 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           query: action.query,
           repositories: action.repositories,
         };
+      case 'notSignedIn':
+        // サインインしていない
+        return {...state, isPending: false}
       case 'signOut':
         state.vpubFs?.delete().then(()=>{});
-        return {...state,user:null,isPending:true,query:undefined,repositories:undefined};
+        return {...state,user:null,query:undefined,repositories:undefined};
       case 'reload':
         init(state.user);
         return state;
