@@ -20,6 +20,7 @@ import {useDisclosure} from '@chakra-ui/react';
 import {WebApiFs} from '@middlewares/WebApiFS';
 import {EditIcon, HamburgerIcon, RepeatIcon, ViewIcon} from '@chakra-ui/icons';
 import {Fs, Theme} from 'theme-manager';
+import { VivliostyleConfigSchema } from '@middlewares/vivliostyle.config';
 
 const fs = {} as Fs;
 
@@ -38,22 +39,23 @@ class CustomTheme implements Theme {
   app: AppContext;
   repository: Repository;
 
-  private constructor(fs:Fs,app: AppContext, repository: Repository) {
+  private constructor(fs:Fs,app: AppContext, repository: Repository,style:string) {
     this.app = app;
     this.repository = repository;
     this.fs = fs;
+    this.style = style;
     console.log('new CustomTheme',app.user,repository);
   }
 
   private async process(){
-    const path = 'theme.css';
-    console.log('CustomTheme process');
-    const stylesheet = await this.fs.readFile(path);
-    await this.app.vpubFs!.writeFile(path, stylesheet);
+    console.log('CustomTheme process',this.style);
+    const stylesheet = await this.fs.readFile(this.style);
+    await this.app.vpubFs!.writeFile(this.style, stylesheet);
     console.log('setup custom theme');
   }
 
   public static async create(app: AppContext, repository: Repository) {
+    console.log('create custom theme',repository.branch);
     if(!(app.user && repository.owner && repository.repo)) {
       return null;
     }
@@ -65,7 +67,20 @@ class CustomTheme implements Theme {
     };
     console.log('props',props);
     const fs = await WebApiFs.open(props);
-    const theme = new CustomTheme(fs, app, repository);
+    // 設定ファイルの読み込み
+    const configString = await fs.readFile('vivliostyle.config.js') as string;
+    console.log('[create custom theme].config',configString);
+    // 設定ファイルからthemeを取得
+    // TODO: entry別のテーマ
+    const configJsonString = configString
+    .replace('module.exports = ', '')
+    .replaceAll(/^\s*(.+):/gm, '"$1":')
+    .replaceAll(`'`, '"')
+    .replaceAll(/,[\s\n]*([\]}])/g, "$1")
+    .replaceAll(/};/g, "}");
+    const config = JSON.parse(configJsonString) as VivliostyleConfigSchema;
+    if(!config || !config.theme) { return null; }
+    const theme = new CustomTheme(fs, app, repository,config.theme);
     await theme.process();
     return theme;
   }
