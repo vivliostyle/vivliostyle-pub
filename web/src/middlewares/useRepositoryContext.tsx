@@ -192,14 +192,16 @@ export function RepositoryContextProvider({
           return state;
         case 'selectBranchCallback':
           // TODO: ブランチ毎のカレントディレクトリを保持する
+          setFile(null);
           return {
             ...state,
             branch: action.branch,
             currentTree: [],
             files: action.files,
+            currentFile: null
           };
         case 'selectTree':
-          console.log('selectTreeAction');
+          // console.log('selectTreeAction');
           const tree = [...state.currentTree];
           if (action.tree == '.') {
             // 何もせず後段でファイルリストを読み込みなおす
@@ -218,7 +220,7 @@ export function RepositoryContextProvider({
             branch: state.branch!,
           };
           const path = tree.map(t=>t.name).join('/');
-          console.log('selectTree props',treeProps, path);
+          // console.log('selectTree props',treeProps, path);
           WebApiFs.open(treeProps)
             .then((fs) => {
               fs.readdir(path)
