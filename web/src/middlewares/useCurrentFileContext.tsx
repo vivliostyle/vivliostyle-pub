@@ -12,6 +12,7 @@ import {useAppContext} from './useAppContext';
 import {useLogContext} from './useLogContext';
 import {useRepositoryContext} from './useRepositoryContext';
 import {WebApiFs} from './WebApiFS';
+import upath from 'upath';
 
 /**
  * エディタで編集しているファイル情報
@@ -157,7 +158,12 @@ export function CurrentFileContextProvider({
           console.log('setFile props',props);
           WebApiFs.open(props)
             .then((fs) => {
-              fs.readFile(action.file?.name!).then((content) => {
+              const filePath = action.file?.name!;
+              const dir = repository.currentTree.map(t=>t.name).join('/');
+              const path = upath.join(dir,filePath);
+              console.log('setFile filePath', path);
+              fs.readFile(path)
+              .then((content) => {
                 // console.log('dispatch setFileCallback', seq,action.file,content);
                 if (!content) {
                   log.error(

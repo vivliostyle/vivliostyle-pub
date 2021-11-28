@@ -31,10 +31,10 @@ export type Repository = {
 
   files: Dirent[];
   selectBranch: (branch: string) => void;
-  selectTree: (tree: '..' | Dirent) => void;
+  selectTree: (tree: '.' | '..' | Dirent) => void; // .は現在のディレクトリのリロード用
   selectFile: (path: Dirent | null, key: number) => void;
   fs: WebApiFs | null;
-  getFileContent: () => Promise<any>;
+  // getFileContent: () => Promise<any>;
 };
 
 const RepositoryContext = createContext({} as Repository);
@@ -54,7 +54,7 @@ type Actions =
     }
   | {type: 'selectBranch'; branch: string}
   | {type: 'selectBranchCallback'; branch: string; files: Dirent[]}
-  | {type: 'selectTree'; tree: '..' | Dirent}
+  | {type: 'selectTree'; tree: '.' | '..' | Dirent}
   | {type: 'selectTreeCallback'; tree: Dirent[]; files: Dirent[]}
   | {type: 'setFiles'; files: Dirent[]}
   | {type: 'selectFile'; file: Dirent | null; key: number}
@@ -107,7 +107,7 @@ export function RepositoryContextProvider({
    * フォルダを開く
    * @param tree
    */
-  const selectTree = (tree: '..' | Dirent) => {
+  const selectTree = (tree: '.' | '..' | Dirent) => {
     console.log('selectTree', tree);
     if (dispatch) {
       dispatch({type: 'selectTree', tree});
@@ -123,10 +123,10 @@ export function RepositoryContextProvider({
       dispatch({type: 'selectFile', file, key});
     }
 
-    // // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
+    // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
   }, []);
 
-  const getFileContent = async () => {};
+  // const getFileContent = async () => {};
 
   const state = {
     id: 0,
@@ -145,7 +145,7 @@ export function RepositoryContextProvider({
     selectTree,
     selectFile,
     fs: null,
-    getFileContent,
+    // getFileContent,
     defaultBranch: ''
   } as Repository;
 
@@ -201,7 +201,9 @@ export function RepositoryContextProvider({
         case 'selectTree':
           console.log('selectTreeAction');
           const tree = [...state.currentTree];
-          if (action.tree == '..') {
+          if (action.tree == '.') {
+            // 何もせず後段でファイルリストを読み込みなおす
+          }else if (action.tree == '..') {
             if (tree.length == 0) {
               return state;
             }
@@ -215,12 +217,13 @@ export function RepositoryContextProvider({
             repo: state.repo!,
             branch: state.branch!,
           };
-          console.log('selectTree props',treeProps);
+          const path = tree.map(t=>t.name).join('/');
+          console.log('selectTree props',treeProps, path);
           WebApiFs.open(treeProps)
             .then((fs) => {
-              fs.readdir('')
+              fs.readdir(path)
                 .then((files) => {
-                  console.log('success');
+                  console.log('success',path);
                   dispatch({type: 'selectTreeCallback', tree, files});
                 })
                 .catch((err) => {
@@ -232,7 +235,7 @@ export function RepositoryContextProvider({
             });
           return state;
         case 'selectTreeCallback':
-          console.log('callback', action);
+          console.log('selectTreeCallback', action);
           return {...state, currentTree: action.tree, files: action.files};
         case 'setFiles':
           console.log('setFiles', action.files);

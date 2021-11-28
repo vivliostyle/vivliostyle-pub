@@ -55,7 +55,7 @@ export function ProjectExplorer() {
    */
   const reload = useCallback(async () => {
     // repository.reloadFiles();
-    log.info("!!未実装!!プロジェクトをリロードしました");
+    repository.selectTree('.');
   },[repository]);
 
   return (
