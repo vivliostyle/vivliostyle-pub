@@ -3951,6 +3951,13 @@ fbjs@^0.8.12, fbjs@^0.8.9:
     setimmediate "^1.0.5"
     ua-parser-js "^0.7.30"
 
+fetch-github-content@^1.2.4:
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/fetch-github-content/-/fetch-github-content-1.2.4.tgz#b88c1b1a2bee9cd09448102edddade7bc12d7d8c"
+  integrity sha512-I8owX8msUC8cesZQ8N0mBDyTIpKjSIkjqp7dWZRftjh7QNtjLktP0bUan+1/2vJpmBaSZgyxHUJa3/GZI6Q3uQ==
+  dependencies:
+    node-fetch "^2.6.1"
+
 file-entry-cache@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/file-entry-cache/-/file-entry-cache-6.0.1.tgz#211b2dd9659cb0394b073e7323ac3c933d522027"

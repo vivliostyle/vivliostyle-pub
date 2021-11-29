@@ -26,6 +26,7 @@
     "apollo-server-micro": "^3.5.0",
     "chakra-ui-contextmenu": "^1.0.3",
     "dotenv": "^10.0.0",
+    "fetch-github-content": "^1.2.4",
     "firebase": "^9.5.0",
     "firebase-admin": "^10.0.0",
     "framer-motion": "^5",
