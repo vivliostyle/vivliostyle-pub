@@ -177,7 +177,7 @@ export function CurrentFileContextProvider({
               fs.readFile(path)
               .then((content) => {
                 // console.log('dispatch setFileCallback', seq,action.file,content);
-                if (!content) {
+                if (content == undefined || content == null) { // 0バイトのファイルがあるため、!contentでは駄目
                   log.error(
                     `ファイルの取得が出来ませんでした(${path}) : ${content}`,
                     3000,

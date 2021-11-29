@@ -11,6 +11,8 @@ export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner:
       if (!Array.isArray(data) && data.type === 'file') return data.sha;
     } catch (error) {}
   })();
+
+
   await octokit.repos.createOrUpdateFileContents({
     owner, repo, path, branch,
     sha: contentSha,
@@ -21,9 +23,13 @@ export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner:
 
 const createOrUpdateFileContents: NextApiHandler<null> = async (req, res) => {
   const {owner, repo, path, content, branch} = req.body;
-  if (req.method !== 'POST' || !owner || !repo || !path || !content) {
+  if (req.method !== 'POST' || !owner || !repo || !path ) {
+    console.error('invalid parameters',owner,repo,branch,path,content);
     return res.status(400).send(null);
   }
+
+  // console.log('createOrUpdateFileContents',path,content);
+
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
     return res.status(401).send(null);
@@ -33,6 +39,7 @@ const createOrUpdateFileContents: NextApiHandler<null> = async (req, res) => {
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
     await firebaseAdmin.auth().verifyIdToken(tokenString);
   } catch (error) {
+    console.error('authentication error');
     return res.status(400).send(null);
   }
 

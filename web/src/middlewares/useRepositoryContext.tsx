@@ -1,3 +1,5 @@
+import { StatHelpText } from '@chakra-ui/stat';
+import { createFile } from '@services/serverSideFunctions';
 import {Dirent} from 'fs-extra';
 import React, {
   createContext,
@@ -7,11 +9,9 @@ import React, {
   useReducer,
   useState,
 } from 'react';
-import {fetchBranches} from './frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {CurrentFileContextProvider} from './useCurrentFileContext';
 import {useLogContext} from './useLogContext';
-import {useVivlioStyleConfig} from './useVivliostyleConfig';
 import {CoreProps} from './vivliostyle.config';
 import {WebApiFs} from './WebApiFS';
 
@@ -33,6 +33,7 @@ export type Repository = {
   selectBranch: (branch: string) => void;
   selectTree: (tree: '.' | '..' | Dirent) => void; // .は現在のディレクトリのリロード用
   selectFile: (path: Dirent | null, key: number) => void;
+  createFile: (path: string, file: File) => void;
   fs: WebApiFs | null;
   // getFileContent: () => Promise<any>;
 };
@@ -58,7 +59,8 @@ type Actions =
   | {type: 'selectTreeCallback'; tree: Dirent[]; files: Dirent[]}
   | {type: 'setFiles'; files: Dirent[]}
   | {type: 'selectFile'; file: Dirent | null; key: number}
-  | {type: 'selectFileCallback'; n: number; file: Dirent | null};
+  | {type: 'selectFileCallback'; n: number; file: Dirent | null}
+  | {type: 'createFile'; path: string; file:File; };
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -146,7 +148,10 @@ export function RepositoryContextProvider({
     selectFile,
     fs: null,
     // getFileContent,
-    defaultBranch: ''
+    defaultBranch: '',
+    createFile: (path:string, file:File)=>{
+      dispatch({type:'createFile',path,file});
+    }
   } as Repository;
 
   // コールバックのディスパッチが多重に処理されるのを防ぐカウンタ
@@ -274,6 +279,23 @@ export function RepositoryContextProvider({
           //     console.error('file not found');
           //     return state;
           //   }
+          return state;
+        case 'createFile':
+          console.log('createFile action',action.path,action.file);
+          createFile({
+            user: app.user!,
+            owner:state.owner!,
+            repo:state.repo!,
+            branch:state.branch!,
+            path:action.path
+          },action.file)
+          .then(()=>{
+            log.success(`ファイルを作成しました : ${action.path}`,1000);
+            dispatch({type:'selectBranch', branch:state.branch!});
+          })
+          .catch((err)=>{
+            log.error(`ファイルが作成できませんでした : ${action.path}`,1000);
+          });
           return state;
       }
     },

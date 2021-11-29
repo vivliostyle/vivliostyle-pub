@@ -32,6 +32,7 @@ export {
   Alert,
   Stack,
   AlertIcon,
+  Spacer
 } from '@chakra-ui/react';
 
 

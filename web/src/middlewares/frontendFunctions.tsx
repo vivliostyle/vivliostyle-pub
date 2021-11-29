@@ -1,6 +1,5 @@
 import {User} from 'firebase/auth';
 import useSWR from 'swr';
-import {GithubReposApiResponse} from '../pages/api/github/repos';
 import path from 'path';
 import {BranchesApiResponse} from 'pages/api/github/branches';
 import {AppCacheFs} from './AppCacheFS';
@@ -123,21 +122,6 @@ const fetcher = (url: string, idToken: string) =>
       'x-id-token': idToken,
     },
   }).then((r) => r.json());
-
-/**
- *
- * @param idToken
- * @returns
- */
-export function GetRepsitoryList(idToken: string | null) {
-  return useSWR<GithubReposApiResponse>(
-    idToken ? ['/api/github/repos', idToken] : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    },
-  );
-}
 
 /**
  *

@@ -1,3 +1,4 @@
+import { isImageFile } from '@middlewares/frontendFunctions';
 import { User } from 'firebase/auth';
 
 /**
@@ -48,6 +49,8 @@ export async function createFile(
     return null;
   }
   try {
+    const content = isImageFile(path) ? (await getBase64(data))?.toString().split(',')[1] : await data.text();
+    // console.log('createFile content', content);
     const result = await fetch('/api/github/createOrUpdateFileContents', {
       method: 'POST',
       body: JSON.stringify({
@@ -55,44 +58,17 @@ export async function createFile(
         repo,
         branch,
         path: path,
-        content: (await getBase64(data))?.toString().split(',')[1], // remove dataURL's prefixr
+        content , // remove dataURL's prefixr
       }),
       headers: {
         'content-type': 'application/json',
         'x-id-token': await user.getIdToken(),
       },
     });
-    console.log(result.status);
+    // console.log('createOrUpdateFileContents response status',result.status);
     return result;
   } catch (error) {
     console.error(error);
   }
   return null;
 }
-
-
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-// export async function getDecryptedId(req:NextApiRequest,res:NextApiResponse){
-//     const idToken = req.headers['x-id-token'];
-//     if (!idToken) {
-//       return res.status(401).send(null);
-//     }
-//     let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
-//     try {
-//       const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
-//       idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
-//     } catch (error) {
-//       return res.status(400).send(null);
-//     }
-  
-//     if (!idTokenDecoded?.githubAccessToken) {
-//       return res.status(405).send(null);
-//     }
-//     const decrypted = decrypt(idTokenDecoded.githubAccessToken);
-//     return decrypted;
-//   }
