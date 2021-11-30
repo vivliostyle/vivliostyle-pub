@@ -112,7 +112,16 @@ class npmFs implements Fs {
     // TODO: GraphQLにしたいけれど、GitHub App以外のトークンが必要っぽい
     // octokit-restはPublic repositoryへのアクセスはトークン不要
     console.log('readFile',path);
-    const octokit = new Octokit();
+    let octokit:Octokit;
+    const token = localStorage.getItem('GH_PERSONAL_ACCESS_TOKEN');
+    if(token) {
+      console.log('use Personal access token');
+      octokit = new Octokit({auth:token});
+    }else{
+      // 1時間あたりのアクセス数制限あり
+      console.log('not use Personal access token');
+      octokit = new Octokit();
+    }
     // TODO: Monorepoではない公式テーマはどうする?
     const repoPath = `packages/${this.dir}/${path}`;
     console.log('repoPath',repoPath);
