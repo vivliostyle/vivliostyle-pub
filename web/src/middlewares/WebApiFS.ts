@@ -57,7 +57,7 @@ export class WebApiFs implements Fs {
   }
 
   private async readDirEnt(path:string, json?: boolean) {
-    console.log('readDirEnt', path);
+    // console.log('readDirEnt', path);
     const response = await fetch(
       `/api/github/contentOfRepository?${new URLSearchParams({
         owner: this.owner,

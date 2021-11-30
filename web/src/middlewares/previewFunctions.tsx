@@ -24,6 +24,7 @@ export const pickupCSSResources = (text: string): string[] => {
     text.matchAll(/url\("?(.+?)"?\)/g),
     (m) => m[1],
   );
+  // console.log('imagePaths', imagePaths);
   return imagePaths;
 };
 
@@ -119,9 +120,11 @@ export const processThemeString = async (
   console.log(`updateCache : ${themePath}`);
   
   const imagesOfStyle = pickupCSSResources(stylesheet);
+  // console.log('imagesOfStyle',imagesOfStyle);
   await Promise.all(
     imagesOfStyle.map(async(imageOfStyle) => {
-      const contentPath = path.join(path.dirname(stylesheet),imageOfStyle);
+      const contentPath = path.join(path.dirname(theme.style),imageOfStyle);
+      // console.log('contentPath',contentPath);
       const content = await theme.fs.readFile(contentPath);
       app.vpubFs?.writeFile(contentPath, content);
     }),

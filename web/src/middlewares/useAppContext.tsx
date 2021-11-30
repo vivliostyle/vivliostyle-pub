@@ -252,7 +252,6 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       const fs = await AppCacheFs.open();
       // GraphQLのクエリメソッド
       const idToken =  await user!.getIdToken();
-      console.log('idToken', idToken); // TODO: 本番では削除する
       const client = new ApolloClient({
         uri: '/api/graphql',
         cache: new InMemoryCache(),
