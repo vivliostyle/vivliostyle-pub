@@ -12,6 +12,7 @@ import {makeExecutableSchema} from '@graphql-tools/schema';
 import {isNumber} from 'lodash';
 import { getRepositories } from '@services/gqlRepository';
 import { authDirectiveTransformer, queryContext } from '@services/gqlAuthDirective';
+import { send } from 'micro';
 
 const cors = Cors();
 
@@ -108,6 +109,7 @@ export default cors(async function handler(req, res) {
   const decryptedToken = await getDecryptedToken(req, res);
   if (!decryptedToken || isNumber(decryptedToken)) {
     context.roles = [];
+    return send(res, 401);
   } else {
     context.token = decryptedToken;
     context.roles = ['USER'];

@@ -28,9 +28,9 @@ import {
   TypedDocumentNode,
 } from '@apollo/client';
 import {Repository} from './useRepositoryContext';
-import { Fs, Theme, ThemeManager } from 'theme-manager';
-import { Octokit } from '@octokit/rest';
-import { Dirent } from 'fs-extra';
+import {Fs, Theme, ThemeManager} from 'theme-manager';
+import {Octokit} from '@octokit/rest';
+import {Dirent} from 'fs-extra';
 
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (
@@ -48,20 +48,21 @@ export type AppContext = {
   vpubFs?: AppCacheFs; // Application Cacheへのアクセス
   repositories?: Repository[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
   query?: GraphQlQueryMethod; // サーバのGraphQL APIへのクエリメソッド
-  reload: ()=>void;
+  reload: () => void;
 };
 
-type Actions = {
-  type: 'init';
-  user: User | null;
-  fs?: AppCacheFs;
-  themes?: Theme[];
-  query?: GraphQlQueryMethod;
-  repositories?: Repository[];
-} 
-| {type: 'notSignedIn'}
-| {type: 'signOut'}
-| {type: 'reload'};
+type Actions =
+  | {
+      type: 'init';
+      user: User | null;
+      fs?: AppCacheFs;
+      themes?: Theme[];
+      query?: GraphQlQueryMethod;
+      repositories?: Repository[];
+    }
+  | {type: 'notSignedIn'}
+  | {type: 'signOut'}
+  | {type: 'reload'};
 
 const AppContext = createContext({} as AppContext);
 
@@ -70,13 +71,13 @@ export function useAppContext() {
 }
 
 class npmFs implements Fs {
-  private owner:string;
-  private repo:string;
-  private branch:string;
-  private dir:string;
+  private owner: string;
+  private repo: string;
+  private branch: string;
+  private dir: string;
 
-  private constructor(owner:string,repo:string,dir:string){
-    console.log('constructor:',owner,repo,dir);
+  private constructor(owner: string, repo: string, dir: string) {
+    console.log('constructor:', owner, repo, dir);
     this.owner = owner;
     this.repo = repo;
     this.branch = 'master';
@@ -88,61 +89,78 @@ class npmFs implements Fs {
    * @param themeLocation テーマ名
    * @returns テーマの場所がアクセス可能ならFsオブジェクトを返す。アクセスできない場合はfalseを返す
    */
-  public static async open(themeLocation:any):Promise<Fs|false> {
+  public static async open(themeLocation: any): Promise<Fs | false> {
     // themeLocationからowner,repoを取得する
     // console.log('npm open:',themeLocation);
     const pkg = themeLocation.package;
-    if(!pkg || pkg.scope !== 'vivliostyle' || !pkg.links.repository) { console.log('pkg cant open',pkg.scope); return false; } // GitHubにある公式テーマのみ対応
+    if (!pkg || pkg.scope !== 'vivliostyle' || !pkg.links.repository) {
+      console.log('pkg cant open', pkg.scope);
+      return false;
+    } // GitHubにある公式テーマのみ対応
 
     const name = pkg.name;
     const repoUrl = pkg.links.repository;
     console.log('npm open :', name, repoUrl);
 
-
     const owner = 'vivliostyle';
     const repo = 'themes';
     const branch = 'master';
     const dir = pkg.name;
-    const fs = new npmFs(owner,repo,dir);
+    const fs = new npmFs(owner, repo, dir);
 
     return fs;
   }
 
-  public async readFile(path: string, json?: boolean | undefined):Promise<string | Buffer> {
+  public async readFile(
+    path: string,
+    json?: boolean | undefined,
+  ): Promise<string | Buffer> {
     // TODO: GraphQLにしたいけれど、GitHub App以外のトークンが必要っぽい
     // octokit-restはPublic repositoryへのアクセスはトークン不要
-    console.log('readFile',path);
-    let octokit:Octokit;
+    console.log('readFile', path);
+    let octokit: Octokit;
     const token = localStorage.getItem('GH_PERSONAL_ACCESS_TOKEN');
-    if(token) {
+    if (token) {
       console.log('use Personal access token');
-      octokit = new Octokit({auth:token});
-    }else{
+      octokit = new Octokit({auth: token});
+    } else {
       // 1時間あたりのアクセス数制限あり
       console.log('not use Personal access token');
       octokit = new Octokit();
     }
     // TODO: Monorepoではない公式テーマはどうする?
     const repoPath = `packages/${this.dir}/${path}`;
-    console.log('repoPath',repoPath);
+    console.log('repoPath', repoPath);
     const content = await octokit.repos.getContent({
       owner: this.owner,
       repo: this.repo,
-      path: repoPath
+      path: repoPath,
     });
-    if(!('content' in content.data && 'encoding' in content.data)) { throw new Error(); }
-    const buffer = Buffer.from(content.data.content, content.data.encoding as BufferEncoding);
+    if (!('content' in content.data && 'encoding' in content.data)) {
+      throw new Error();
+    }
+    const buffer = Buffer.from(
+      content.data.content,
+      content.data.encoding as BufferEncoding,
+    );
     const data = buffer.toString();
     // console.log('readFile content',data);
     return json ? JSON.parse(data) : data;
   }
 
-  public async writeFile(file: string | Buffer | URL, data: string | Object | Buffer | DataView, options?: string | Object | undefined):Promise<void> {
+  public async writeFile(
+    file: string | Buffer | URL,
+    data: string | Object | Buffer | DataView,
+    options?: string | Object | undefined,
+  ): Promise<void> {
     throw new Error('not implemnted');
     return;
   }
 
-  public async readdir(path: string, options?: string | Object | undefined):Promise<Dirent[]>{
+  public async readdir(
+    path: string,
+    options?: string | Object | undefined,
+  ): Promise<Dirent[]> {
     throw new Error('not implemnted');
     return [];
   }
@@ -156,21 +174,51 @@ class npmFs implements Fs {
  * @param info
  * @returns
  */
- async function getOfficialThemes() {
-    // オンラインテーマの取得
-    const themeManagerConfig = {
-      searchOrder:[
-        async (themeLocation:any)=>{ return await npmFs.open(themeLocation); }
-      ]
-    };
-    const themeManager = new ThemeManager(themeManagerConfig);
-    const themes = await themeManager.searchFromNpm();
-    return themes;
+async function getOfficialThemes() {
+  // オンラインテーマの取得
+  const themeManagerConfig = {
+    searchOrder: [
+      async (themeLocation: any) => {
+        return await npmFs.open(themeLocation);
+      },
+    ],
+  };
+  const themeManager = new ThemeManager(themeManagerConfig);
+  const themes = await themeManager.searchFromNpm();
+  return themes;
+}
+
+async function getRepositories(
+  query:(query: DocumentNode | TypedDocumentNode<any, OperationVariables>) => Promise<ApolloQueryResult<any>>,
+): Promise<Repository[]> {
+  try {
+    // リポジトリリストの取得
+    const result = await query(
+      gql`
+        query {
+          repositories {
+            id
+            node_id
+            private
+            full_name
+            owner
+            repo
+            branches
+            defaultBranch
+          }
+        }
+      `,
+    );
+    const repositories: Repository[] = result.data.repositories;
+    return repositories;
+  } catch (error) {
+    return [];
+  }
 }
 
 /**
  * アプリケーションコンテクスト
- * 
+ *
  * @param param0
  * @returns
  */
@@ -182,20 +230,20 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    */
   const init = (user: User | null) => {
     console.log('init', user);
-    if (!user) { dispatch({type:'notSignedIn'}); return;}
+    if (!user) {
+      dispatch({type: 'notSignedIn'});
+      return;
+    }
     (async () => {
-      console.log('init',1);
+      console.log('init', 1);
       // ユーザアカウントの初期化
       user.getIdToken(true);
       // console.log('providerData', user.providerData);
       await user.getIdTokenResult(true);
-      console.log('init',2);
+      console.log('init', 2);
 
       // Application CacheへのI/O
       const fs = await AppCacheFs.open();
-      console.log('init',3);
-
-      // リポジトリリストの取得
       // GraphQLのクエリメソッド
       const client = new ApolloClient({
         uri: '/api/graphql',
@@ -204,38 +252,20 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           'x-id-token': await user!.getIdToken(),
         },
       });
-      console.log('init',4);
-
       const query = async (
         query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
       ): Promise<ApolloQueryResult<any>> => {
         return client.query({query});
       };
-      const result = await query(
-        gql`
-          query {
-            repositories {
-              id
-              node_id
-              private
-              full_name
-              owner
-              repo
-              branches
-              defaultBranch
-            }
-          }
-        `,
-      );
-      console.log('init',5);
-      const repositories: Repository[] = result.data.repositories;
+      const repositories = await getRepositories(query);
       console.log('repositories\n', repositories);
+
       // テーマ一覧を取得
-      console.log('init',6);
+      console.log('init', 3);
       const themes: Theme[] = await getOfficialThemes();
       console.log('themes', themes);
-      // 
-      console.log('init',7);
+      //
+      console.log('init', 4);
       dispatch({type: 'init', user, fs, themes, repositories, query});
     })();
   };
@@ -283,7 +313,9 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       return {data: null, loading: false, networkStatus: NetworkStatus.ready};
     },
     repositories: null,
-    reload: ()=>{dispatch({type:'reload'})}
+    reload: () => {
+      dispatch({type: 'reload'});
+    },
   });
 
   /**
@@ -303,10 +335,15 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
         };
       case 'notSignedIn':
         // サインインしていない
-        return {...state, isPending: false}
+        return {...state, isPending: false};
       case 'signOut':
-        state.vpubFs?.delete().then(()=>{});
-        return {...state,user:null,query:undefined,repositories:undefined};
+        state.vpubFs?.delete().then(() => {});
+        return {
+          ...state,
+          user: null,
+          query: undefined,
+          repositories: undefined,
+        };
       case 'reload':
         init(state.user);
         return state;
