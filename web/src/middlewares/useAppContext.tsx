@@ -94,7 +94,7 @@ class npmFs implements Fs {
     // console.log('npm open:',themeLocation);
     const pkg = themeLocation.package;
     if (!pkg || pkg.scope !== 'vivliostyle' || !pkg.links.repository) {
-      console.log('pkg cant open', pkg.scope);
+      console.log("pkg can't open", pkg.scope);
       return false;
     } // GitHubにある公式テーマのみ対応
 
@@ -188,6 +188,12 @@ async function getOfficialThemes() {
   return themes;
 }
 
+/**
+ * ログインしているユーザがアクセス可能なリポジトリのリストを取得する
+ * アクセス可能なリポジトリはGitHub Appがインストールされていて許可しているリポジトリ
+ * @param query 
+ * @returns 
+ */
 async function getRepositories(
   query:(query: DocumentNode | TypedDocumentNode<any, OperationVariables>) => Promise<ApolloQueryResult<any>>,
 ): Promise<Repository[]> {
@@ -245,11 +251,13 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       // Application CacheへのI/O
       const fs = await AppCacheFs.open();
       // GraphQLのクエリメソッド
+      const idToken =  await user!.getIdToken();
+      console.log('idToken', idToken); // TODO: 本番では削除する
       const client = new ApolloClient({
         uri: '/api/graphql',
         cache: new InMemoryCache(),
         headers: {
-          'x-id-token': await user!.getIdToken(),
+          'x-id-token': idToken,
         },
       });
       const query = async (
