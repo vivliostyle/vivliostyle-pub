@@ -97,6 +97,7 @@ export function ProjectExplorer() {
 
   return (
     <UI.Box w={'100%'} resize="horizontal" p={1}>
+      <UI.Box h="48px">
       <UI.Input
         placeholder="search file"
         value={filenamesFilterText}
@@ -108,11 +109,12 @@ export function ProjectExplorer() {
       <UI.Button textAlign="right" onClick={reload}>
         <RepeatIcon />
       </UI.Button>
+      </UI.Box>
 
       <UI.Flex>
         {currentDir}/
         <UI.Spacer />
-        <UI.Box>
+        <UI.Box h="24px">
           <UI.Button
             title="new File"
             p="0"
@@ -137,7 +139,7 @@ export function ProjectExplorer() {
         <hr />
       </UI.Flex>
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
-        <UI.Box height={'100vh'} overflowY="scroll" backgroundColor="white">
+        <UI.Box height={'calc(100vh - 48px - 24px - 140px)'} overflowY="scroll" backgroundColor="white"> {/* ここの高さ計算をもっと的確に。 */}
           {repository.currentTree.length > 0 ? (
             <UI.Container p={0} onClick={upTree} cursor="pointer">
               <UI.Text mt={3} fontSize="sm">
