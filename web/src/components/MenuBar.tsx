@@ -95,7 +95,7 @@ class CustomTheme implements Theme {
   public getStylePath() {
     // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
     // リポジトリからstylesheetを取得してApplicationCacheに追加
-    return 'theme.css';
+    return this.style;
   }
 }
 
