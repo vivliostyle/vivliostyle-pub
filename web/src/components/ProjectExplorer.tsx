@@ -77,7 +77,7 @@ export function ProjectExplorer() {
     setCreateForm('dir');
   };
 
-  const createFileOrDirectory = (e) => {
+  const createFileOrDirectory = (e:any) => {
     const name = e.target.value;
     if (!name || name.length === 0) {
       setCreateForm(null);
@@ -139,7 +139,7 @@ export function ProjectExplorer() {
         <hr />
       </UI.Flex>
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
-        <UI.Box height={'calc(100vh - 48px - 24px - 140px)'} overflowY="scroll" backgroundColor="white"> {/* ここの高さ計算をもっと的確に。 */}
+        <UI.Box height={'calc(100vh - 48px - 24px - 140px)'} overflowY="scroll" backgroundColor="white"> {/* TODO:ここの高さ計算をもっと的確に。 */}
           {repository.currentTree.length > 0 ? (
             <UI.Container p={0} onClick={upTree} cursor="pointer">
               <UI.Text mt={3} fontSize="sm">
