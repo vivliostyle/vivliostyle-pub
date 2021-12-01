@@ -6,7 +6,7 @@ import {AddIcon, PlusSquareIcon, RepeatIcon} from '@chakra-ui/icons';
 import {useLogContext} from '@middlewares/useLogContext';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
-import { VFile } from 'theme-manager';
+import {VFile} from 'theme-manager';
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
@@ -41,10 +41,10 @@ export function ProjectExplorer() {
     setCreateForm(null);
 
     console.log('proj.onclick', file);
-    if (file.type === "file") {
+    if (file.type === 'file') {
       // ファイル
       repository.selectFile(file, new Date().getTime());
-    } else if (file.type === "dir") {
+    } else if (file.type === 'dir') {
       // ディレクトリ
       repository.selectTree(file);
     }
@@ -63,9 +63,9 @@ export function ProjectExplorer() {
    * TODO: GitHubのリポジトリに直接変更を加えた場合にリロードしてもらうようマニュアルに追加
    */
   const reload = useCallback(async () => {
-    // repository.reloadFiles();
+    console.log('ProjectExplorer reload', currentDir);
     repository.selectTree('.');
-  }, [repository]);
+  }, [repository, currentDir]);
 
   // ファイル名入力フォームの表示フラグ 種別兼用 'file':新規ファイル,'dir':新規ディレクトリ,null:非表示
   const [createForm, setCreateForm] = useState<'file' | 'dir' | null>(null);
@@ -77,7 +77,7 @@ export function ProjectExplorer() {
     setCreateForm('dir');
   };
 
-  const createFileOrDirectory = (e:any) => {
+  const createFileOrDirectory = (e: any) => {
     const name = e.target.value;
     if (!name || name.length === 0) {
       setCreateForm(null);
@@ -98,17 +98,17 @@ export function ProjectExplorer() {
   return (
     <UI.Box w={'100%'} resize="horizontal" p={1}>
       <UI.Box h="48px">
-      <UI.Input
-        placeholder="search file"
-        value={filenamesFilterText}
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          setFilenamesFilterText(event.target.value);
-        }}
-        w={'calc(100% - 3em)'}
-      />
-      <UI.Button textAlign="right" onClick={reload}>
-        <RepeatIcon />
-      </UI.Button>
+        <UI.Input
+          placeholder="search file"
+          value={filenamesFilterText}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setFilenamesFilterText(event.target.value);
+          }}
+          w={'calc(100% - 3em)'}
+        />
+        <UI.Button textAlign="right" onClick={reload}>
+          <RepeatIcon />
+        </UI.Button>
       </UI.Box>
 
       <UI.Flex>
@@ -139,7 +139,13 @@ export function ProjectExplorer() {
         <hr />
       </UI.Flex>
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
-        <UI.Box height={'calc(100vh - 48px - 24px - 140px)'} overflowY="scroll" backgroundColor="white"> {/* TODO:ここの高さ計算をもっと的確に。 */}
+        <UI.Box
+          height={'calc(100vh - 48px - 24px - 140px)'}
+          overflowY="scroll"
+          backgroundColor="white"
+        >
+          {' '}
+          {/* TODO:ここの高さ計算をもっと的確に。 */}
           {repository.currentTree.length > 0 ? (
             <UI.Container p={0} onClick={upTree} cursor="pointer">
               <UI.Text mt={3} fontSize="sm">
@@ -202,7 +208,7 @@ export function ProjectExplorer() {
                     _hover={{textDecoration: 'underline'}}
                   >
                     {file.name}
-                    {file.type === "dir" ? '/' : ''}
+                    {file.type === 'dir' ? '/' : ''}
                   </UI.Text>
                 )}
               </ContextMenu>

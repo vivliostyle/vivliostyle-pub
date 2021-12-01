@@ -52,14 +52,14 @@ type Actions =
       defaultBranch: string;
       files: VFile[];
     }
-  | {type: 'selectBranch'; branch: string}
-  | {type: 'selectBranchCallback'; branch: string; files: VFile[]}
-  | {type: 'selectTree'; tree: '.' | '..' | VFile}
-  | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[]}
-  | {type: 'setFiles'; files: VFile[]}
-  | {type: 'selectFile'; file: VFile | null; key: number}
-  | {type: 'selectFileCallback'; n: number; file: VFile | null}
-  | {type: 'createFile'; path: string; file: File}; // ここはVFileではなくJavaScript標準のFile
+  | {type: 'selectBranch'; branch: string; tree?:VFile[]; }
+  | {type: 'selectBranchCallback'; branch: string; files: VFile[]; tree?: VFile[];}
+  | {type: 'selectTree'; tree: '.' | '..' | VFile;}
+  | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[];}
+  | {type: 'setFiles'; files: VFile[];}
+  | {type: 'selectFile'; file: VFile | null; key: number;}
+  | {type: 'selectFileCallback'; n: number; file: VFile | null; }
+  | {type: 'createFile'; path: string; file: File; }; // ここはVFileではなくJavaScript標準のFile
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -177,15 +177,16 @@ export function RepositoryContextProvider({
             repo: state.repo!,
             branch: action.branch,
           };
-          console.log('selectBranch', props);
+          const dirname = action.tree ? action.tree.map(t=>t.name).join('/') : ''; 
           WebApiFs.open(props).then((fs) => {
-            fs.readdir('')
+            fs.readdir(dirname)
               .then((files) => {
                 if (dispatch) {
                   dispatch({
                     type: 'selectBranchCallback',
                     branch: action.branch,
                     files,
+                    tree: action.tree
                   });
                 }
               })
@@ -200,7 +201,7 @@ export function RepositoryContextProvider({
           return {
             ...state,
             branch: action.branch,
-            currentTree: [],
+            currentTree: action.tree??[],
             files: action.files,
             currentFile: null,
           };
@@ -293,7 +294,7 @@ export function RepositoryContextProvider({
           )
             .then(() => {
               log.success(`ファイルを作成しました : ${action.path}`, 1000);
-              dispatch({type: 'selectBranch', branch: state.branch!});
+              dispatch({type: 'selectBranch', branch: state.branch!, tree: state.currentTree});
             })
             .catch((err) => {
               log.error(
