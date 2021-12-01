@@ -66,7 +66,6 @@ export function LogContextProvider({children}: {children: JSX.Element}) {
   const toast = useToast();
 
   const [buf, setBuf] = useState<LogEntry[]>([]);
-  console.log('relroad buf', buf);
 
   const createEntry = useCallback(
     (type: MessageType, message: string): LogEntry => {
