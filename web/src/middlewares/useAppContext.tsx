@@ -28,9 +28,8 @@ import {
   TypedDocumentNode,
 } from '@apollo/client';
 import {Repository} from './useRepositoryContext';
-import {Fs, Theme, ThemeManager} from 'theme-manager';
-import {Octokit} from '@octokit/rest';
-import {Dirent} from 'fs-extra';
+import {Theme, ThemeManager} from 'theme-manager';
+import {NpmFs} from './NpmFS';
 
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (
@@ -70,102 +69,6 @@ export function useAppContext() {
   return useContext(AppContext);
 }
 
-class npmFs implements Fs {
-  private owner: string;
-  private repo: string;
-  private branch: string;
-  private dir: string;
-
-  private constructor(owner: string, repo: string, dir: string) {
-    console.log('constructor:', owner, repo, dir);
-    this.owner = owner;
-    this.repo = repo;
-    this.branch = 'master';
-    this.dir = dir;
-  }
-
-  /**
-   * リポジトリにアクセスするオブジェクトを作成する
-   * @param themeLocation テーマ名
-   * @returns テーマの場所がアクセス可能ならFsオブジェクトを返す。アクセスできない場合はfalseを返す
-   */
-  public static async open(themeLocation: any): Promise<Fs | false> {
-    // themeLocationからowner,repoを取得する
-    // console.log('npm open:',themeLocation);
-    const pkg = themeLocation.package;
-    if (!pkg || pkg.scope !== 'vivliostyle' || !pkg.links.repository) {
-      console.log("pkg can't open", pkg.scope);
-      return false;
-    } // GitHubにある公式テーマのみ対応
-
-    const name = pkg.name;
-    const repoUrl = pkg.links.repository;
-    console.log('npm open :', name, repoUrl);
-
-    const owner = 'vivliostyle';
-    const repo = 'themes';
-    const branch = 'master';
-    const dir = pkg.name;
-    const fs = new npmFs(owner, repo, dir);
-
-    return fs;
-  }
-
-  public async readFile(
-    path: string,
-    json?: boolean | undefined,
-  ): Promise<string | Buffer> {
-    // TODO: GraphQLにしたいけれど、GitHub App以外のトークンが必要っぽい
-    // octokit-restはPublic repositoryへのアクセスはトークン不要
-    console.log('readFile', path);
-    let octokit: Octokit;
-    const token = localStorage.getItem('GH_PERSONAL_ACCESS_TOKEN');
-    if (token) {
-      console.log('use Personal access token');
-      octokit = new Octokit({auth: token});
-    } else {
-      // 1時間あたりのアクセス数制限あり
-      console.log('not use Personal access token');
-      octokit = new Octokit();
-    }
-    // TODO: Monorepoではない公式テーマはどうする?
-    const repoPath = `packages/${this.dir}/${path}`;
-    console.log('repoPath', repoPath);
-    const content = await octokit.repos.getContent({
-      owner: this.owner,
-      repo: this.repo,
-      path: repoPath,
-    });
-    if (!('content' in content.data && 'encoding' in content.data)) {
-      throw new Error();
-    }
-    const buffer = Buffer.from(
-      content.data.content,
-      content.data.encoding as BufferEncoding,
-    );
-    const data = buffer.toString();
-    // console.log('readFile content',data);
-    return json ? JSON.parse(data) : data;
-  }
-
-  public async writeFile(
-    file: string | Buffer | URL,
-    data: string | Object | Buffer | DataView,
-    options?: string | Object | undefined,
-  ): Promise<void> {
-    throw new Error('not implemnted');
-    return;
-  }
-
-  public async readdir(
-    path: string,
-    options?: string | Object | undefined,
-  ): Promise<Dirent[]> {
-    throw new Error('not implemnted');
-    return [];
-  }
-}
-
 /**
  * 公式テーマのリストを返す
  * @param parent
@@ -179,7 +82,7 @@ async function getOfficialThemes() {
   const themeManagerConfig = {
     searchOrder: [
       async (themeLocation: any) => {
-        return await npmFs.open(themeLocation);
+        return await NpmFs.open(themeLocation);
       },
     ],
   };
@@ -191,11 +94,13 @@ async function getOfficialThemes() {
 /**
  * ログインしているユーザがアクセス可能なリポジトリのリストを取得する
  * アクセス可能なリポジトリはGitHub Appがインストールされていて許可しているリポジトリ
- * @param query 
- * @returns 
+ * @param query
+ * @returns
  */
 async function getRepositories(
-  query:(query: DocumentNode | TypedDocumentNode<any, OperationVariables>) => Promise<ApolloQueryResult<any>>,
+  query: (
+    query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
+  ) => Promise<ApolloQueryResult<any>>,
 ): Promise<Repository[]> {
   try {
     // リポジトリリストの取得
@@ -251,7 +156,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       // Application CacheへのI/O
       const fs = await AppCacheFs.open();
       // GraphQLのクエリメソッド
-      const idToken =  await user!.getIdToken();
+      const idToken = await user!.getIdToken();
       const client = new ApolloClient({
         uri: '/api/graphql',
         cache: new InMemoryCache(),
@@ -344,7 +249,8 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
         // サインインしていない
         return {...state, isPending: false};
       case 'signOut':
-        state.vpubFs?.delete().then(() => {});
+        // ApplicationCacheを削除
+        state.vpubFs?.unlinkCache().then(() => {});
         return {
           ...state,
           user: null,

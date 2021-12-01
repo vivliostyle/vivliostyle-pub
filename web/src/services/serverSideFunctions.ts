@@ -43,7 +43,7 @@ const getBase64 = (file: File): Promise<string | ArrayBuffer | null> => {
    */
 export async function createFile(
   {user, owner, repo, branch, path}: RepositoryPath,
-  data: File,
+  data: File, // JavaScript標準のFile
 ): Promise<Response | null> {
   if (!(user && owner && repo && branch && path)) {
     return null;

@@ -1,17 +1,30 @@
 import fetchGhContent from 'fetch-github-content';
-import { Dirent } from 'fs';
+import { VFile } from './VFile';
 /**
  * 読み書きインターフェース
  */
 export type Fs = {
+  /**
+   * ファイルの内容を取得する
+   */
   readFile: (path: string, json?: boolean) => Promise<string | Buffer>;
-  // fsではfileの型にinteger,dataの型にTypedArrayが含まれている
+  /**
+   * ファイルの内容を書き込む
+   */
   writeFile: (
-    file: string | Buffer | URL,
+  // node.jsのfsではfileの型にinteger,dataの型にTypedArrayが含まれている
+  file: string | Buffer | URL,
     data: string | Buffer | DataView | Object,
     options?: Object | string,
   ) => Promise<void>;
-  readdir: (path: string, options?: string | Object) => Promise<Dirent[]>;
+  /**
+   * ファイルまたはディレクトリの一覧を取得
+   */
+  readdir: (path: string, options?: string | Object) => Promise<VFile[]>;
+  /**
+   * ファイルまたはディレクトリの削除
+   */
+  unlink: (path: string)=> Promise<boolean>;
 };
 
 
@@ -67,11 +80,23 @@ export class GitHubFs implements Fs {
     this.token = p.octkitOrToken;
   }
 
+  /**
+   * 指定したディレクトリに存在するファイル、ディレクトリの配列を取得する
+   * @param path 
+   * @param options 
+   * @returns 
+   */
   public readdir = async (
     path: string,
     options?: string | Object,
-  ): Promise<Dirent[]> => { return []; };
+  ): Promise<VFile[]> => { return []; };
 
+  /**
+   * 指定したファイルの内容を取得する
+   * @param path 
+   * @param json 
+   * @returns 
+   */
   public async readFile(
     path: string,
     json?: boolean,
@@ -87,7 +112,20 @@ export class GitHubFs implements Fs {
     return content;
   }
 
-  public async writeFile(): Promise<void> {}
+  /**
+   * ファイルを書き込む
+   */
+  public async writeFile(): Promise<void> {
+    throw new Error("GitHubFS::writeFile not implemented");
+  }
+
+  /**
+   * ファイルを削除する
+   * @returns 
+   */
+  public async unlink(): Promise<boolean> {
+    throw new Error("GitHubFS::unlink not implemented");
+  }
 }
 
 /**
@@ -106,7 +144,7 @@ export class DummyFs implements Fs {
   public readdir = async (
     path: string,
     options?: string | Object,
-  ): Promise<Dirent[]> => {return []};
+  ): Promise<VFile[]> => {return []};
 
   public async readFile(path: string): Promise<string | Buffer> {
     return path;

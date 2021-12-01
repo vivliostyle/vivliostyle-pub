@@ -1,7 +1,6 @@
 import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
 import { Fs } from "./srcIO";
-import { Theme } from ".";
-import { PackageTheme } from "./theme";
+import { PackageTheme, Theme } from ".";
 
 // テーマの検索
 // DONE: keywords:vivliostyle-themeで一覧取得

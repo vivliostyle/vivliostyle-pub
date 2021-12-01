@@ -1,5 +1,4 @@
 import {DocumentReference, updateDoc, serverTimestamp} from 'firebase/firestore';
-import {Dirent} from 'fs-extra';
 import {
   createContext,
   useCallback,
@@ -13,12 +12,14 @@ import {useLogContext} from './useLogContext';
 import {useRepositoryContext} from './useRepositoryContext';
 import {WebApiFs} from './WebApiFS';
 import upath from 'upath';
+import { VFile } from 'theme-manager';
 
 /**
  * エディタで編集しているファイル情報
  */
 export type CurrentFile = {
-  file: Dirent | null; // ファイル情報
+  dirname: string | null;
+  file: VFile | null; // ファイル情報
   text: string; // 現在のテキスト
   ext: string; // 拡張子
   state: FileState; // 状態
@@ -36,11 +37,11 @@ export function useCurrentFileContext() {
 
 type CurrentFileActions =
   | {type: 'modify'; text: string}
-  | {type: 'setFile'; file: Dirent | null}
+  | {type: 'setFile'; file: VFile | null}
   | {
       type: 'setFileCallback';
       seq: number;
-      file: Dirent | null;
+      file: VFile | null;
       content: string;
       session: DocumentReference;
     }
@@ -60,8 +61,8 @@ export function CurrentFileContextProvider({
   onReady,
 }: {
   children: JSX.Element;
-  file: Dirent | null;
-  onReady: (file: Dirent | null) => void;
+  file: VFile | null;
+  onReady: (file: VFile | null) => void;
 }) {
   console.log('[CurrentFileContextProvider]' /*, file, onReady*/);
   const app = useAppContext();
@@ -131,9 +132,10 @@ export function CurrentFileContextProvider({
             }
           }
           // 同じファイルを選択した場合何もしない
-          if (
-            (action.file == null && state.file == null) ||
-            action.file?.name === state.file?.name // TODO: 違うブランチ/ディレクトリの同名ファイルに注意 ブランチやディレクトリ変更でリセットすること
+          const newFilePath = action.file ? upath.join(action.file?.dirname, action.file?.name) : '';
+          const pastFilePath = state.file ? upath.join(state.file?.dirname, state.file?.name) : '';
+          if ( (action.file == null && state.file == null)  ||
+            newFilePath === pastFilePath
           ) {
             if(isEditableFile(action.file?.name)) {
               // 同じファイルを選択していても編集可能ファイルならスピナーを解除する
@@ -258,10 +260,10 @@ export function CurrentFileContextProvider({
                 },
               },
             ).then(()=>{
-              log.success(`ファイルを保存しました(${path})`);
+              log.success(`ファイルを保存しました(${upath.join(state.file?.dirname,state.file?.name)})`, 1000);
               dispatch({type:"commitCallback"});
             }).catch((err)=>{
-              log.error(`ファイルの保存に失敗しました。(${path}) : ${err.message}`);
+              log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)}) : ${err.message}`);
             });
           })();
           return state;

@@ -2,11 +2,11 @@ import React, {useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {useRepositoryContext} from '@middlewares/useRepositoryContext';
 import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
-import {Dirent} from 'fs-extra';
 import {AddIcon, PlusSquareIcon, RepeatIcon} from '@chakra-ui/icons';
 import {useLogContext} from '@middlewares/useLogContext';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
+import { VFile } from 'theme-manager';
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
@@ -37,14 +37,14 @@ export function ProjectExplorer() {
    * blob,treeはGit用語
    * @param file
    */
-  const onClick = (file: Dirent) => {
+  const onClick = (file: VFile) => {
     setCreateForm(null);
 
     console.log('proj.onclick', file);
-    if (file.isFile()) {
+    if (file.type === "file") {
       // ファイル
       repository.selectFile(file, new Date().getTime());
-    } else if (file.isDirectory()) {
+    } else if (file.type === "dir") {
       // ディレクトリ
       repository.selectTree(file);
     }
@@ -202,7 +202,7 @@ export function ProjectExplorer() {
                     _hover={{textDecoration: 'underline'}}
                   >
                     {file.name}
-                    {file.isDirectory() ? '/' : ''}
+                    {file.type === "dir" ? '/' : ''}
                   </UI.Text>
                 )}
               </ContextMenu>

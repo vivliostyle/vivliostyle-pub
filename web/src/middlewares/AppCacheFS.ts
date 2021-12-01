@@ -1,7 +1,6 @@
-import { Fs } from "theme-manager";
+import { Fs, VFile } from "theme-manager";
 import mime from 'mime-types';
 import upath from 'upath';
-import { Dirent } from "fs-extra";
 
 const VPUBFS_CACHE_NAME = 'vpubfs';
 /**
@@ -25,11 +24,20 @@ export class AppCacheFs implements Fs {
     }
   
     /**
+     * キャッシュされているファイルを削除する
+     * @param path 
+     * @returns 
+     */
+    public async unlink(path:string):Promise<boolean> {
+      return this.cache.delete(path);
+    }
+
+    /**
      * キャッシュを削除する
      * @param cacheName キャッシュ名
      * @returns 
      */
-    public async delete():Promise<boolean> {
+    public async unlinkCache():Promise<boolean> {
         return caches.delete(this.cacheName);
     }
 
@@ -57,7 +65,7 @@ export class AppCacheFs implements Fs {
       path: string,
       json?: boolean | undefined,
     ): Promise<string | Buffer> {
-      return '';
+      throw new Error("AppCacheFs::readFile not implemented");
     }
   
     /**
@@ -96,8 +104,8 @@ export class AppCacheFs implements Fs {
     public async readdir(
       path: string,
       options?: string | Object,
-    ): Promise<Dirent[]> {
-        return [];
+    ): Promise<VFile[]> {
+      throw new Error("AppCacheFs::readdir not implemented");
     }
   }
   

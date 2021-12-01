@@ -1,11 +1,10 @@
 import {User} from '@firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {doc, DocumentReference, getFirestore} from 'firebase/firestore';
-import {Dirent} from 'fs-extra';
 import {ContentOfRepositoryApiResponse} from 'pages/api/github/contentOfRepository';
 import {GithubRequestSessionApiResponse} from 'pages/api/github/requestSession';
 import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
-import {Fs} from 'theme-manager';
+import {Fs, VFile} from 'theme-manager';
 
 /**
  * /api/github/* へのWeb APIアクセスを抽象化して提供するクラス
@@ -56,8 +55,20 @@ export class WebApiFs implements Fs {
     this.tree_sha = '';
   }
 
-  private async readDirEnt(path:string, json?: boolean) {
-    // console.log('readDirEnt', path);
+  /**
+   * リポジトリからファイルを読み込む
+   * Application Cacheの場合は使用しないかも
+   * @param path
+   * @param json // 現在非対応 TODO: 必要があれば対応する
+   * @returns
+   */
+  public async readFile(
+    path: string,
+    json?: boolean,
+  ): Promise<string | Buffer> {
+    if (json) {
+      throw new Error('WebApiFs::readFile json parameter not implemented');
+    } // オプション未実装
     const response = await fetch(
       `/api/github/contentOfRepository?${new URLSearchParams({
         owner: this.owner,
@@ -77,21 +88,6 @@ export class WebApiFs implements Fs {
     }
     const content =
       (await response.json()) as unknown as ContentOfRepositoryApiResponse;
-    return content;
-  }
-
-  /**
-   * リポジトリからファイルを読み込む
-   * Application Cacheの場合は使用しないかも
-   * @param path
-   * @param json // 現在非対応 TODO: 必要があれば対応する
-   * @returns
-   */
-  public async readFile(
-    path: string,
-    json?: boolean,
-  ): Promise<string | Buffer> {
-    const content = await this.readDirEnt(path, json);
     if (Array.isArray(content) || !('content' in content)) {
       // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
       throw new Error(`WebApiFs:Content type is not file`);
@@ -148,7 +144,9 @@ export class WebApiFs implements Fs {
     file: string | Buffer | URL,
     data: any,
     options?: any,
-  ): Promise<void> {}
+  ): Promise<void> {
+    throw new Error("WebApiFS::writeFile : not implemented");
+  }
 
   /**
    * リポジトリにあるファイルの一覧を取得する
@@ -159,7 +157,7 @@ export class WebApiFs implements Fs {
   public async readdir(
     path: string, // TODO: pathからtree_shaを取得する
     options?: string | Object,
-  ): Promise<Dirent[]> {
+  ): Promise<VFile[]> {
     if (options) {
       throw new Error('WebApiFs::readdir options not implemented');
     } // オプション未実装
@@ -182,19 +180,29 @@ export class WebApiFs implements Fs {
     // console.log('data', data.tree);
     const files = data.tree.map((tree) => {
       // console.log(tree);
-      // 取得したGitのファイル情報をDirent形式に変換する
-      return {
-        ...tree,
-        isFile: () => tree.type === 'blob',
-        isDirectory: () => tree.type === 'tree',
-        isBlockDevice: () => false,
-        isCharacterDevice: () => false,
-        isFIFO: () => false,
-        isSocket: () => false,
-        isSymbolicLink: () => false,
-        name: tree.path,
-      } as Dirent;
+      // 取得したGitのファイル情報をVFile形式に変換する
+      // この時点ではファイルの内容は取得していない
+      return new VFile({
+        fs: this,
+        dirname: path,
+        type:
+          tree.type === 'blob'
+            ? 'file'
+            : tree.type === 'tree'
+            ? 'dir'
+            : 'others',
+        name: tree.path!,
+        hash: tree.sha,
+      });
     });
     return files;
+  }
+
+  /**
+   * ファイル、ディレクトリの削除
+   * @param path 
+   */
+  public async unlink(path:string):Promise<boolean> {
+    throw new Error("WebApiFS::unlink not implemented");
   }
 }
