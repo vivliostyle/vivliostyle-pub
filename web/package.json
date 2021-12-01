@@ -44,14 +44,14 @@
     "react-reflex": "^4.0.3",
     "react-split-pane": "^2.0.3",
     "scss-parser": "^1.0.5",
-    "swr": "^1.0.1",
+    "swr": "^1.1.0",
     "upath": "^2.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
     "@types/micro-cors": "^0.1.2",
     "@types/mime-types": "^2.1.1",
-    "@types/react": "^17.0.35",
+    "@types/react": "^17.0.37",
     "@types/react-dom": "^17.0.11",
     "@types/scss-parser": "^1.0.1",
     "eslint": "^7.23.0",
