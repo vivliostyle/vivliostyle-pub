@@ -173,7 +173,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           });
       } else {
         // TODO: テーマのリセット
-        log.warning('テーマが指定されていません', 1000);
+        // log.warning('テーマが指定されていません', 1000);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

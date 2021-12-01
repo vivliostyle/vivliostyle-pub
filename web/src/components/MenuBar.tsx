@@ -158,6 +158,7 @@ export function MenuBar({
     // TODO: config.jsが編集されたらカスタムテーマを読み直し
     CustomTheme.create(app, repository).then((theme) => {
       setCustomTheme(theme);
+      previewSource.changeTheme(theme);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, repository.branch]);
