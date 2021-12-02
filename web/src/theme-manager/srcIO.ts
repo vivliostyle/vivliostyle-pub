@@ -140,6 +140,9 @@ export class DummyFs implements Fs {
   private constructor() {
 
   }
+  public async unlink(path: string):Promise<boolean>  {
+    throw new Error("DummyFs::unlink not implemented");
+  }
 
   public readdir = async (
     path: string,

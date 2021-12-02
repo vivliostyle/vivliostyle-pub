@@ -1,8 +1,8 @@
 import React from 'react';
 import {AppProps} from 'next/app';
 import {ChakraProvider, CSSReset} from '@chakra-ui/react';
-import {AppContextProvider} from '@middlewares/useAppContext';
-import {LogContextProvider} from '@middlewares/useLogContext';
+import {AppContextProvider} from '@middlewares/contexts/useAppContext';
+import {LogContextProvider} from '@middlewares/contexts/useLogContext';
 
 import '../styles/styles.css';
 

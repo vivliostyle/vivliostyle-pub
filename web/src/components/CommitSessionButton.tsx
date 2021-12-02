@@ -1,6 +1,6 @@
 import { FileState } from '@middlewares/frontendFunctions';
-import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
-import { useLogContext } from '@middlewares/useLogContext';
+import { useCurrentFileContext } from '@middlewares/contexts/useCurrentFileContext';
+import { useLogContext } from '@middlewares/contexts/useLogContext';
 import React, { useCallback, useState } from 'react';
 import * as UI from './ui';
 

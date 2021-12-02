@@ -10,18 +10,19 @@ import * as UI from '@components/ui';
 import {MarkdownEditor} from '@components/MarkdownEditor';
 import {Previewer} from '@components/MarkdownPreviewer';
 
-import {RepositoryContextProvider} from '@middlewares/useRepositoryContext';
-import {useAppContext} from '@middlewares/useAppContext';
+import {RepositoryContextProvider} from '@middlewares/contexts/useRepositoryContext';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {
   PreviewSourceContextProvider,
-} from '@middlewares/usePreviewSourceContext';
+} from '@middlewares/contexts/usePreviewSourceContext';
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
 import {FileState} from '@middlewares/frontendFunctions';
-import {useLogContext} from '@middlewares/useLogContext';
+import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
+import { CurrentThemeContextProvider } from '@middlewares/contexts/useCurrentThemeContext';
 
 interface BuildRecord {
   url: string | null;
@@ -200,6 +201,7 @@ const GitHubOwnerRepo = () => {
   return (
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
+        <CurrentThemeContextProvider>
         <RepositoryContextProvider owner={owner} repo={repo}>
           <PreviewSourceContextProvider isAutoReload={isAutoReload}>
             <UI.Box height={'calc(100vh - 4rem)'}>
@@ -288,6 +290,7 @@ const GitHubOwnerRepo = () => {
             </UI.Box>
           </PreviewSourceContextProvider>
         </RepositoryContextProvider>
+        </CurrentThemeContextProvider>
       ) : null}
     </UI.Box>
   );

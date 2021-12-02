@@ -2,7 +2,7 @@ import React from 'react';
 import * as UI from '@components/ui';
 import {GithubReposList} from '@components/GithubReposList';
 import {GithubAppsButtonGroup} from '@components/GithubAppsButtonGroup';
-import { useAppContext } from '@middlewares/useAppContext';
+import { useAppContext } from '@middlewares/contexts/useAppContext';
 
 const Index = () => {
   const app = useAppContext();

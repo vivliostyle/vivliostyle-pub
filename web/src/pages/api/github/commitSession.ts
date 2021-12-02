@@ -8,7 +8,7 @@ import {createOrUpdateFileContentsInternal} from './createOrUpdateFileContents';
 import { createAppAuth } from '@octokit/auth-app';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
-  const {sessionId, branch} = req.body;
+  const {sessionId, branch, style} = req.body;
   if (req.method !== 'PUT' || !sessionId) {
     return res.status(400).send(null);
   }
@@ -58,7 +58,9 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
 
   await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'));
   if((path as string).endsWith('.md')) {
-    await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), Buffer.from(stringify(text), 'utf8').toString('base64'));
+    const stringified = stringify(text, {style});
+    const encoded =  Buffer.from(stringified, 'utf8').toString('base64');
+    await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), encoded);
   }
   res.status(201).send(null);
 };

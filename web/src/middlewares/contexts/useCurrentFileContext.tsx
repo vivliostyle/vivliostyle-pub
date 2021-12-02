@@ -6,13 +6,14 @@ import {
   useEffect,
   useReducer,
 } from 'react';
-import {FileState, getExt, isEditableFile} from './frontendFunctions';
+import {FileState, getExt, isEditableFile} from '../frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {useLogContext} from './useLogContext';
 import {useRepositoryContext} from './useRepositoryContext';
-import {WebApiFs} from './WebApiFS';
+import {WebApiFs} from '../fs/WebApiFS';
 import upath from 'upath';
 import { VFile } from 'theme-manager';
+import { useCurrentThemeContext } from './useCurrentThemeContext';
 
 /**
  * エディタで編集しているファイル情報
@@ -68,6 +69,7 @@ export function CurrentFileContextProvider({
   const app = useAppContext();
   const repository = useRepositoryContext();
   const log = useLogContext();
+  const currentTheme = useCurrentThemeContext();
 
   /**
    * テキストが編集された
@@ -249,11 +251,16 @@ export function CurrentFileContextProvider({
         // ファイルを保存
         case 'commit':
           (async () => {
+          console.log("commit action currentTheme", currentTheme);
           await fetch(
               '/api/github/commitSession',
               {
                 method: 'PUT',
-                body: JSON.stringify({sessionId:state.session?.id, branch:repository.branch}),
+                body: JSON.stringify({
+                  sessionId:state.session?.id, 
+                  branch:repository.branch,
+                  style:currentTheme.stylePath??undefined
+                }),
                 headers: {
                   'content-type': 'application/json',
                   'x-id-token': await app.user!.getIdToken(),
@@ -272,7 +279,7 @@ export function CurrentFileContextProvider({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app, repository],
+    [app, repository, currentTheme],
   );
   const [context, dispatch] = useReducer(reducer, initialState);
 

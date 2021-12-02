@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import {
   FileState,
 } from '@middlewares/frontendFunctions';
-import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
+import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 import * as UI from '@components/ui';
 
 export const MarkdownEditor = ({

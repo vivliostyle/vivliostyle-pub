@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import * as UI from './ui';
-import { useAppContext } from '@middlewares/useAppContext';
+import { useAppContext } from '@middlewares/contexts/useAppContext';
 
 
 const HeaderUserInfo: React.FC = () => {

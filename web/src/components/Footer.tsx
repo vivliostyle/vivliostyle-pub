@@ -1,5 +1,5 @@
 import * as UI from '@components/ui';
-import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
+import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 
 export function Footer() {
   const currentFile = useCurrentFileContext();

@@ -11,8 +11,8 @@ import {VFile} from 'theme-manager';
 import {useAppContext} from './useAppContext';
 import {CurrentFileContextProvider} from './useCurrentFileContext';
 import {useLogContext} from './useLogContext';
-import {CoreProps} from './vivliostyle.config';
-import {WebApiFs} from './WebApiFS';
+import {CoreProps} from '../vivliostyle.config';
+import {WebApiFs} from '../fs/WebApiFS';
 
 export type Repository = {
   id: number;

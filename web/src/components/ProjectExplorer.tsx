@@ -1,9 +1,9 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
-import {useRepositoryContext} from '@middlewares/useRepositoryContext';
-import {useCurrentFileContext} from '@middlewares/useCurrentFileContext';
+import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
+import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 import {AddIcon, PlusSquareIcon, RepeatIcon} from '@chakra-ui/icons';
-import {useLogContext} from '@middlewares/useLogContext';
+import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
 import {VFile} from 'theme-manager';

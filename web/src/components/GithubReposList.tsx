@@ -1,7 +1,7 @@
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 import Link from 'next/link';
 import * as UI from './ui';
-import {useAppContext} from '@middlewares/useAppContext';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
 import { RepeatIcon } from '@chakra-ui/icons';
 
 export const GithubReposList: React.FC<{}> = ({}) => {

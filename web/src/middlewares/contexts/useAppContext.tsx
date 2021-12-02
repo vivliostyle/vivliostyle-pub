@@ -15,7 +15,7 @@ import {
 } from '@firebase/auth';
 import * as UI from '@components/ui';
 import {Header} from '@components/Header';
-import {AppCacheFs} from './AppCacheFS';
+import {AppCacheFs} from '../fs/AppCacheFS';
 
 import {
   ApolloClient,
@@ -29,7 +29,7 @@ import {
 } from '@apollo/client';
 import {Repository} from './useRepositoryContext';
 import {Theme, ThemeManager} from 'theme-manager';
-import {NpmFs} from './NpmFS';
+import {NpmFs} from '../fs/NpmFS';
 
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (

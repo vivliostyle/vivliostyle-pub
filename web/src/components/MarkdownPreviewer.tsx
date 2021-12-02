@@ -1,8 +1,9 @@
 import {useRef, useEffect, useMemo, useState} from 'react';
 
-import {useRepositoryContext} from '@middlewares/useRepositoryContext';
-import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
-import {useAppContext} from '@middlewares/useAppContext';
+import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
+import {usePreviewSourceContext} from '@middlewares/contexts/usePreviewSourceContext';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
+import { useCurrentThemeContext } from '@middlewares/contexts/useCurrentThemeContext';
 
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
@@ -13,6 +14,7 @@ export const Previewer: React.FC<PreviewerProps> = ({ }) => {
   const app = useAppContext();
   const repository = useRepositoryContext();
   const [contentReady, setContentReady] = useState<boolean>(false);
+  const currentTheme = useCurrentThemeContext();
   const previewSource = usePreviewSourceContext();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -22,8 +24,8 @@ export const Previewer: React.FC<PreviewerProps> = ({ }) => {
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
       previewSource.vpubPath
     }`;
-    const stylePath = previewSource.theme?.getStylePath()
-      ? '/vpubfs/'+previewSource.theme.getStylePath()
+    const stylePath = currentTheme.theme?.getStylePath()
+      ? '/vpubfs/'+currentTheme.theme.getStylePath()
       : null;
     if (stylePath) {
       url += `&style=${stylePath}`;
@@ -32,7 +34,7 @@ export const Previewer: React.FC<PreviewerProps> = ({ }) => {
     }
     return url;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewSource, previewSource.stylePath]);
+  }, [previewSource, currentTheme.stylePath]);
 
   useEffect(() => {
     console.log('rerendering', previewSource.path); //, previewSource.text,repository,user);

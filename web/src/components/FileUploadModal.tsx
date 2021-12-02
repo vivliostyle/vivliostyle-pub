@@ -1,9 +1,9 @@
 import React, {useCallback, useState, useRef, useMemo} from 'react';
 import * as UI from './ui';
-import {useRepositoryContext} from '@middlewares/useRepositoryContext';
+import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
 import {User} from 'firebase/auth';
 import {createFile} from '@services/serverSideFunctions';
-import {useLogContext} from '@middlewares/useLogContext';
+import {useLogContext} from '@middlewares/contexts/useLogContext';
 
 export const FileUploadModal = ({
   user,

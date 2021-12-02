@@ -32,6 +32,10 @@ import { Fs,Theme } from "theme-manager";
       // TODO: コメントから取得
       this.category = "";
     }
+
+    public async process(dstFs:Fs):Promise<string> {
+      throw new Error("SingleFileTheme::process not implemented");
+    }
   
     public getStylePath():string|null{
       return null;

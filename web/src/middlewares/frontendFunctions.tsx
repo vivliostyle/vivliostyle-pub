@@ -1,9 +1,8 @@
 import {User} from 'firebase/auth';
-import useSWR from 'swr';
 import path from 'path';
 import {BranchesApiResponse} from 'pages/api/github/branches';
-import {AppCacheFs} from './AppCacheFS';
-import {WebApiFs} from './WebApiFS';
+import {AppCacheFs} from './fs/AppCacheFS';
+import {WebApiFs} from './fs/WebApiFS';
 
 /**
  * URL判別

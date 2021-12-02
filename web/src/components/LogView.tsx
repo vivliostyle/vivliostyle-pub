@@ -1,6 +1,6 @@
 import {DeleteIcon} from '@chakra-ui/icons';
 import * as UI from '@components/ui';
-import {useLogBufferContext, useLogContext} from '@middlewares/useLogContext';
+import {useLogBufferContext, useLogContext} from '@middlewares/contexts/useLogContext';
 import {useCallback, useEffect} from 'react';
 
 export function LogView({

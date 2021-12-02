@@ -6,26 +6,14 @@ import {
   useCallback,
 } from 'react';
 import {DocumentData, DocumentReference} from 'firebase/firestore';
-import {parse} from 'scss-parser';
-import {FileState, isEditableFile} from './frontendFunctions';
+import {FileState, isEditableFile} from '../frontendFunctions';
 import {useRepositoryContext} from './useRepositoryContext';
-import path from 'path';
 import {useAppContext} from './useAppContext';
-import {Theme} from 'theme-manager';
 import {useCurrentFileContext} from './useCurrentFileContext';
 import {
-  processThemeString,
   transpileMarkdown,
-  VPUBFS_ROOT,
-} from './previewFunctions';
+} from '../previewFunctions';
 import {useLogContext} from './useLogContext';
-
-/**
- * URLか判定
- * @param value
- * @returns
- */
-const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
 
 /**
  * 遅延処理
@@ -52,11 +40,8 @@ export type PreviewSource = {
   path: string | null;
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
-  theme: Theme | null;
-  stylePath: string | null; // viewer.jsのstyle= に渡すパス
   // パブリック メソッドに相当
   changeFile: (path: string | null, text: string | null) => void;
-  changeTheme: (theme: Theme | null) => void;
   commit: (
     session: DocumentReference<DocumentData> | undefined,
     branch: string | undefined,
@@ -71,7 +56,6 @@ type Actions =
       vPubPath: string | null;
       text: string | null;
     }
-  | {type: 'changeThemeCallback'; theme: Theme | null; stylePath: string}
   | {type: 'reload'; path:string; text:string; }
   | {
       type: 'commit';
@@ -134,51 +118,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     // TODO: ファイル未選択や空ファイルへの対応
     transpile(filePath!, text!);
   };
-  /**
-   * 対象となるテーマを切り替える
-   * TODO: CSS単体ファイルだけではなく、テーマオブジェクトを扱えるようにする。
-   * @param theme
-   */
-  const changeTheme = useCallback(
-    (theme: Theme | null) => {
-      console.log('changeTheme', theme);
-      if (theme) {
-        // TODO: テーマオブジェクトのメソッド呼び出し
-        processThemeString(app, theme)
-          .then((themePath) => {
-            // 準備が終わったら状態を変化させる
-            if (dispatch) {
-              dispatch({
-                type: 'changeThemeCallback',
-                theme: theme,
-                stylePath: themePath,
-              });
-              log.success('テーマを変更しました:'+theme.name+":"+themePath,1000);
-            }
-          })
-          .catch((err) => {
-            if (err.message.startsWith('403:')) {
-              console.error(err);
-              log.error(
-                'file size too large : ' + err.message.split(':')[1],
-                3000,
-              );
-            } else {
-              console.log(err);
-              log.error(
-                `テーマの準備に失敗しました(${theme.style}) : ${err.message}`,
-                3000,
-              );
-            }
-          });
-      } else {
-        // TODO: テーマのリセット
-        // log.warning('テーマが指定されていません', 1000);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app, repository],
-  );
 
   /**
    * MarkDownファイルをHTMLに変換する
@@ -262,7 +201,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     stylePath: null,
     // methods
     changeFile,
-    changeTheme,
     commit: commit,
     reload,
   } as PreviewSource;
@@ -309,17 +247,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
             vpubPath: action.vPubPath,
             text: action.text,
           };
-        case 'changeThemeCallback': // テーマの準備が完了
-          console.log('changeThemeCallback', action.theme);
-          let stylePath: string | null = null;
-          if (action.theme) {
-            stylePath = !action.stylePath
-              ? null
-              : isURL(action.stylePath)
-              ? action.stylePath
-              : path.join(VPUBFS_ROOT, action.stylePath);
-          }
-          return {...state, theme: action.theme!, stylePath};
         case 'reload':
           transpile(action.path, action.text);
           return {...state};

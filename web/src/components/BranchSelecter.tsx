@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react';
 import * as UI from './ui';
-import { useRepositoryContext } from '@middlewares/useRepositoryContext';
-import { useLogContext } from '@middlewares/useLogContext';
-import { useCurrentFileContext } from '@middlewares/useCurrentFileContext';
+import { useRepositoryContext } from '@middlewares/contexts/useRepositoryContext';
+import { useLogContext } from '@middlewares/contexts/useLogContext';
+import { useCurrentFileContext } from '@middlewares/contexts/useCurrentFileContext';
 import { FileState } from '@middlewares/frontendFunctions';
 
 export const BranchSelecter = () => {

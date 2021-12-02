@@ -10,94 +10,18 @@ import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
 import {
-  Repository,
   useRepositoryContext,
-} from '@middlewares/useRepositoryContext';
-import {AppContext, useAppContext} from '@middlewares/useAppContext';
+} from '@middlewares/contexts/useRepositoryContext';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
 
-import {usePreviewSourceContext} from '@middlewares/usePreviewSourceContext';
+import {usePreviewSourceContext} from '@middlewares/contexts/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
-import {WebApiFs} from '@middlewares/WebApiFS';
-import {EditIcon, HamburgerIcon, RepeatIcon, ViewIcon} from '@chakra-ui/icons';
+import {EditIcon, HamburgerIcon, ViewIcon} from '@chakra-ui/icons';
 import {Fs, Theme} from 'theme-manager';
-import {VivliostyleConfigSchema} from '@middlewares/vivliostyle.config';
+import { useCurrentThemeContext } from '@middlewares/contexts/useCurrentThemeContext';
+import { CustomTheme } from '@middlewares/themes/CustomTheme';
 
 const fs = {} as Fs;
-
-// vivliostyle.config.jsのthemeを使用する
-class CustomTheme implements Theme {
-  name: string = 'custom-theme';
-  category: string = '';
-  topics: string[] = [];
-  style: string = 'theme.css';
-  description: string = 'Custom theme';
-  version: string = '1.0';
-  author: string = 'Vivliostyle';
-  files: {[filepath: string]: any} = {};
-  fs: Fs;
-
-  app: AppContext;
-  repository: Repository;
-
-  private constructor(
-    fs: Fs,
-    app: AppContext,
-    repository: Repository,
-    style: string,
-  ) {
-    this.app = app;
-    this.repository = repository;
-    this.fs = fs;
-    this.style = style;
-    console.log('new CustomTheme', app.user, repository);
-  }
-
-  private async process() {
-    console.log('CustomTheme process', this.style);
-    const stylesheet = await this.fs.readFile(this.style);
-    await this.app.vpubFs!.writeFile(this.style, stylesheet);
-    console.log('setup custom theme');
-  }
-
-  public static async create(app: AppContext, repository: Repository) {
-    console.log('create custom theme', repository.branch);
-    if (!(app.user && repository.owner && repository.repo)) {
-      return null;
-    }
-    const props = {
-      user: app.user!,
-      owner: repository.owner!,
-      repo: repository.repo!,
-      branch: repository.branch!,
-    };
-    console.log('props', props);
-    const fs = await WebApiFs.open(props);
-    // 設定ファイルの読み込み
-    const configString = (await fs.readFile('vivliostyle.config.js')) as string;
-    // console.log('[create custom theme].config', configString);
-    // 設定ファイルからthemeを取得
-    // TODO: entry別のテーマ
-    const configJsonString = configString
-      .replace('module.exports = ', '')
-      .replaceAll(/^\s*(.+):/gm, '"$1":')
-      .replaceAll(`'`, '"')
-      .replaceAll(/,[\s\n]*([\]}])/g, '$1')
-      .replaceAll(/};/g, '}');
-    const config = JSON.parse(configJsonString) as VivliostyleConfigSchema;
-    if (!config || !config.theme) {
-      return null;
-    }
-    const theme = new CustomTheme(fs, app, repository, config.theme);
-    await theme.process();
-    return theme;
-  }
-
-  public getStylePath() {
-    // TODO: vivliostyle.config.jsを処理してファイルパスを取得する
-    // リポジトリからstylesheetを取得してApplicationCacheに追加
-    return this.style;
-  }
-}
 
 export function MenuBar({
   isProcessing,
@@ -131,6 +55,7 @@ export function MenuBar({
   onReload: () => void;
 }) {
   const app = useAppContext();
+  const currentTheme = useCurrentThemeContext();
   const repository = useRepositoryContext();
   const previewSource = usePreviewSourceContext();
   const plainTheme = useMemo(() => {
@@ -148,6 +73,9 @@ export function MenuBar({
       getStylePath: () => {
         return null;
       },
+      process: async ()=>{
+        return '';
+      }
     } as Theme;
     return plainTheme;
   }, []);
@@ -158,7 +86,7 @@ export function MenuBar({
     // TODO: config.jsが編集されたらカスタムテーマを読み直し
     CustomTheme.create(app, repository).then((theme) => {
       setCustomTheme(theme);
-      previewSource.changeTheme(theme);
+      currentTheme.changeTheme(theme);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, repository.branch]);
@@ -181,9 +109,9 @@ export function MenuBar({
   const onThemeSelected = useCallback(
     (theme: Theme) => {
       console.log('theme selected', theme);
-      previewSource.changeTheme(theme);
+      currentTheme.changeTheme(theme);
     },
-    [previewSource],
+    [currentTheme],
   );
 
   return (
@@ -264,7 +192,7 @@ export function MenuBar({
                 key={plainTheme.name}
                 onClick={() => onThemeSelected(plainTheme)}
               >
-                {plainTheme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                {plainTheme.name === currentTheme.theme?.name ? '✔ ' : ' '}
                 {plainTheme.description}
               </UI.MenuItem>
               {!customTheme ? null : (
@@ -272,7 +200,7 @@ export function MenuBar({
                   key={customTheme.name}
                   onClick={() => onThemeSelected(customTheme)}
                 >
-                  {customTheme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                  {customTheme.name === currentTheme.theme?.name ? '✔ ' : ' '}
                   {customTheme.description}
                 </UI.MenuItem>
               )}
@@ -281,7 +209,7 @@ export function MenuBar({
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
                 >
-                  {theme.name === previewSource.theme?.name ? '✔ ' : ' '}
+                  {theme.name === currentTheme.theme?.name ? '✔ ' : ' '}
                   {theme.description}
                 </UI.MenuItem>
               ))}

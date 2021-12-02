@@ -11,6 +11,7 @@ export interface Theme {
   files: { [filepath: string]: any };
   fs: Fs;
   getStylePath: ()=>string|null;
+  process: (dstFs:Fs)=>Promise<string>;
 }
 
 export type PackageJson = {
