@@ -14,14 +14,13 @@ import {
 } from '@middlewares/contexts/useRepositoryContext';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 
-import {usePreviewSourceContext} from '@middlewares/contexts/usePreviewSourceContext';
 import {useDisclosure} from '@chakra-ui/react';
 import {EditIcon, HamburgerIcon, ViewIcon} from '@chakra-ui/icons';
-import {Fs, Theme} from 'theme-manager';
+import {Theme} from 'theme-manager';
 import { useCurrentThemeContext } from '@middlewares/contexts/useCurrentThemeContext';
 import { CustomTheme } from '@middlewares/themes/CustomTheme';
+import { PlainTheme } from '@middlewares/themes/PlainTheme';
 
-const fs = {} as Fs;
 
 export function MenuBar({
   isProcessing,
@@ -57,26 +56,9 @@ export function MenuBar({
   const app = useAppContext();
   const currentTheme = useCurrentThemeContext();
   const repository = useRepositoryContext();
-  const previewSource = usePreviewSourceContext();
   const plainTheme = useMemo(() => {
     // Viewerのデフォルトスタイルを使用するテーマ
-    const plainTheme = {
-      name: 'plain-theme',
-      category: '',
-      topics: [],
-      style: '',
-      description: 'Plain theme',
-      version: '1.0',
-      author: 'Vivliostyle',
-      files: {},
-      fs: fs,
-      getStylePath: () => {
-        return null;
-      },
-      process: async ()=>{
-        return '';
-      }
-    } as Theme;
+    const plainTheme = new PlainTheme();
     return plainTheme;
   }, []);
 
