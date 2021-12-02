@@ -84,17 +84,17 @@ export class CustomTheme implements Theme {
         imagesOfStyle.map(async(imageOfStyle) => {
           const contentPath = upath.join(upath.dirname(this.style),imageOfStyle);
           try {
-            console.log('contentPath',contentPath);
+            // console.log('contentPath',contentPath);
             const content = await this.fs.readFile(contentPath);
             dstFs.writeFile(contentPath, content); 
             return null;             
           } catch (error:any) {
-            return new Error(`CustomeTheme readFile error: ${contentPath}`);
+            return new Error(`${contentPath}`);
           }
         }),
       )
       .then((errors)=>{
-        console.log('CustomeTheme::process errors',errors);
+        // console.log('CustomeTheme::process errors',errors);
         throw new Error(`以下のファイルの処理に失敗しました ${errors.join(' , ')}`);
       })
       .catch((error) => {
