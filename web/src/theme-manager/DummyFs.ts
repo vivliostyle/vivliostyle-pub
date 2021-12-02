@@ -4,6 +4,8 @@ import {Fs, VFile} from 'theme-manager';
  * テスト用のファイルシステム
  */
 export class DummyFs implements Fs {
+  public root:string = "";
+  
   public static open() {
     return new DummyFs();
   }

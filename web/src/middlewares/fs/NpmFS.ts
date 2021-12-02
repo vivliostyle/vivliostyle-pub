@@ -2,26 +2,26 @@ import { Octokit } from "@octokit/rest";
 import { Fs, VFile } from "theme-manager";
 
 /**
- * 
+ * npmからパッケージを取得するための仮想FileSystem
  */
  export class NpmFs implements Fs {
     private owner: string;
     private repo: string;
     private branch: string;
-    private dir: string;
+    public root: string = "";
   
     /**
      * 
      * @param owner 
      * @param repo 
-     * @param dir 
+     * @param root
      */
-    private constructor(owner: string, repo: string, dir: string) {
-      console.log('constructor:', owner, repo, dir);
+    private constructor(owner: string, repo: string,branch: string, root: string) {
+      console.log('constructor:', owner, repo, root);
       this.owner = owner;
       this.repo = repo;
-      this.branch = 'master';
-      this.dir = dir;
+      this.branch = branch;
+      this.root = root;
     }
   
     /**
@@ -45,8 +45,8 @@ import { Fs, VFile } from "theme-manager";
       const owner = 'vivliostyle';
       const repo = 'themes';
       const branch = 'master';
-      const dir = pkg.name;
-      const fs = new NpmFs(owner, repo, dir);
+      const root = pkg.name;
+      const fs = new NpmFs(owner, repo, branch, root);
   
       return fs;
     }
@@ -75,11 +75,12 @@ import { Fs, VFile } from "theme-manager";
         octokit = new Octokit();
       }
       // TODO: Monorepoではない公式テーマはどうする?
-      const repoPath = `packages/${this.dir}/${path}`;
+      const repoPath = `packages/${this.root}/${path}`;
       console.log('repoPath', repoPath);
       const content = await octokit.repos.getContent({
         owner: this.owner,
         repo: this.repo,
+        branch: this.branch,
         path: repoPath,
       });
       if (!('content' in content.data && 'encoding' in content.data)) {

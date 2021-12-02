@@ -3,6 +3,7 @@ import { VFile } from './VFile';
  * 読み書きインターフェース
  */
 export type Fs = {
+  root:string;
   /**
    * ファイルの内容を取得する
    */

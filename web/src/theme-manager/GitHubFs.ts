@@ -8,6 +8,7 @@ export class GitHubFs implements Fs {
   repo: string;
   dir: string;
   token: string;
+  root: string = "";
 
   /**
    * urlからowner, repo, pathを取り出す

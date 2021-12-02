@@ -7,7 +7,7 @@ import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {Fs, VFile} from 'theme-manager';
 
 /**
- * /api/github/* へのWeb APIアクセスを抽象化して提供するクラス
+ * /api/github/* へのWeb APIアクセスを抽象化して提供する仮想FileSystemクラス
  */
 export class WebApiFs implements Fs {
   user: User;
@@ -15,6 +15,7 @@ export class WebApiFs implements Fs {
   repo: string;
   branch: string;
   tree_sha: string;
+  root:string = "";
   /**
    * キャッシュを開いてFsインターフェースを実装したオブジェクトを返す
    * @param cacheName キャッシュ名
