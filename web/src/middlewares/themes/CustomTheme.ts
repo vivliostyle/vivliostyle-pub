@@ -26,7 +26,7 @@ import upath from "upath";
  *  vivliostyle.config.jsのthemeを使用する 
  */
 export class CustomTheme implements Theme {
-    name: string = 'custom-theme';
+    name: string = 'vivliostyle-custom-theme';
     category: string = '';
     topics: string[] = [];
     style: string = 'theme.css';

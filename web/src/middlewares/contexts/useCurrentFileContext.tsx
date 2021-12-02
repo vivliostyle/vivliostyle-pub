@@ -14,6 +14,7 @@ import {WebApiFs} from '../fs/WebApiFS';
 import upath from 'upath';
 import { VFile } from 'theme-manager';
 import { useCurrentThemeContext } from './useCurrentThemeContext';
+import { VPUBFS_ROOT } from '@middlewares/previewFunctions';
 
 /**
  * エディタで編集しているファイル情報
@@ -251,7 +252,14 @@ export function CurrentFileContextProvider({
         // ファイルを保存
         case 'commit':
           (async () => {
-          console.log("commit action currentTheme", currentTheme);
+          console.log("commit action currentTheme", currentTheme,state);
+          let style;
+          if(currentTheme.theme?.name ==="vivliostyle-custom-theme" ) {
+            // TODO: 以下のパスの処理を整理する
+            const docPath = state.file?.dirname!;
+            const stylePath = currentTheme.stylePath ? upath.relative( VPUBFS_ROOT,currentTheme.stylePath) : undefined;
+            style = stylePath ? upath.relative(docPath, stylePath) : undefined;
+          }
           await fetch(
               '/api/github/commitSession',
               {
@@ -259,7 +267,7 @@ export function CurrentFileContextProvider({
                 body: JSON.stringify({
                   sessionId:state.session?.id, 
                   branch:repository.branch,
-                  style:currentTheme.stylePath??undefined
+                  style: style,
                 }),
                 headers: {
                   'content-type': 'application/json',
