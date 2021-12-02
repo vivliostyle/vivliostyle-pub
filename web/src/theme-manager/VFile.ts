@@ -72,7 +72,7 @@ export class VFile {
    */
   public async getContent(json?: boolean) {
     try {
-      const filePath = upath.join(this.dirname, this.name);
+      const filePath = upath.relative("/",upath.join(this.dirname, this.name));
       // TODO: hash値を使って無駄なトラフィックを減らす
       // readFileの引数はfilePathではなく、VFileで良いのでは
       this.content = await this.fs.readFile(filePath, json);

@@ -87,7 +87,7 @@ export class CustomTheme implements Theme {
             // console.log('contentPath',contentPath);
             const content = await this.fs.readFile(contentPath) as string;
             const buf:Buffer = Buffer.from(content, 'base64');
-            console.log("imageOfStyle content",buf);
+            // console.log("imageOfStyle content",buf);
             dstFs.writeFile(contentPath, buf); 
             return null;             
           } catch (error:any) {
