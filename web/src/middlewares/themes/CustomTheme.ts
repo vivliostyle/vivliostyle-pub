@@ -85,8 +85,10 @@ export class CustomTheme implements Theme {
           const contentPath = upath.join(upath.dirname(this.style),imageOfStyle);
           try {
             // console.log('contentPath',contentPath);
-            const content = await this.fs.readFile(contentPath);
-            dstFs.writeFile(contentPath, content); 
+            const content = await this.fs.readFile(contentPath) as string;
+            const buf:Buffer = Buffer.from(content, 'base64');
+            console.log("imageOfStyle content",buf);
+            dstFs.writeFile(contentPath, buf); 
             return null;             
           } catch (error:any) {
             return new Error(`${contentPath}`);
