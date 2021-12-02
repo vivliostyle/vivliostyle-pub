@@ -1,5 +1,5 @@
 import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
-import { Fs } from "./srcIO";
+import { Fs } from "./Fs";
 import { PackageTheme, Theme } from ".";
 
 // テーマの検索

@@ -1,4 +1,4 @@
-import { Fs } from "./srcIO";
+import { Fs } from "./Fs";
 
 export interface Theme {
   name: string;
