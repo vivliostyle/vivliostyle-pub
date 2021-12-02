@@ -46,7 +46,7 @@ export async function transpileMarkdown(
     await file.getContent();
   }
   let text = file.content;
-  console.log('transpileMarkdown',srcPath,text);
+  // console.log('transpileMarkdown',srcPath,text);
   if (srcPath && text && srcPath.endsWith('.md')) {
     srcPath = srcPath.replace(/\.md$/, '.html');
     text = stringify(text);
