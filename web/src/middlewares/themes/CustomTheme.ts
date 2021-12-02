@@ -62,6 +62,7 @@ export class CustomTheme implements Theme {
     /**
      * テーマを処理してCSSとして出力する
      * TODO: PackageThemeと似ているので集約したい。
+     * @param dstFs 処理後のファイルの書き出し先Fs(画像などもここに書き出す)
      * @returns CSSの相対パス(dstFsのルートディレクトリを基準とする)
      */
     public async process(dstFs:Fs):Promise<string> {
@@ -82,15 +83,25 @@ export class CustomTheme implements Theme {
       await Promise.all(
         imagesOfStyle.map(async(imageOfStyle) => {
           const contentPath = upath.join(upath.dirname(this.style),imageOfStyle);
-          // console.log('contentPath',contentPath);
-          const content = await this.fs.readFile(contentPath);
-          dstFs.writeFile(contentPath, content);
+          try {
+            console.log('contentPath',contentPath);
+            const content = await this.fs.readFile(contentPath);
+            dstFs.writeFile(contentPath, content); 
+            return null;             
+          } catch (error:any) {
+            return new Error(`CustomeTheme readFile error: ${contentPath}`);
+          }
         }),
-      ).catch((error) => {
-        console.log(error);
+      )
+      .then((errors)=>{
+        console.log('CustomeTheme::process errors',errors);
+        throw new Error(`以下のファイルの処理に失敗しました ${errors.join(' , ')}`);
+      })
+      .catch((error) => {
+        console.log('CustomTheme::process',error);
         throw error;
       });
-    
+      // TODO: 画像取得エラーに失敗していてもテーマ処理を継続する。現在は例外を発生させているため中断してしまう
       return themePath; // ここがPackageThemeと異なる
     }
   
