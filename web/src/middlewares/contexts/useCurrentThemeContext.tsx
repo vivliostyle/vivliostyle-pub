@@ -35,6 +35,9 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
 }) => {
     const app = useAppContext();
     const log = useLogContext();
+
+    let n = 0;
+
     /**
    * 対象となるテーマを切り替える
    * TODO: CSS単体ファイルだけではなく、テーマオブジェクトを扱えるようにする。
@@ -87,17 +90,18 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
         changeTheme
     } as CurrentTheme;
 
+
     const reducer = (state:CurrentTheme, action:Actions):CurrentTheme => { 
         switch(action.type) {
-            case 'changeThemeCallback': // テーマの準備が完了
-            console.log('changeThemeCallback', action);
-            let stylePath: string | null = null;
-            if (action.theme && action.stylePath) {
-              stylePath = isURL(action.stylePath)
-                ? action.stylePath
-                : upath.resolve(VPUBFS_ROOT, action.stylePath);
-            }
-            return {...state, theme: action.theme!, stylePath};
+            case 'changeThemeCallback': // テーマの準備が完了 TODOQ: 複数回呼ばれているので修正する
+              console.log('changeThemeCallback', action);
+              let stylePath: string | null = null;
+              if (action.theme && action.stylePath) {
+                stylePath = isURL(action.stylePath)
+                  ? action.stylePath
+                  : upath.resolve(VPUBFS_ROOT, action.stylePath);
+              }
+              return {...state, theme: action.theme!, stylePath};
 
         }
     }

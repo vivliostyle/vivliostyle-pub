@@ -14,6 +14,7 @@ import {
   transpileMarkdown,
 } from '../previewFunctions';
 import {useLogContext} from './useLogContext';
+import { VFile } from 'theme-manager';
 
 /**
  * 遅延処理
@@ -41,22 +42,22 @@ export type PreviewSource = {
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
   // パブリック メソッドに相当
-  changeFile: (path: string | null, text: string | null) => void;
+  changeFile: (file:VFile|null) => void; // TODO: 使われていない?
   commit: (
     session: DocumentReference<DocumentData> | undefined,
     branch: string | undefined,
   ) => void;
-  reload: (filePath:string,text:string) => void;
+  reload: (file:VFile|null) => void;
 };
 
 type Actions =
   | {
       type: 'changeFileCallback';
-      path: string | null;
+      file: VFile | null;
       vPubPath: string | null;
       text: string | null;
     }
-  | {type: 'reload'; path:string; text:string; }
+  | {type: 'reload'; file:VFile|null; }
   | {
       type: 'commit';
       session: DocumentReference | undefined;
@@ -111,12 +112,13 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   );
   /**
    * 対象となるファイルを切り替える
+   * TODO: 使われていないのでは
    * @param path
    * @param text
    */
-  const changeFile = (filePath: string | null, text: string | null) => {
+  const changeFile = (file:VFile) => {
     // TODO: ファイル未選択や空ファイルへの対応
-    transpile(filePath!, text!);
+    transpile(file);
   };
 
   /**
@@ -126,26 +128,29 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    * @returns {path, text}
    */
   const transpile = useCallback(
-    (srcPath: string, text: string): void => {
+    (file:VFile): void => {
+      console.log("transpile", file);
       (async () => {
         try {
-          const {vPubPath, text: resultText} = await transpileMarkdown(
+          const {vPubPath, text: resultText, errors} = await transpileMarkdown(
             app,
             repository,
-            srcPath,
-            text,
+            file
           );
+          if(errors.length > 0) {
+            log.error(`以下のファイルの処理に失敗しました ${errors.join(" , ")}`);
+          }
           // 準備が終わったら状態を変化させる
           // console.log('call dispatcher', dispatch);
           dispatch({
             type: 'changeFileCallback',
-            path: srcPath,
+            file,
             vPubPath: vPubPath,
             text: resultText,
           });
         } catch (err: any) {
           log.error(
-            'プレビュー変換に失敗しました(' + srcPath + ') ： ' + err.message,
+            'プレビュー変換に失敗しました(' + file.path + ') ： ' + err.message,
             3000,
           );
         }
@@ -171,7 +176,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
         (currentFile.ext == 'md' || currentFile.ext == 'html')
       ) {
         console.log('編集対象ファイルはプレビュー可能');
-        transpile(currentFile.file.name, currentFile.text);
+        transpile(currentFile.file);
       } else {
         console.log('編集対象ファイルはプレビュー不可');
       }
@@ -183,9 +188,9 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   /**
    * 手動リロード 動作しない
    */
-  const reload = useCallback((filePath:string,text:string)=>{
+  const reload = useCallback((file:VFile|null)=>{
     console.log('reload by user action');
-    dispatch({type:'reload', path:filePath, text:text});
+    dispatch({type:'reload', file});
     //updatePreview(true); // 古いupdatePreviewを呼び出すと、クロージャ内のテキストを使ってしまうのでuseCallback不可
   },[]);
 
@@ -243,12 +248,14 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           console.log('changeFileCallback', action.vPubPath /*, action.text */);
           return {
             ...state,
-            path: action.path,
+            path: action.file?.path ?? null,
             vpubPath: action.vPubPath,
             text: action.text,
           };
         case 'reload':
-          transpile(action.path, action.text);
+          if(action.file) {
+            transpile(action.file);
+          }
           return {...state};
         case 'commit': // コミット
           commit(action.session!, action.branch);

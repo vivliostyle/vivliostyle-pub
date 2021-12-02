@@ -1,5 +1,5 @@
 import {User} from 'firebase/auth';
-import path from 'path';
+import upath from 'upath';
 import {BranchesApiResponse} from 'pages/api/github/branches';
 import {AppCacheFs} from './fs/AppCacheFS';
 import {WebApiFs} from './fs/WebApiFS';
@@ -99,7 +99,7 @@ export async function getFileContentFromGithub(
   user: User,
 ): Promise<any> {
   const props = {user, owner, repo, branch};
-  console.log('getFileContent props',props);
+  // console.log('getFileContent props',props, path);
   const fs: WebApiFs = await WebApiFs.open(props);
   const content = await fs.readFile(path);
   if (Array.isArray(content)) {
@@ -141,7 +141,8 @@ export const updateCacheFromPath = async (
   user: User,
 ) => {
   if (isURL(contentRelativePath)) return;
-  const contentPath = path.join(path.dirname(basePath), contentRelativePath);
+  const contentPath = upath.join(upath.dirname(basePath), contentRelativePath);
+  // console.log("updateCacheFromPath", basePath, contentRelativePath, contentPath);
   const content = await getFileContentFromGithub(
     owner,
     repo,
@@ -150,6 +151,7 @@ export const updateCacheFromPath = async (
     user,
   );
   const fs = await AppCacheFs.open();
+  // console.log("getFileContentFromPath",content);
   await fs.writeFile(contentPath, Buffer.from(content, 'base64'));
   console.log(`updateCache : ${contentPath}`);
 };

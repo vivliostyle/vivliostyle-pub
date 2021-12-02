@@ -82,4 +82,12 @@ export class VFile {
       throw e;
     }
   }
+
+  /**
+   * 所属するFsのルートディレクトリからの相対パスを返す
+   * TODO: Memo化
+   */
+  public get path():string {
+    return upath.join(this.dirname, this.name);
+  }
 }
