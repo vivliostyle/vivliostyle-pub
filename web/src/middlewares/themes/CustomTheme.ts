@@ -93,9 +93,12 @@ export class CustomTheme implements Theme {
           }
         }),
       )
-      .then((errors)=>{
-        // console.log('CustomeTheme::process errors',errors);
-        throw new Error(`以下のファイルの処理に失敗しました ${errors.join(' , ')}`);
+      .then((result)=>{
+        const errors = result.filter(r=>r);
+        if(errors.length > 0) {
+          console.error('CustomeTheme::process errors',errors);
+          throw new Error(`以下のファイルの処理に失敗しました ${errors.join(" , ")}`);  
+        }
       })
       .catch((error) => {
         console.log('CustomTheme::process',error);
