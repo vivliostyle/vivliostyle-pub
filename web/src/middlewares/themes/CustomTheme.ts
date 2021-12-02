@@ -3,6 +3,24 @@ import { AppContext } from "../contexts/useAppContext";
 import { Repository } from "../contexts/useRepositoryContext";
 import { VivliostyleConfigSchema } from "../vivliostyle.config";
 import { WebApiFs } from "../fs/WebApiFS";
+import upath from "upath";
+
+/**
+ * CSSからアプリケーションキャッシュの対象になるファイルのリストアップ
+ * @param text
+ * @returns
+ */
+ export const pickupCSSResources = (text: string): string[] => {
+  // TODO: パースして取り出す エラー処理も重要
+  // const ast = parse(text);
+
+  const imagePaths = Array.from(
+    text.matchAll(/url\("?(.+?)"?\)/g),
+    (m) => m[1],
+  );
+  // console.log('imagePaths', imagePaths);
+  return imagePaths;
+};
 
 /**
  *  vivliostyle.config.jsのthemeを使用する 
@@ -22,7 +40,7 @@ export class CustomTheme implements Theme {
     repository: Repository;
   
     /**
-     * 
+     * コンストラクタ
      * @param fs 
      * @param app 
      * @param repository 
@@ -42,19 +60,42 @@ export class CustomTheme implements Theme {
     }
   
     /**
-     * 
-     * @returns 
+     * テーマを処理してCSSとして出力する
+     * TODO: PackageThemeと似ているので集約したい。
+     * @returns CSSの相対パス(dstFsのルートディレクトリを基準とする)
      */
     public async process(dstFs:Fs):Promise<string> {
-      console.log('CustomTheme process', this.style);
-      const stylesheet = await this.fs.readFile(this.style);
-      await dstFs.writeFile(this.style, stylesheet);
-      console.log('setup custom theme');
-      return this.style;
+      // console.log('processingThemeString',this,dstFs);
+      if( !this.style ) { console.log('empty theme'); return ''; }
+      const themePath = `${this.style}`; // ここがPackageThemeと異なる
+      const stylesheet = await this.fs.readFile(this.style) as string;
+      // console.log('stylesheet',stylesheet);
+      if(!stylesheet) {
+        return '';
+      }
+    
+      await dstFs!.writeFile(themePath, stylesheet);
+      console.log(`updateCache : ${themePath}`);
+      
+      const imagesOfStyle = pickupCSSResources(stylesheet);
+      // console.log('imagesOfStyle',imagesOfStyle);
+      await Promise.all(
+        imagesOfStyle.map(async(imageOfStyle) => {
+          const contentPath = upath.join(upath.dirname(this.style),imageOfStyle);
+          // console.log('contentPath',contentPath);
+          const content = await this.fs.readFile(contentPath);
+          dstFs.writeFile(contentPath, content);
+        }),
+      ).catch((error) => {
+        console.log(error);
+        throw error;
+      });
+    
+      return themePath; // ここがPackageThemeと異なる
     }
   
     /**
-     * 
+     * テーマオブジェクトを生成する
      * @param app 
      * @param repository 
      * @returns 
@@ -92,7 +133,7 @@ export class CustomTheme implements Theme {
     }
   
     /**
-     * 
+     * CSSのパス
      * @returns 
      */
     public getStylePath() {

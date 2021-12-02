@@ -3,7 +3,7 @@ import {PackageJson} from './theme';
 import upath from 'upath';
 
 /**
- * CSSからアプリケーションキャッシュの対象になるファイルのリストアップ
+ * CSSから参照されているファイルのリストアップ
  * @param text
  * @returns
  */
