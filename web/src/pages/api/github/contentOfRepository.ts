@@ -58,8 +58,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       return data.installations.map((i) => i.id);
     })(),
   ]);
-  res.json({content:"{messsage:\"test5\"}",encoding:'utf-8',oid:""});
-  /*
+
   if (!installations.includes(id)) {
     return res.status(405).send(null);
   }
@@ -72,6 +71,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       installationId: id,
     },
   });
+  res.json({content:"{messsage:\"test6\"}",encoding:'utf-8',oid:""});
+  /*
   try {
     const auth = createAppAuth({
       appId: +process.env.GH_APP_ID,
