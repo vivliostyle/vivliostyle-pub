@@ -65,7 +65,7 @@ import { Fs, VFile } from "theme-manager";
       // octokit-restはPublic repositoryへのアクセスはトークン不要
       console.log('readFile', path);
       let octokit: Octokit;
-      const token = localStorage.getItem('GH_PERSONAL_ACCESS_TOKEN');
+      const token = false; //localStorage.getItem('GH_PERSONAL_ACCESS_TOKEN');
       if (token) {
         console.log('use Personal access token');
         octokit = new Octokit({auth: token});
