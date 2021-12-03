@@ -131,7 +131,7 @@ export class CustomTheme implements Theme {
       const fs = await WebApiFs.open(props);
       // 設定ファイルの読み込み
       const configString = (await fs.readFile('vivliostyle.config.js')) as string;
-      console.log('CustomTheme::create configString', configString);
+      // console.log('CustomTheme::create configString', configString);
       // 設定ファイルからthemeを取得
       // TODO: entry別のテーマ
       const configJsonString = configString

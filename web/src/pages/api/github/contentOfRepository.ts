@@ -105,19 +105,19 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
           .status(200)
           .json({content: '', encoding: '', oid: repository.content.oid});
       } else if (repository.content.isBinary) {
-        // const blob = await octokit.git.getBlob({
-        //   owner,
-        //   repo,
-        //   file_sha: repository.content.oid,
-        // });
-        // res
-        //   .status(200)
-        //   .json({
-        //     content: blob.data.content,
-        //     encoding: blob.data.encoding,
-        //     oid: repository.content.oid,
-        //   });
-        res.json({content:repository.content.text as string, encoding: "Base64", oid: repository.content.oid});
+        const octokit = new Octokit({auth:auth});
+        const blob = await octokit.git.getBlob({
+          owner,
+          repo,
+          file_sha: repository.content.oid,
+        });
+        res
+          .status(200)
+          .json({
+            content: blob.data.content,
+            encoding: blob.data.encoding,
+            oid: repository.content.oid,
+          });
       } else {
         const text = repository.content.text as string;
         res.json({
