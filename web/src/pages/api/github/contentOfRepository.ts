@@ -26,8 +26,6 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   if (!idToken) {
     return res.status(401).send(null);
   }
-  res.json({content:"{messsage:\"test2\"}",encoding:'utf-8',oid:""});
-  /*
   let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
   try {
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
@@ -36,6 +34,9 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     console.log(error)
     return res.status(400).send(null);
   }
+
+  res.json({content:"{messsage:\"test3\"}",encoding:'utf-8',oid:""});
+  /*
 
   if (!idTokenDecoded?.githubAccessToken) {
     return res.status(405).send(null);
