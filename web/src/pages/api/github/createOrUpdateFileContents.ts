@@ -3,6 +3,7 @@ import {Octokit} from '@octokit/rest';
 import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import { createAppAuth } from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 export const createOrUpdateFileContentsInternal = async(octokit: Octokit, owner: string, repo: string, branch: string, path: string, base64edContent: string) => {
   const contentSha = await (async () => {
@@ -57,7 +58,7 @@ const createOrUpdateFileContents: NextApiHandler<null> = async (req, res) => {
     authStrategy: createAppAuth,
     auth: {
       appId: +process.env.GH_APP_ID,
-      privateKey: process.env.GH_APP_PRIVATEKEY,
+      privateKey: githubAppPrivateKey,
       installationId: installationId,
     },
   });

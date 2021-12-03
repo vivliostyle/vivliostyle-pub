@@ -6,6 +6,7 @@ import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {createOrUpdateFileContentsInternal} from './createOrUpdateFileContents';
 import { createAppAuth } from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
   const {sessionId, branch, style} = req.body;
@@ -51,7 +52,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
     authStrategy: createAppAuth,
     auth: {
       appId: +process.env.GH_APP_ID,
-      privateKey: process.env.GH_APP_PRIVATEKEY,
+      privateKey: githubAppPrivateKey,
       installationId: installationId,
     },
   });

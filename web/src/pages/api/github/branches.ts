@@ -6,6 +6,7 @@ import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 import { createAppAuth } from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 export type BranchesApiResponse = {
     branches: Endpoints["GET /repos/{owner}/{repo}/branches"]['response']['data'];
@@ -65,7 +66,7 @@ const branches: NextApiHandler<BranchesApiResponse | null> = async (
     authStrategy: createAppAuth,
     auth: {
       appId: +process.env.GH_APP_ID,
-      privateKey: process.env.GH_APP_PRIVATEKEY,
+      privateKey: githubAppPrivateKey,
       installationId: id,
     },
   });
