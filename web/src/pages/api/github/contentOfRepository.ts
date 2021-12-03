@@ -40,9 +40,6 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   }
   const decrypted = decrypt(idTokenDecoded.githubAccessToken);
 
-  res.json({content:"{messsage:\"test4\"}",encoding:'utf-8',oid:""});
-  /*
-
   const [id, installations] = await Promise.all([
     (async () => {
       const appAuthentication = await githubApp({type:"app"});
@@ -61,6 +58,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       return data.installations.map((i) => i.id);
     })(),
   ]);
+  res.json({content:"{messsage:\"test5\"}",encoding:'utf-8',oid:""});
+  /*
   if (!installations.includes(id)) {
     return res.status(405).send(null);
   }
