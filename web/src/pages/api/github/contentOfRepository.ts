@@ -63,15 +63,37 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     return res.status(405).send(null);
   }
   
-  const octokit = new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      appId: +process.env.GH_APP_ID,
-      privateKey: process.env.GH_APP_PRIVATEKEY,
-      installationId: id,
-    },
-  });
-  res.json({content:"{messsage:\"test6\"}",encoding:'utf-8',oid:""});
+  // 旧バージョン
+  // const token = await githubApp.getInstallationAccessToken({
+  //   installationId: id,
+  // });
+  // const octokit = new Octokit({
+  //   auth: `token ${token}`,
+  // });
+
+  // const auth = createAppAuth({
+  //   appId: +process.env.GH_APP_ID,
+  //   privateKey: process.env.GH_APP_PRIVATEKEY,
+  //   clientId: process.env.GH_APP_CLIENT_ID,
+  //   clientSecret: process.env.GH_APP_CLIENT_SECRET
+  // });
+
+  try{
+    const octokit = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: +process.env.GH_APP_ID,
+        privateKey: process.env.GH_APP_PRIVATEKEY,
+        installationId: id,
+      },
+    });  
+  }catch(err:any){
+    res.json({
+      content:`{messsage:"test7",installationId:${id},err:${err.messsage}}`,
+      encoding:'utf-8',
+      oid:""});
+  }
+  res.json({content:"{messsage:\"test7\"}",encoding:'utf-8',oid:""});
   /*
   try {
     const auth = createAppAuth({
