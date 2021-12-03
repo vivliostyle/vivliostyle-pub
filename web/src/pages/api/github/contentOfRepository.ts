@@ -22,13 +22,12 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     console.log("validation error")
     return res.status(400).send(null);
   }
-  res.json({content:"{messsage:\"test\"}",encoding:'utf-8',oid:""});
-  /*
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
     return res.status(401).send(null);
   }
-
+  res.json({content:"{messsage:\"test2\"}",encoding:'utf-8',oid:""});
+  /*
   let idTokenDecoded: firebaseAdmin.auth.DecodedIdToken;
   try {
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;

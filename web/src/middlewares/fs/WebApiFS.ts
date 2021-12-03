@@ -86,7 +86,8 @@ export class WebApiFs implements Fs {
         },
       },
     );
-    console.log("response", response.text());
+    console.log("response", await response.text());
+    /*
     if (response.status === 403) {
       throw new Error(`403:${path}`);
     }
@@ -97,6 +98,8 @@ export class WebApiFs implements Fs {
       throw new Error(`WebApiFs:Content type is not file`);
     }
     return content.content;
+    */
+   return "";
   }
 
   /**
