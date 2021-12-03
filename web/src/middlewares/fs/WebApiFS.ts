@@ -71,7 +71,6 @@ export class WebApiFs implements Fs {
       throw new Error('WebApiFs::readFile json parameter not implemented');
     } // オプション未実装
     const idToken = await this.user.getIdToken();
-    console.log("idToken", idToken);
     const response = await fetch(
       `/api/github/contentOfRepository?${new URLSearchParams({
         owner: this.owner,
