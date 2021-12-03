@@ -17,6 +17,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   req,
   res,
 ) => {
+  res.json({content:"{messsage:\"test\"}",encoding:'utf-8',oid:""});
+  /*
   const {owner, repo, path, branch, oid} = req.query;
   if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path) || Array.isArray(branch)) {
     console.log("validation error")
@@ -113,6 +115,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     const e = error as any;
     return res.status(e.status).send(null);
   }
+  */
 };
 
 export default contentOfRepository;
