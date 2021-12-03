@@ -100,7 +100,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       }
     `);
       if (oid == repository.content.oid) {
-        res
+      // ハッシュが同じなら取得しない
+      res
           .status(200)
           .json({content: '', encoding: '', oid: repository.content.oid});
       } else if (repository.content.isBinary) {
@@ -116,7 +117,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
         //     encoding: blob.data.encoding,
         //     oid: repository.content.oid,
         //   });
-        res.json({content:"", encoding: "utf-8", oid:""});
+        res.json({content:repository.content.text as string, encoding: "Base64", oid: repository.content.oid});
       } else {
         const text = repository.content.text as string;
         res.json({
