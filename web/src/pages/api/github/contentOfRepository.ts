@@ -6,6 +6,8 @@ import firebaseAdmin from '@services/firebaseAdmin';
 import {decrypt} from '@utils/encryption';
 import { createAppAuth } from '@octokit/auth-app';
 import { graphql } from '@octokit/graphql';
+import {githubAppPrivateKey} from '@utils/keys';
+
 
 export type ContentOfRepositoryApiResponse =  {
   content:string;
@@ -41,6 +43,7 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   const decrypted = decrypt(idTokenDecoded.githubAccessToken);
 
   const [id, installations] = await Promise.all([
+
     (async () => {
       const appAuthentication = await githubApp({type:"app"});
       const jwt = appAuthentication.token;
@@ -50,6 +53,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       const {data} = await octokit.apps.getRepoInstallation({owner, repo});
       return data.id;
     })(),
+
+
     (async () => {
       const octokit = new Octokit({
         auth: `token ${decrypted}`,
@@ -71,29 +76,34 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   //   auth: `token ${token}`,
   // });
 
-  // const auth = createAppAuth({
-  //   appId: +process.env.GH_APP_ID,
-  //   privateKey: process.env.GH_APP_PRIVATEKEY,
-  //   clientId: process.env.GH_APP_CLIENT_ID,
-  //   clientSecret: process.env.GH_APP_CLIENT_SECRET
-  // });
+
 
   try{
-    const octokit = new Octokit({
-      authStrategy: createAppAuth,
-      auth: {
-        appId: +process.env.GH_APP_ID,
-        privateKey: process.env.GH_APP_PRIVATEKEY,
-        installationId: id,
+    // const octokit = new Octokit({
+    //   authStrategy: createAppAuth,
+    //   auth: {
+    //     appId: +process.env.GH_APP_ID,
+    //     privateKey: process.env.GH_APP_PRIVATEKEY,
+    //     installationId: id,
+    //   },
+    // });  
+    const auth = createAppAuth({
+      appId: +process.env.GH_APP_ID,
+      privateKey: githubAppPrivateKey,
+      installationId: id
+    });
+    const graphqlWithAuth = graphql.defaults({
+      request: {
+        hook: auth.hook,
       },
-    });  
+    });
   }catch(err:any){
     res.json({
-      content:`{messsage:"test7",installationId:${id},err:${err.messsage}}`,
+      content:`{messsage:"test8",installationId:${id},err:${err.messsage}}`,
       encoding:'utf-8',
       oid:""});
   }
-  res.json({content:"{messsage:\"test7\"}",encoding:'utf-8',oid:""});
+  res.json({content:"{messsage:\"test8\"}",encoding:'utf-8',oid:""});
   /*
   try {
     const auth = createAppAuth({
