@@ -31,17 +31,17 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     const tokenString = Array.isArray(idToken) ? idToken[0] : idToken;
     idTokenDecoded = await firebaseAdmin.auth().verifyIdToken(tokenString);
   } catch (error) {
-    console.log(error)
+    // console.log(error)
     return res.status(400).send(null);
   }
-
-  res.json({content:"{messsage:\"test3\"}",encoding:'utf-8',oid:""});
-  /*
 
   if (!idTokenDecoded?.githubAccessToken) {
     return res.status(405).send(null);
   }
   const decrypted = decrypt(idTokenDecoded.githubAccessToken);
+
+  res.json({content:"{messsage:\"test4\"}",encoding:'utf-8',oid:""});
+  /*
 
   const [id, installations] = await Promise.all([
     (async () => {
