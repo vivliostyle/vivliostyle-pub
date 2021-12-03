@@ -105,7 +105,9 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
           .status(200)
           .json({content: '', encoding: '', oid: repository.content.oid});
       } else if (repository.content.isBinary) {
-        const octokit = new Octokit({auth:auth});
+        const octokit = new Octokit({
+          auth: `token ${decrypted}`,
+        });
         const blob = await octokit.git.getBlob({
           owner,
           repo,
