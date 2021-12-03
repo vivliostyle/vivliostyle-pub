@@ -17,13 +17,13 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
   req,
   res,
 ) => {
-  res.json({content:"{messsage:\"test\"}",encoding:'utf-8',oid:""});
-  /*
   const {owner, repo, path, branch, oid} = req.query;
   if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(path) || Array.isArray(branch)) {
     console.log("validation error")
     return res.status(400).send(null);
   }
+  res.json({content:"{messsage:\"test\"}",encoding:'utf-8',oid:""});
+  /*
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
     return res.status(401).send(null);

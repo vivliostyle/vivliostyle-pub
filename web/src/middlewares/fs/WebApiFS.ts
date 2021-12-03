@@ -86,7 +86,7 @@ export class WebApiFs implements Fs {
         },
       },
     );
-    console.log("response", response);
+    console.log("response", response.text());
     if (response.status === 403) {
       throw new Error(`403:${path}`);
     }
