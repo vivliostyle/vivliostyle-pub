@@ -6,7 +6,7 @@ import {
 import {AppContext} from './contexts/useAppContext';
 import {Repository} from './contexts/useRepositoryContext';
 import upath from 'upath';
-import { VFile } from 'theme-manager';
+import { CurrentFile } from './contexts/useCurrentFileContext';
 
 export const VPUBFS_ROOT = '/vpubfs';
 
@@ -38,14 +38,15 @@ const pickupHtmlResources = (text: string): string[] => {
 export async function transpileMarkdown(
   app: AppContext,
   repository: Repository,
-  file:VFile
+  currentFile:CurrentFile
 ): Promise<{vPubPath: string; text: string; errors:Error[]}> {
-  
-  let srcPath = file.path;
-  if(!file.hasContent) {
-    await file.getContent();
+  if( ! currentFile.file ) { return {vPubPath:'',text:'',errors:[new Error("empty file")]}; } 
+  let srcPath = currentFile.file!.path;
+  if(!currentFile.text) {
+    await currentFile.file.getContent();
+    currentFile.text = currentFile.file.content;
   }
-  let text = file.content;
+  let text = currentFile.text;
   // console.log('transpileMarkdown',srcPath,text);
   if (srcPath && text && srcPath.endsWith('.md')) {
     srcPath = srcPath.replace(/\.md$/, '.html');
