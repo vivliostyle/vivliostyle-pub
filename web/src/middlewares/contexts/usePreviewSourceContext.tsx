@@ -9,7 +9,7 @@ import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {FileState, isEditableFile} from '../frontendFunctions';
 import {useRepositoryContext} from './useRepositoryContext';
 import {useAppContext} from './useAppContext';
-import {useCurrentFileContext} from './useCurrentFileContext';
+import {CurrentFile, useCurrentFileContext} from './useCurrentFileContext';
 import {
   transpileMarkdown,
 } from '../previewFunctions';
@@ -42,7 +42,7 @@ export type PreviewSource = {
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
   // パブリック メソッドに相当
-  changeFile: (file:VFile|null) => void; // TODO: 使われていない?
+  // changeFile: (file:VFile|null) => void; // TODO: 使われていない?
   commit: (
     session: DocumentReference<DocumentData> | undefined,
     branch: string | undefined,
@@ -57,7 +57,7 @@ type Actions =
       vPubPath: string | null;
       text: string | null;
     }
-  | {type: 'reload'; file:VFile|null; }
+  | {type: 'reload'; currentFile:CurrentFile|null; }
   | {
       type: 'commit';
       session: DocumentReference | undefined;
@@ -116,10 +116,10 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    * @param path
    * @param text
    */
-  const changeFile = (file:VFile) => {
-    // TODO: ファイル未選択や空ファイルへの対応
-    transpile(file);
-  };
+  // const changeFile = (file:VFile) => {
+  //   // TODO: ファイル未選択や空ファイルへの対応
+  //   transpile(file);
+  // };
 
   /**
    * MarkDownファイルをHTMLに変換する
@@ -128,14 +128,15 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    * @returns {path, text}
    */
   const transpile = useCallback(
-    (file:VFile): void => {
-      console.log("transpile", file);
+    (currentFile:CurrentFile): void => {
+      console.log("transpile", currentFile);
       (async () => {
         try {
+          if(!currentFile.file) { return; }
           const {vPubPath, text: resultText, errors} = await transpileMarkdown(
             app,
             repository,
-            file
+            currentFile
           );
           if(errors.length > 0) {
             log.error(`以下のファイルの処理に失敗しました ${errors.join(" , ")}`);
@@ -144,13 +145,13 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           // console.log('call dispatcher', dispatch);
           dispatch({
             type: 'changeFileCallback',
-            file,
+            file: currentFile.file,
             vPubPath: vPubPath,
             text: resultText,
           });
         } catch (err: any) {
           log.error(
-            'プレビュー変換に失敗しました(' + file.path + ') ： ' + err.message,
+            'プレビュー変換に失敗しました(' + currentFile.file!.path + ') ： ' + err.message,
             3000,
           );
         }
@@ -175,8 +176,8 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
         isEditableFile(currentFile.file.name) &&
         (currentFile.ext == 'md' || currentFile.ext == 'html')
       ) {
-        console.log('編集対象ファイルはプレビュー可能');
-        transpile(currentFile.file);
+        console.log('編集対象ファイルはプレビュー可能',currentFile);
+        transpile(currentFile);
       } else {
         console.log('編集対象ファイルはプレビュー不可');
       }
@@ -188,9 +189,9 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   /**
    * 手動リロード 動作しない
    */
-  const reload = useCallback((file:VFile|null)=>{
+  const reload = useCallback((currentFile:CurrentFile|null)=>{
     console.log('reload by user action');
-    dispatch({type:'reload', file});
+    dispatch({type:'reload', currentFile});
     //updatePreview(true); // 古いupdatePreviewを呼び出すと、クロージャ内のテキストを使ってしまうのでuseCallback不可
   },[]);
 
@@ -205,7 +206,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     theme: null,
     stylePath: null,
     // methods
-    changeFile,
+    // changeFile,
     commit: commit,
     reload,
   } as PreviewSource;
@@ -253,8 +254,8 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
             text: action.text,
           };
         case 'reload':
-          if(action.file) {
-            transpile(action.file);
+          if(action.currentFile) {
+            transpile(action.currentFile);
           }
           return {...state};
         case 'commit': // コミット
