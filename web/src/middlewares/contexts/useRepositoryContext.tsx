@@ -45,11 +45,12 @@ export function useRepositoryContext() {
 
 type Actions =
   | {
-      type: 'selectRepository';
+      type: 'selectRepositoryCallback';
       owner: string;
       repo: string;
       branches: string[];
       defaultBranch: string;
+      branch: string;
       files: VFile[];
     }
   | {type: 'selectBranch'; branch: string; tree?:VFile[]; }
@@ -95,7 +96,7 @@ export function RepositoryContextProvider({
    * ブランチの選択
    * @param branch
    */
-  const selectBranch = (branch: string) => {
+  const selectBranch = useCallback((branch: string) => {
     console.log('selectBranch', branch);
     if (!owner || !repo || !branch) {
       return;
@@ -103,7 +104,7 @@ export function RepositoryContextProvider({
     if (dispatch) {
       dispatch({type: 'selectBranch', branch});
     }
-  };
+  },[owner, repo]);
   /**
    * フォルダを開く
    * @param tree
@@ -160,17 +161,18 @@ export function RepositoryContextProvider({
   const reducer = useCallback(
     (state: Repository, action: Actions): Repository => {
       switch (action.type) {
-        case 'selectRepository':
+        case 'selectRepositoryCallback':
           return {
             ...state,
             owner: action.owner,
             repo: action.repo,
             branches: action.branches,
-            branch: action.defaultBranch,
             defaultBranch: action.defaultBranch,
+            branch: action.branch,
             files: action.files,
           };
         case 'selectBranch':
+          if( !(app.user && state.owner && state.repo && action.branch) || state.branch === action.branch ) { return state; }
           const props = {
             user: app.user!,
             owner: state.owner!,
@@ -198,6 +200,10 @@ export function RepositoryContextProvider({
         case 'selectBranchCallback':
           // TODO: ブランチ毎のカレントディレクトリを保持する
           setFile(null);
+          const url = new URL(window.location.toString());
+          url.searchParams.set('branch', action.branch);
+          url.searchParams.delete('file');
+          history.pushState({}, '', url);
           return {
             ...state,
             branch: action.branch,
@@ -316,7 +322,7 @@ export function RepositoryContextProvider({
    */
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const selectRepository = useCallback(
-    (owner: string, repo: string) => {
+    (owner: string, repo: string, branch?: string, filePath?: string) => {
       if (!app.user || app.isPending) {
         return null;
       }
@@ -334,18 +340,19 @@ export function RepositoryContextProvider({
           user: app.user!,
           owner,
           repo,
-          branch: defaultBranch,
+          branch: branch ?? defaultBranch,
         };
         console.log('selectRepository', props);
         const fs: WebApiFs = await WebApiFs.open(props);
         const files = await fs.readdir('/');
         if (dispatch) {
           dispatch({
-            type: 'selectRepository',
+            type: 'selectRepositoryCallback',
             owner,
             repo,
             branches,
             defaultBranch,
+            branch: branch ?? defaultBranch,
             files,
           });
         }
@@ -356,6 +363,7 @@ export function RepositoryContextProvider({
         //   .catch((e) => console.error(e));
       })();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [app.isPending, app.user],
   );
 
@@ -363,8 +371,13 @@ export function RepositoryContextProvider({
     if (!app.user || app.isPending) {
       return;
     }
-    selectRepository(owner, repo);
+    // クエリパラメータでカレントブランチ、カレントファイルが指定されている
+    const url = new URL(window.location.toString());
+    const paramBranch = url.searchParams.get('branch')?? undefined;
+    const paramFile = url.searchParams.get('file') ?? undefined;
+    selectRepository(owner, repo, paramBranch, paramFile);
   }, [app.isPending, app.user, owner, repo, selectRepository]);
+
 
   /**
    * ファイルの内容を読み込み完了し、編集可能な状態になった

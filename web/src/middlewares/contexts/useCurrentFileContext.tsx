@@ -229,6 +229,16 @@ export function CurrentFileContextProvider({
           }
           if (action.file) {
             onReady(action.file);
+            
+            // クエリパラメータにファイル名を設定
+            const url = new URL(window.location.toString());
+            if(action.file) {
+              url.searchParams.set('file', action.file?.path!);
+            }else{
+              url.searchParams.delete('file');
+            }
+            history.pushState({}, '', url);    
+  
             return {
               ...state,
               state: FileState.init,
