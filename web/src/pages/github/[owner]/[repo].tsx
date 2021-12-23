@@ -23,6 +23,9 @@ import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
 import { CurrentThemeContextProvider } from '@middlewares/contexts/useCurrentThemeContext';
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@services/firebase';
 
 interface BuildRecord {
   url: string | null;
@@ -39,6 +42,14 @@ function useBuildStatus(
 ) {
   useEffect(() => {
     if (!buildID) return;
+
+  const unsubscribe = onSnapshot(doc(db, "builds", buildID), (doc) => {
+    const {url} = doc.data() as BuildRecord;
+    console.log('Current data: ', doc.data());
+    if (!url) return;
+    unsubscribe();
+    if (onBuildFinished) onBuildFinished(url);
+  });
     // const unsubscribe = firebase
     //   .firestore()
     //   .collection('builds')
@@ -50,7 +61,7 @@ function useBuildStatus(
     //     unsubscribe();
     //     if (onBuildFinished) onBuildFinished(url);
     //   });
-    // return unsubscribe;
+    return unsubscribe;
   }, [buildID, onBuildFinished]);
 }
 
@@ -110,7 +121,8 @@ const GitHubOwnerRepo = () => {
         </UI.Link>
       </UI.Box>
     );
-    log.info('View PDF'); // TODO リンクにする
+    console.log("build complete:"+artifactURL);
+    log.info(`<a href="${artifactURL}">View PDF</a>`); // TODO リンクにする
     // toast({
     //   duration: 9000,
     //   isClosable: true,
@@ -167,30 +179,33 @@ const GitHubOwnerRepo = () => {
 
   function onBuildPDFButtonClicked() {
     setIsProcessing(true);
-
-    // const buildPDF = firebase.functions().httpsCallable('buildPDF');
-    // buildPDF({owner, repo, stylesheet})
-    //   .then((result:any) => {
-    //     console.log(result);
-    //     const buildID = result.data.buildID;
-    //     setBuildID(buildID);
-    //     toast({
-    //       title: 'Build started',
-    //       description: 'Your build has been started',
-    //       status: 'success',
-    //       duration: 5000,
-    //       isClosable: false,
-    //     });
-    //   })
-    //   .catch((err:any) => {
-    //     toast({
-    //       title: err.message,
-    //       description: err.details,
-    //       status: 'error',
-    //       duration: 9000,
-    //       isClosable: true,
-    //     });
-    //   });
+    const functions = getFunctions();
+    const buildPDF = httpsCallable(functions, 'buildPDF');
+    const stylesheet = "";
+    buildPDF({owner, repo, stylesheet})
+      .then((result:any) => {
+        console.log("buildPDF function",result);
+        const buildID = result.data.buildID;
+        setBuildID(buildID);
+        log.info("Build started",5000);
+        // toast({
+        //   title: 'Build started',
+        //   description: 'Your build has been started',
+        //   status: 'success',
+        //   duration: 5000,
+        //   isClosable: false,
+        // });
+      })
+      .catch((err:any) => {
+        log.error(err.message, 9000);
+        // toast({
+        //   title: err.message,
+        //   description: err.details,
+        //   status: 'error',
+        //   duration: 9000,
+        //   isClosable: true,
+        // });
+      });
   }
 
   const onLogging = (num: number) => {
