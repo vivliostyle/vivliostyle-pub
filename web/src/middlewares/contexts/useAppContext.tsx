@@ -24,6 +24,7 @@ import {
   gql,
   InMemoryCache,
   NetworkStatus,
+  NormalizedCacheObject,
   OperationVariables,
   TypedDocumentNode,
 } from '@apollo/client';
@@ -47,6 +48,7 @@ export type AppContext = {
   vpubFs?: AppCacheFs; // Application Cacheへのアクセス
   repositories?: Repository[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
   query?: GraphQlQueryMethod; // サーバのGraphQL APIへのクエリメソッド
+  gqlclient?: ApolloClient<NormalizedCacheObject>;
   reload: () => void;
 };
 
@@ -57,6 +59,7 @@ type Actions =
       fs?: AppCacheFs;
       themes?: Theme[];
       query?: GraphQlQueryMethod;
+      gqlclient?: ApolloClient<NormalizedCacheObject>;
       repositories?: Repository[];
     }
   | {type: 'notSignedIn'}
@@ -178,7 +181,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       console.log('themes', themes);
       //
       console.log('init', 4);
-      dispatch({type: 'init', user, fs, themes, repositories, query});
+      dispatch({type: 'init', user, fs, themes, repositories, query, gqlclient:client});
     })();
   };
   /**
@@ -243,6 +246,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
           vpubFs: action.fs,
           onlineThemes: action.themes ?? [],
           query: action.query,
+          gqlclient: action.gqlclient,
           repositories: action.repositories,
         };
       case 'notSignedIn':

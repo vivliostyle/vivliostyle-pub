@@ -13,6 +13,8 @@ import {isNumber} from 'lodash';
 import { getRepositories } from '@services/gqlRepository';
 import { authDirectiveTransformer, queryContext } from '@services/gqlAuthDirective';
 import { send } from 'micro';
+import { renameContent } from '@services/gqlRename';
+import { deleteContent } from '@services/gqlDelete';
 
 const cors = Cors();
 
@@ -43,6 +45,15 @@ const typeDefs = gql`
     # リポジトリ名 owner/repoを指定して特定のリポジトリの情報を取得
     repository(name: String!): Repository
   }
+
+  type Result {
+    state: Boolean
+  }
+
+  type Mutation @auth {
+    renameContent(owner: String!, repo: String!, branch: String!, oldPath: String!, newPath: String!, sha: String!): Result
+    deleteContent(owner: String!, repo: String!, branch: String!, name: String!, sha: String!): Result
+  }
   type User @auth {
     name: String
   }
@@ -71,12 +82,12 @@ const resolvers = {
     // parent  前のリゾルバ呼び出しの結果
     // args    リゾルバのフィールドの引数
     // context 各リゾルバが読み書きできるカスタムオブジェクト
-    async users(parent: {}, args: {}, context: queryContext) {
-      // console.log('parent', parent);
-      // console.log('args', args);
-      // console.log('context', context);
-      return [{name: 'name1'}, {name: 'name2'}];
-    },
+    // async users(parent: {}, args: {}, context: queryContext) {
+    //   // console.log('parent', parent);
+    //   // console.log('args', args);
+    //   // console.log('context', context);
+    //   return [{name: 'name1'}, {name: 'name2'}];
+    // },
     async repositories(
       parent: any,
       args: any,
@@ -94,6 +105,10 @@ const resolvers = {
       }
     },
   },
+  Mutation: {
+    renameContent,
+    deleteContent
+  }
 };
 
 const schemaSrc = makeExecutableSchema({
@@ -111,6 +126,7 @@ export default cors(async function handler(req, res) {
     context.roles = [];
     return send(res, 401);
   } else {
+    // GraphQLのリゾルバで使えるようにGitHubのトークンをcontextにセットする
     context.token = decryptedToken;
     context.roles = ['USER'];
   }

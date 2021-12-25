@@ -1,20 +1,25 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
-import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
+import {CurrentFile, useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 import {AddIcon, PlusSquareIcon, RepeatIcon} from '@chakra-ui/icons';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
-import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
 import {VFile} from 'theme-manager';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
+import FileEntry from './ProjectExplorerFileEntry';
+import DirEntry from './ProjectExplorerDirEntry';
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
+  const app = useAppContext();
   const log = useLogContext();
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
+
+
 
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
@@ -95,6 +100,8 @@ export function ProjectExplorer() {
     setCreateForm(null);
   };
 
+
+
   return (
     <UI.Box w={'100%'} resize="horizontal" p={1}>
       <UI.Box h="48px">
@@ -144,7 +151,6 @@ export function ProjectExplorer() {
           overflowY="scroll"
           backgroundColor="white"
         >
-          {' '}
           {/* TODO:ここの高さ計算をもっと的確に。 */}
           {repository.currentTree.length > 0 ? (
             <UI.Container p={0} onClick={upTree} cursor="pointer">
@@ -164,56 +170,11 @@ export function ProjectExplorer() {
               }}
             />
           )}
-          {filteredFiles.map((file) => (
-            <UI.Container
-              paddingInlineStart={1}
-              onClick={() => {
-                onClick(file);
-              }}
-              cursor="pointer"
-              key={file.name}
-            >
-              <ContextMenu<HTMLDivElement>
-                renderMenu={() => (
-                  <UI.MenuList zIndex="999">
-                    <UI.MenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      Rename File
-                    </UI.MenuItem>
-                    <UI.MenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      Delete File
-                    </UI.MenuItem>
-                  </UI.MenuList>
-                )}
-              >
-                {(ref: React.LegacyRef<HTMLParagraphElement> | undefined) => (
-                  <UI.Text
-                    ref={ref}
-                    mt={1}
-                    fontSize="sm"
-                    fontWeight={
-                      file.name == currentFile?.file?.name ? 'bold' : 'normal'
-                    }
-                    display="inline-block"
-                    width="100%"
-                    _hover={{textDecoration: 'underline'}}
-                  >
-                    {file.name}
-                    {file.type === 'dir' ? '/' : ''}
-                  </UI.Text>
-                )}
-              </ContextMenu>
-            </UI.Container>
-          ))}
+          {filteredFiles.map((file) => {
+            return file.type === 'file' ?
+            (<FileEntry key={file.name} currentDir={currentDir} file={file} onClick={onClick} onReload={reload} />):
+            (<DirEntry key={file.name} file={file} onClick={onClick} onReload={reload} />)
+          })}
         </UI.Box>
       </UI.Box>
     </UI.Box>
