@@ -1,21 +1,16 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
-import {CurrentFile, useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
-import {AddIcon, PlusSquareIcon, RepeatIcon} from '@chakra-ui/icons';
-import {useLogContext} from '@middlewares/contexts/useLogContext';
+import {RepeatIcon} from '@chakra-ui/icons';
 import upath from 'upath';
 import {VFile} from 'theme-manager';
-import {useAppContext} from '@middlewares/contexts/useAppContext';
 import FileEntry from './ProjectExplorerFileEntry';
 import DirEntry from './ProjectExplorerDirEntry';
+import {VscNewFile, VscNewFolder } from 'react-icons/vsc'; 
 
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
-  const app = useAppContext();
-  const log = useLogContext();
   const repository = useRepositoryContext();
-  const currentFile = useCurrentFileContext();
 
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
 
@@ -128,9 +123,10 @@ export function ProjectExplorer() {
             h="0"
             minH="1em"
             minW="1em"
+            backgroundColor={"transparent"}
             onClick={createFile}
           >
-            <AddIcon w="1em" h="1em" p="0" />
+            <UI.Icon as={VscNewFile} w="1em" h="1em" p="0" />
           </UI.Button>
           <UI.Button
             title="new Folder"
@@ -138,9 +134,10 @@ export function ProjectExplorer() {
             h="0"
             minH="1em"
             minW="1em"
+            backgroundColor={"transparent"}
             onClick={createDirectory}
           >
-            <PlusSquareIcon w="1em" h="1em" p="0" />
+            <UI.Icon as={VscNewFolder} w="1em" h="1em" p="0" />
           </UI.Button>
         </UI.Box>
         <hr />
