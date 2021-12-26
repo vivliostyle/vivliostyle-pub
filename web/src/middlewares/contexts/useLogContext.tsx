@@ -1,25 +1,26 @@
 import {
   createContext,
   Dispatch,
+  ReactNode,
   SetStateAction,
   useCallback,
   useContext,
   useReducer,
   useState,
 } from 'react';
-import { useToast } from "@chakra-ui/react"
+import { RenderProps, useToast } from "@chakra-ui/react"
 
 type LogEntry = {
   timestamp: number;
   type: 'info' | 'error' | 'success' | 'warning';
-  message: string;
+  message: ReactNode;
 };
 
 type Log = {
-  info: (message: string, toastDuration?: number) => void;
-  error: (message: string, toastDuration?: number) => void;
-  success: (message: string, toastDuration?: number) => void;
-  warning: (message: string, toastDuration?: number) => void;
+  info: (message: ReactNode, toastDuration?: number) => void;
+  error: (message: ReactNode, toastDuration?: number) => void;
+  success: (message: ReactNode, toastDuration?: number) => void;
+  warning: (message: ReactNode, toastDuration?: number) => void;
   clear: () => void;
 };
 
@@ -68,14 +69,14 @@ export function LogContextProvider({children}: {children: JSX.Element}) {
   const [buf, setBuf] = useState<LogEntry[]>([]);
 
   const createEntry = useCallback(
-    (type: MessageType, message: string): LogEntry => {
+    (type: MessageType, message: ReactNode): LogEntry => {
       // type指定がundefinedならとりあえず'info'にする
       return {type:type??'info', message, timestamp: Date.now()};
     },
     [],
   );
 
-  const logging = useCallback((status:MessageType, message:string, toastDuration: number | null = 0) => { 
+  const logging = useCallback((status:MessageType, message:ReactNode, toastDuration: number | null = 0) => { 
     if(toastDuration && toastDuration > 0) {
       toast({
         title: message,
@@ -88,22 +89,22 @@ export function LogContextProvider({children}: {children: JSX.Element}) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const info = useCallback((message: string, toastDuration: number | null = 0) => {
+  const info = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
     logging('info', message, toastDuration);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const warning = useCallback((message: string, toastDuration: number | null = 0) => {
+  const warning = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
     logging('warning', message, toastDuration);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const success = useCallback((message: string, toastDuration: number | null = 0) => {
+  const success = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
     logging('success', message, toastDuration);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const error = useCallback((message: string, toastDuration: number | null = 0) => {
+  const error = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
       logging('error', message, toastDuration);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
