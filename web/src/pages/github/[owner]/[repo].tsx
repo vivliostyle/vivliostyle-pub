@@ -12,9 +12,7 @@ import {Previewer} from '@components/MarkdownPreviewer';
 
 import {RepositoryContextProvider} from '@middlewares/contexts/useRepositoryContext';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
-import {
-  PreviewSourceContextProvider,
-} from '@middlewares/contexts/usePreviewSourceContext';
+import {PreviewSourceContextProvider} from '@middlewares/contexts/usePreviewSourceContext';
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
@@ -22,10 +20,10 @@ import {FileState} from '@middlewares/frontendFunctions';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
-import { CurrentThemeContextProvider } from '@middlewares/contexts/useCurrentThemeContext';
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@services/firebase';
+import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentThemeContext';
+import {getFunctions, httpsCallable} from 'firebase/functions';
+import {doc, onSnapshot, Unsubscribe} from 'firebase/firestore';
+import {db} from '@services/firebase';
 
 interface BuildRecord {
   url: string | null;
@@ -42,14 +40,16 @@ function useBuildStatus(
 ) {
   useEffect(() => {
     if (!buildID) return;
+    console.log('useBuildStatus', buildID);
+    const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
+      const {url} = doc.data() as BuildRecord;
+      console.log('Current data: ', doc.data());
+      if (!url) return;
+      unsubscribe();
+      console.log('buildStatus unsubscribed', unsubscribe);
+      if (onBuildFinished) onBuildFinished(url);
+    });
 
-  const unsubscribe = onSnapshot(doc(db, "builds", buildID), (doc) => {
-    const {url} = doc.data() as BuildRecord;
-    console.log('Current data: ', doc.data());
-    if (!url) return;
-    unsubscribe();
-    if (onBuildFinished) onBuildFinished(url);
-  });
     // const unsubscribe = firebase
     //   .firestore()
     //   .collection('builds')
@@ -61,7 +61,7 @@ function useBuildStatus(
     //     unsubscribe();
     //     if (onBuildFinished) onBuildFinished(url);
     //   });
-    return unsubscribe;
+    // return unsubscribe;
   }, [buildID, onBuildFinished]);
 }
 
@@ -105,7 +105,6 @@ const GitHubOwnerRepo = () => {
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
 
-  const [status, setStatus] = useState<FileState>(FileState.init);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [buildID, setBuildID] = useState<string | null>(null);
   // const toast = useToast();
@@ -114,15 +113,24 @@ const GitHubOwnerRepo = () => {
 
   useBuildStatus(buildID, (artifactURL: string) => {
     setIsProcessing(false);
-    const ViewPDFToast = ({onClose}: RenderProps) => (
-      <UI.Box bg="tomato" p={5} color="white">
-        <UI.Link href={artifactURL} isExternal onClick={onClose}>
+    // const ViewPDFToast = ({onClose}: RenderProps) => (
+    //   <UI.Box bg="tomato" p={5} color="white">
+    //     <UI.Link href={artifactURL} isExternal onClick={onClose}>
+    //       View PDF
+    //     </UI.Link>
+    //   </UI.Box>
+    // );
+    console.log('build complete:' + artifactURL);
+    log.success(
+      <UI.Text>
+        以下のリンクをクリックして表示してください。
+        <UI.Link href={artifactURL} isExternal textDecoration={'underline'}>
           View PDF
         </UI.Link>
-      </UI.Box>
-    );
-    console.log("build complete:"+artifactURL);
-    log.info(`<a href="${artifactURL}">View PDF</a>`); // TODO リンクにする
+      </UI.Text>,
+      5000,
+    ); // TODO リンクにする
+    setBuildID(null);
     // toast({
     //   duration: 9000,
     //   isClosable: true,
@@ -181,30 +189,16 @@ const GitHubOwnerRepo = () => {
     setIsProcessing(true);
     const functions = getFunctions();
     const buildPDF = httpsCallable(functions, 'buildPDF');
-    const stylesheet = "";
+    const stylesheet = '';
     buildPDF({owner, repo, stylesheet})
-      .then((result:any) => {
-        console.log("buildPDF function",result);
+      .then((result: any) => {
+        console.log('buildPDF function', result);
         const buildID = result.data.buildID;
         setBuildID(buildID);
-        log.info("Build started",5000);
-        // toast({
-        //   title: 'Build started',
-        //   description: 'Your build has been started',
-        //   status: 'success',
-        //   duration: 5000,
-        //   isClosable: false,
-        // });
+        log.info('Your build has been started', 5000);
       })
-      .catch((err:any) => {
+      .catch((err: any) => {
         log.error(err.message, 9000);
-        // toast({
-        //   title: err.message,
-        //   description: err.details,
-        //   status: 'error',
-        //   duration: 9000,
-        //   isClosable: true,
-        // });
       });
   }
 
@@ -217,94 +211,100 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <CurrentThemeContextProvider>
-        <RepositoryContextProvider owner={owner} repo={repo}>
-          <PreviewSourceContextProvider isAutoReload={isAutoReload}>
-            <UI.Box height={'calc(100vh - 4rem)'}>
-              {/* Wrapper  サイズ固定*/}
-              <MenuBar
-                isProcessing={isProcessing}
-                isPresentationMode={isPresentationMode}
-                setPresentationMode={setPresentationMode}
-                setWarnDialog={setWarnDialog}
-                onBuildPDFButtonClicked={onBuildPDFButtonClicked}
-                isEditorVisible={isEditorVisible}
-                onToggleEditor={(f: boolean) => {
-                  setEditorVisible(f);
-                }}
-                isExplorerVisible={isExplorerVisible}
-                onToggleExplorer={(f: boolean) => {
-                  setExplorerVisible(f);
-                }}
-                isPreviewerVisible={isPreviewerVisible}
-                onTogglePreviewer={(f: boolean) => {
-                  setPreviewerVisible(f);
-                }}
-                isAutoReload={isAutoReload}
-                setAutoReload={(f: boolean)=>{ setAutoReload(f); }}
-                onReload={()=>{ /* TODO: 手動リロード */ }}
-              />
-              <UI.Box
-                height={'calc(100vh - 8rem)'}
-                borderTop={'solid 1px gray'}
-              >
-                {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
-                <ReflexContainer
-                  orientation="horizontal"
-                  windowResizeAware={true}
+          <RepositoryContextProvider owner={owner} repo={repo}>
+            <PreviewSourceContextProvider isAutoReload={isAutoReload}>
+              <UI.Box height={'calc(100vh - 4rem)'}>
+                {/* Wrapper  サイズ固定*/}
+                <MenuBar
+                  isProcessing={isProcessing}
+                  isPresentationMode={isPresentationMode}
+                  setPresentationMode={setPresentationMode}
+                  setWarnDialog={setWarnDialog}
+                  onBuildPDFButtonClicked={onBuildPDFButtonClicked}
+                  isEditorVisible={isEditorVisible}
+                  onToggleEditor={(f: boolean) => {
+                    setEditorVisible(f);
+                  }}
+                  isExplorerVisible={isExplorerVisible}
+                  onToggleExplorer={(f: boolean) => {
+                    setExplorerVisible(f);
+                  }}
+                  isPreviewerVisible={isPreviewerVisible}
+                  onTogglePreviewer={(f: boolean) => {
+                    setPreviewerVisible(f);
+                  }}
+                  isAutoReload={isAutoReload}
+                  setAutoReload={(f: boolean) => {
+                    setAutoReload(f);
+                  }}
+                  onReload={() => {
+                    /* TODO: 手動リロード */
+                  }}
+                />
+                <UI.Box
+                  height={'calc(100vh - 8rem)'}
+                  borderTop={'solid 1px gray'}
                 >
-                  <ReflexElement className="top-pane" flex={1.0}>
-                    <ReflexContainer
-                      orientation="vertical"
-                      windowResizeAware={true}
-                    >
-                      {isPresentationMode || !isExplorerVisible ? null : (
-                        <ReflexElement
-                          className="left-pane"
-                          flex={0.15}
-                          minSize={150}
-                        >
-                          <UI.Box
-                            height={'100%'}
-                            backgroundColor="white"
-                            overflow={'hidden'}
+                  {/* Main ファイルリスト、エディタ、プレビュー、ログ サイズ固定 */}
+                  <ReflexContainer
+                    orientation="horizontal"
+                    windowResizeAware={true}
+                  >
+                    <ReflexElement className="top-pane" flex={1.0}>
+                      <ReflexContainer
+                        orientation="vertical"
+                        windowResizeAware={true}
+                      >
+                        {isPresentationMode || !isExplorerVisible ? null : (
+                          <ReflexElement
+                            className="left-pane"
+                            flex={0.15}
+                            minSize={150}
                           >
-                            <ProjectExplorer />
-                          </UI.Box>
-                        </ReflexElement>
-                      )}
-                      {isPresentationMode || !isEditorVisible ? null : <ReflexSplitter />}
-                      {isPresentationMode || !isEditorVisible ? null : (
-                        <ReflexElement className="middle-pane">
-                          <UI.Box height={'100%'}>
-                            <MarkdownEditor {...{onModified}} />
-                          </UI.Box>
-                        </ReflexElement>
-                      )}
-
-                      {isPresentationMode ? null : <ReflexSplitter />}
-                      {!isPreviewerVisible ? null : (
-                      <ReflexElement className="right-pane">
-                          <UI.Box height={'100%'}>
-                            <Previewer />
-                          </UI.Box>
-                      </ReflexElement>
+                            <UI.Box
+                              height={'100%'}
+                              backgroundColor="white"
+                              overflow={'hidden'}
+                            >
+                              <ProjectExplorer />
+                            </UI.Box>
+                          </ReflexElement>
                         )}
-                        </ReflexContainer>
-                  </ReflexElement>
+                        {isPresentationMode || !isEditorVisible ? null : (
+                          <ReflexSplitter />
+                        )}
+                        {isPresentationMode || !isEditorVisible ? null : (
+                          <ReflexElement className="middle-pane">
+                            <UI.Box height={'100%'}>
+                              <MarkdownEditor {...{onModified}} />
+                            </UI.Box>
+                          </ReflexElement>
+                        )}
 
-                  <ReflexSplitter />
+                        {isPresentationMode ? null : <ReflexSplitter />}
+                        {!isPreviewerVisible ? null : (
+                          <ReflexElement className="right-pane">
+                            <UI.Box height={'100%'}>
+                              <Previewer />
+                            </UI.Box>
+                          </ReflexElement>
+                        )}
+                      </ReflexContainer>
+                    </ReflexElement>
 
-                  <ReflexElement className="bottom-pane" minSize={0} flex={0}>
-                    <LogView onLogging={onLogging} />
-                  </ReflexElement>
-                </ReflexContainer>
-                {/* Main */}
+                    <ReflexSplitter />
+
+                    <ReflexElement className="bottom-pane" minSize={0} flex={0}>
+                      <LogView onLogging={onLogging} />
+                    </ReflexElement>
+                  </ReflexContainer>
+                  {/* Main */}
+                </UI.Box>
+                <Footer />
+                {/* Wrapper */}
               </UI.Box>
-              <Footer />
-              {/* Wrapper */}
-            </UI.Box>
-          </PreviewSourceContextProvider>
-        </RepositoryContextProvider>
+            </PreviewSourceContextProvider>
+          </RepositoryContextProvider>
         </CurrentThemeContextProvider>
       ) : null}
     </UI.Box>
