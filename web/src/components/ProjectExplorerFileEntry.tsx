@@ -10,7 +10,8 @@ import {VFile} from 'theme-manager';
 import * as UI from '@components/ui';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { VscCode, VscFile, VscFileMedia, VscMarkdown, VscSettingsGear, VscSymbolNamespace } from 'react-icons/vsc';
 
 // ファイルのリネーム
 const RENAME = gql`
@@ -49,6 +50,7 @@ const DELETE = gql`
   }
 `;
 
+
 export default function FileEntry({
   file,
   currentDir,
@@ -66,6 +68,23 @@ export default function FileEntry({
   const currentFile = useCurrentFileContext();
 
   const [isRenaming,setRenaming] = useState<boolean>(false);
+
+  const icon = useMemo(()=>{
+    const ext = upath.extname(file.name).toLowerCase();
+    if(file.name == 'vivliostyle.config.js') {
+      return VscSettingsGear;
+    }else if(ext == '.md') {
+      return VscMarkdown;
+    }else if(ext == '.html' || ext == '.htm' || ext == '.xhtml' || ext == '.xhtm'){
+      return VscCode;
+    }else if(ext == '.css'){
+      return VscSymbolNamespace;
+    }else if(['.jpg','.jpeg','.png','.gif','.svg'].includes(ext)) {
+      return VscFileMedia;
+    }else {
+      return VscFile;
+    }
+  },[file]);
 
   // GraphQLのクエリメソッド
   const [renameContent, {loading: renameLoading, error: renameError}] =
@@ -209,7 +228,7 @@ export default function FileEntry({
                   renameFile(e);
                 }
             }}
-             />) : file.name}
+             />) : (<UI.Text><UI.Icon as={icon} /> {file.name}</UI.Text>)}
           </UI.Text>
         )}
       </ContextMenu>

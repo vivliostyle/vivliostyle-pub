@@ -7,7 +7,7 @@ import {VFile} from 'theme-manager';
 import FileEntry from './ProjectExplorerFileEntry';
 import DirEntry from './ProjectExplorerDirEntry';
 import {VscNewFile, VscNewFolder } from 'react-icons/vsc'; 
-
+import {CgCornerLeftUp} from 'react-icons/cg';
 export function ProjectExplorer() {
   console.log('[Project Explorer]');
   const repository = useRepositoryContext();
@@ -152,7 +152,7 @@ export function ProjectExplorer() {
           {repository.currentTree.length > 0 ? (
             <UI.Container p={0} onClick={upTree} cursor="pointer">
               <UI.Text mt={3} fontSize="sm">
-                ..
+              <UI.Icon as={CgCornerLeftUp}/> .. 
               </UI.Text>
             </UI.Container>
           ) : null}

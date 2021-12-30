@@ -10,6 +10,7 @@ import {VFile} from 'theme-manager';
 import * as UI from '@components/ui';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
+import { VscFolder } from 'react-icons/vsc';
 
 export default function DirEntry({
   file,
@@ -36,7 +37,7 @@ export default function DirEntry({
         width="100%"
         _hover={{textDecoration: 'underline'}}
       >
-        {file.name}/
+        <UI.Icon as={VscFolder}/> {file.name}/
       </UI.Text>
     </UI.Container>
   );
