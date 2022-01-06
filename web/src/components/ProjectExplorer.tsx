@@ -170,7 +170,7 @@ export function ProjectExplorer() {
           {filteredFiles.map((file) => {
             return file.type === 'file' ?
             (<FileEntry key={file.name} currentDir={currentDir} file={file} onClick={onClick} onReload={reload} />):
-            (<DirEntry key={file.name} file={file} onClick={onClick} onReload={reload} />)
+            (<DirEntry key={file.name}  currentDir={currentDir} file={file} onClick={onClick} onReload={reload} />)
           })}
         </UI.Box>
       </UI.Box>

@@ -17,6 +17,7 @@ import {
 } from '@services/gqlAuthDirective';
 import {send} from 'micro';
 import {commitContent} from '@services/gqlCommitContent';
+import { commitDirectory } from '@services/gqlCommitDirectory';
 
 const cors = Cors();
 
@@ -99,6 +100,14 @@ const typeDefs = gql`
     # duplicate file:    commitContent({owner, repo, branch, oldPath, newPath})                 実装済
     # move(rename) file: commitContent({owner, repo, branch, oldPath, newPath, removeOldPath})  実装済
     # delete file:       commitContent({owner, repo, branch, oldPath, removeOldPath})           実装済
+
+    # ディレクトリ管理 CommitParamsのnewContentは指定されても無視する
+    commitDirectory(params: CommitParams!): Result!
+    # commitDirectoryの利用例
+    # create directory:       commitContentを使って.gitkeepファイルを作成する
+    # duplicate directory:    commitDirectory({owner, repo, branch, oldPath, newPath});
+    # move(rename) directory: commitDirectory({owner, repo, branch, oldPath, newPath, removeOldPath});
+    # delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});
   }
 `;
 
@@ -132,6 +141,7 @@ const resolvers = {
   },
   Mutation: {
     commitContent,
+    commitDirectory
 
     //createDirectory,
     //renameDirectory,
