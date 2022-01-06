@@ -1,13 +1,10 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
 
-// 複数の変更を1コミットにまとめるプラグインを有効にする
-// const Octo = Octokit.plugin(require('octokit-commit-multiple-files'));
-
 /**
  * Githubリポジトリ上のファイルを管理する
  * @param parent
- * @param args {owner, repo, oldName, newName}
+ * @param args
  * @param context token,rolesが含まれたオブジェクト
  * @param info
  * @returns
