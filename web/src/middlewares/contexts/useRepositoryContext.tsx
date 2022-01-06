@@ -1,4 +1,3 @@
-import {createFile} from '@services/serverSideFunctions';
 import React, {
   createContext,
   useCallback,
@@ -13,6 +12,7 @@ import {CurrentFileContextProvider} from './useCurrentFileContext';
 import {useLogContext} from './useLogContext';
 import {CoreProps} from '../vivliostyle.config';
 import {WebApiFs} from '../fs/WebApiFS';
+import {gql} from '@apollo/client';
 
 export type Repository = {
   id: number;
@@ -287,27 +287,43 @@ export function RepositoryContextProvider({
           //   }
           return state;
         case 'createFile':
-          console.log('createFile action', action.path, action.file);
-          createFile(
-            {
-              user: app.user!,
-              owner: state.owner!,
-              repo: state.repo!,
-              branch: state.branch!,
-              path: action.path,
-            },
-            action.file,
-          )
-            .then(() => {
+          // console.log('createFile action', action.path, action.file);
+          var encodedData = Buffer.from("\n", 'utf8').toString('base64');
+          // console.log('encodedData', encodedData);
+          app.gqlclient?.mutate({mutation:gql`
+            mutation createFile($owner: String!, $repo: String!, $branch: String!, $path: String!, $encodedData: String!, $message: String!) {
+              commitContent(params:{
+                owner: $owner,
+                repo: $repo,
+                branch: $branch,
+                newPath: $path,
+                newContent: $encodedData,
+                message: $message
+              }) {
+                state,
+                message
+              }
+            }
+          `,
+            variables: { owner, repo, branch:state.branch, path:action.path, encodedData, message:"create file"}
+          }).then((result:any)=>{
+            if(result.data.commitContent.state) {
               log.success(`ファイルを作成しました : ${action.path}`, 1000);
-              dispatch({type: 'selectBranch', branch: state.branch!, tree: state.currentTree});
-            })
-            .catch((err) => {
+              // ファイルリストを更新する
+              // TODO: mutationの結果として取得することでリクエスト回数を減らす
+              dispatch({type: 'selectBranch', branch: state.branch!, tree: state.currentTree});  
+            }else{
               log.error(
-                `ファイルが作成できませんでした : ${action.path}`,
+                `ファイル(${action.path})が作成できませんでした : ${result.data.commitContent.message}`,
                 1000,
-              );
-            });
+              );  
+            }
+          }).catch((error)=>{
+            log.error(
+              `ファイル(${action.path})が作成できませんでした : ${error.message}`,
+              1000,
+            );
+          });
           return state;
       }
     },

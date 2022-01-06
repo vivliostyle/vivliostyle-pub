@@ -35,6 +35,7 @@ import {NpmFs} from '../fs/NpmFS';
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (
   query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
+  aptions: OperationVariables
 ) => Promise<ApolloQueryResult<any>>;
 
 const provider = new GithubAuthProvider();
