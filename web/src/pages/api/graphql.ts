@@ -104,10 +104,10 @@ const typeDefs = gql`
     # ディレクトリ管理 CommitParamsのnewContentは指定されても無視する
     commitDirectory(params: CommitParams!): Result!
     # commitDirectoryの利用例
-    # create directory:       commitContentを使って.gitkeepファイルを作成する
+    # create directory:       commitContentを使って.gitkeepファイルを作成する                       実装済
     # duplicate directory:    commitDirectory({owner, repo, branch, oldPath, newPath});
     # move(rename) directory: commitDirectory({owner, repo, branch, oldPath, newPath, removeOldPath});
-    # delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});
+    # delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});   実装済
   }
 `;
 
@@ -142,12 +142,6 @@ const resolvers = {
   Mutation: {
     commitContent,
     commitDirectory
-
-    //createDirectory,
-    //renameDirectory,
-    //deleteDirectory,
-    //copyDirectory,
-    //moveDirectory,
 
     //createBranch,
     //renameBranch,

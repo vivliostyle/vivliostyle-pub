@@ -1,5 +1,9 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
+import githubApp from './githubApp';
+import { Octokit } from '@octokit/rest';
+import { createAppAuth } from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 const getFiles = async (
   token: string,
@@ -9,14 +13,14 @@ const getFiles = async (
   path: string,
   getContents: boolean,
 ) => {
-  let files: {path:string}[] = [];
-  let contents: {[index: string]: string} = {};
+  let files: {path:string, isBinary?: boolean, text?:string, oid?:string}[] = [];
 
   // ファイルの内容を取得する
   const contentQuery = getContents
     ? `
     object {
      ... on Blob {
+        oid
         isBinary
         text
       }
@@ -55,7 +59,7 @@ const getFiles = async (
   for (const entry of entries) {
     if (entry.type == 'blob') {
       // console.log(entry.path);
-      files.push({path:entry.path});
+      files.push({path:entry.path, isBinary:entry.object.isBinary, text:entry.object.text, oid:entry.object.oid});
     } else if (entry.type == 'tree') {
       // console.log(entry.path);
       const subFiles = await getFiles(
@@ -66,11 +70,10 @@ const getFiles = async (
         entry.path,
         getContents,
       );
-      Array.prototype.push.apply(files, subFiles.files);
-      contents = {...contents, ...subFiles.contents};
+      Array.prototype.push.apply(files, subFiles);
     }
   }
-  return {files, contents};
+  return files;
 };
 
 /**
@@ -87,7 +90,7 @@ export const commitDirectory = async (
   context: queryContext,
   info: any,
 ) => {
-  // console.log('commitContent', parent, args, context, info);
+  // console.log('commitDirectory', parent, args, context, info);
 
   if (!context.token) {
     // Userのトークンが無ければ失敗
@@ -109,19 +112,43 @@ export const commitDirectory = async (
   // let newContent = params.newContent; // Base64エンコードされたコンテンツ(更新内容、新規作成内容)
   const removeOldPath = params.removeOldPath ?? false; // trueならoldPathで指定されたファイルを最後に削除
 
+  // GitHub Appによる認証付きGraphQLクライアントオブジェクトを作成
+  const installationId = await (async () => {
+    const appAuthentication = await githubApp({type:"app"});
+    const jwt = appAuthentication.token;
+    const octokit = new Octokit({
+      auth: `Bearer ${jwt}`,
+    });
+    const {data} = await octokit.apps.getRepoInstallation({owner, repo});
+    return data.id;
+  })();
+
+  const auth = createAppAuth({
+    appId: +process.env.GH_APP_ID,
+    privateKey: githubAppPrivateKey,
+    installationId: installationId,
+  });
+
+  const graphqlWithAuth = graphql.defaults({
+    request: {
+      hook: auth.hook
+    }
+  });
+
+
   const files = await getFiles(
     context.token,
     owner,
     repo,
     branch,
     oldPath,
-    false,
+    newPath !== null // newPathが指定されていれば既存ファイルの内容を取得する
   );
-  console.log(files);
+  // console.log(files);
 
   // ブランチのOIDを取得する
   // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。
-  const branchObj = (await graphql(`
+  const branchObj = (await graphqlWithAuth(`
     query getBranchOid(
       $owner: String!,
       $repo: String!, 
@@ -149,12 +176,36 @@ export const commitDirectory = async (
   )) as any;
   // 最新のコミットのObjectID
   const headOid = branchObj.repository.ref.target.oid;
+  
+  let additions:any[] = [];
+  if(newPath !== null) {
+    // REST APIでバイナリファイルを取得する
+    const octokit = new Octokit({
+      auth: `token ${context.token}`,
+    });
 
+    const getBinaryFile = async (oid:string) => {
+      const blob = await octokit.git.getBlob({
+        owner,
+        repo,
+        file_sha: oid,
+      });
+      // console.log(blob.url, blob.data.content);
+      return blob.data.content.replaceAll("\n",""); // 取得したコンテンツには改行文字が含まれているので除去する
+    }
 
-  const additions:any[] = [];
-  const deletions = removeOldPath ? files.files : [];
-  const result = await graphql(
-    `
+    const promises = files.map(async (f)=>{
+      const path = f.path.replace(oldPath,newPath);
+      const contents = f.isBinary ? await getBinaryFile(f.oid!) : Buffer.from(f.text!,"utf-8").toString("base64");
+      return {path, contents};
+    })
+    additions = await Promise.all(promises);
+    // console.log('additions', additions);
+  }
+
+  const deletions:{path:string}[] = removeOldPath ? files.map(f=> {return {path:f.path};}) : [] as {path:string}[];
+
+  const result = await graphqlWithAuth(`
       mutation commitContents(
         $repositoryNameWithOwner: String!
         $branch: String!
