@@ -6,8 +6,7 @@ import {useLogContext} from '@middlewares/contexts/useLogContext';
 import { useAppContext } from '@middlewares/contexts/useAppContext';
 import { gql } from '@apollo/client';
 import { isImageFile } from '@middlewares/frontendFunctions';
-
-
+import upath from 'upath';
 
 /**
  * 
@@ -75,7 +74,8 @@ export const FileUploadModal = ({
           log.error(`画像ファイルを取得できませんでした`, 1000);
           return; 
         }
-
+        const currentDir = repository.currentTree.map((f) => f.name).join('/');
+        const filePath = upath.join(currentDir, fileName);
         // TODO: リポジトリコンテクストにメソッド化したほうがowner,repo,branchの指定が不要になるので良いか
         const result = await app.gqlclient?.mutate({mutation:gql`
           mutation createFile($owner: String!, $repo: String!, $branch: String!, $path: String!, $encodedData: String!, $message: String!) {
@@ -96,7 +96,7 @@ export const FileUploadModal = ({
             owner: repository.owner, 
             repo: repository.repo,
             branch: repository.branch,
-            path: fileName, 
+            path: filePath, 
             encodedData,
             message:"create file"
           }
