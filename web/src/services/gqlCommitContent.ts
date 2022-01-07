@@ -1,5 +1,9 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
+import githubApp from './githubApp';
+import { Octokit } from '@octokit/rest';
+import { createAppAuth } from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 /**
  * Githubリポジトリ上のファイルを管理する
@@ -22,6 +26,7 @@ export const commitContent = async (
     // TODO: エラー処理
     return {state: false, message: 'ユーザトークンが異常です'};
   }
+
   const params = args.params;
   // 必須項目
   const owner = params.owner; // リポジトリオーナー名
@@ -36,6 +41,30 @@ export const commitContent = async (
   let newPath = params.newPath; // 新規パス(新規作成、移動/コピー先)
   let newContent = params.newContent; // Base64エンコードされたコンテンツ(更新内容、新規作成内容)
   const removeOldPath = params.removeOldPath ?? false; // trueならoldPathで指定されたファイルを最後に削除
+
+  // GitHub Appによる認証付きGraphQLクライアントオブジェクトを作成
+  const installationId = await (async () => {
+    const appAuthentication = await githubApp({type:"app"});
+    const jwt = appAuthentication.token;
+    const octokit = new Octokit({
+      auth: `Bearer ${jwt}`,
+    });
+    const {data} = await octokit.apps.getRepoInstallation({owner, repo});
+    return data.id;
+  })();
+
+  const auth = createAppAuth({
+    appId: +process.env.GH_APP_ID,
+    privateKey: githubAppPrivateKey,
+    installationId: installationId,
+  });
+
+  const graphqlWithAuth = graphql.defaults({
+    request: {
+      hook: auth.hook
+    }
+  });
+
 
   // 複製/移動/リネームのための既存ファイルのコンテントを取得するクエリ文字列
   let oldContentQuery = '';
@@ -68,7 +97,7 @@ export const commitContent = async (
 
   // ブランチのOIDを取得する
   // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。
-  const branchObj = (await graphql(
+  const branchObj = (await graphqlWithAuth(
     `
     query getBranchOid(
       $owner: String!,
@@ -96,9 +125,6 @@ export const commitContent = async (
       qualifiedName: `refs/heads/${branch}`,
       oldPathWithBranch,
       newPathWithBranch,
-      headers: {
-        authorization: `token ${context.token}`,
-      },
     },
   )) as any;
   console.log('branch obj', JSON.stringify(branchObj));
@@ -141,7 +167,7 @@ export const commitContent = async (
     deletions.push({path: oldPath});
   }
 
-  const result = await graphql(
+  const result = await graphqlWithAuth(
     `
       mutation commitContents(
         $repositoryNameWithOwner: String!
@@ -171,9 +197,6 @@ export const commitContent = async (
       }
     `,
     {
-      headers: {
-        authorization: `token ${context.token}`,
-      },
       repositoryNameWithOwner: `${owner}/${repo}`,
       branch,
       message,
