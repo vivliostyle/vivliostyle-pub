@@ -62,17 +62,18 @@ export default function FileEntry({
   }, [file]);
 
   /**
-   * ファイル名変更コンテクストメニュー
+   * ファイル 複製/リネーム
    * @param oldFilename
    * @param newFilename
-   * @param hash
+   * @param removeOldPath
+   * @param message
    */
-  const onRenameFile = (
+   const copyFile = async (
     oldFilename: string,
     newFilename: string,
-    hash: string | undefined,
+    removeOldPath: boolean,
+    message: string,
   ) => {
-    (async () => {
       const oldFilePath = upath.join(currentDir, oldFilename);
       const newFilePath = upath.join(currentDir, newFilename);
 
@@ -84,17 +85,18 @@ export default function FileEntry({
             $branch: String!
             $oldPath: String!
             $newPath: String!
+            $removeOldPath: Boolean!
             $message: String!
           ) {
             commitContent(
               params: {
-                owner: $owner,
-                repo: $repo,
-                branch: $branch,
-                oldPath: $oldPath,
-                newPath: $newPath,
-                removeOldPath: true,
-                message: $message,
+                owner: $owner
+                repo: $repo
+                branch: $branch
+                oldPath: $oldPath
+                newPath: $newPath
+                removeOldPath: $removeOldPath
+                message: $message
               }
             ) {
               state
@@ -108,25 +110,16 @@ export default function FileEntry({
           branch: repository.branch,
           oldPath: oldFilePath,
           newPath: newFilePath,
-          message: 'rename file',
+          removeOldPath,
+          message
         },
       })) as any;
 
-      console.log('rename result', result);
-
-      if (result.data.commitContent.state) {
-        log.success(
-          `ファイル(${oldFilePath})を(${newFilePath})にリネームしました`,
-          3000,
-        );
-        onReload();
-      } else {
-        log.error(`ファイル(${oldFilePath})のリネームに失敗しました: ${result.data.commitContent.message}`, 3000);
-      }
-    })();
+      console.log('copy result', result);
+      return result;
   };
 
-  const renameFile = (e: any) => {
+  const renameFile = async (e: any) => {
     setRenaming(false);
     // console.log('renameFile', e);
     const oldFilename = file.name;
@@ -134,83 +127,42 @@ export default function FileEntry({
     if (oldFilename === newFilename) {
       return;
     }
-    onRenameFile(oldFilename, newFilename, file.hash);
+    const result = await copyFile(oldFilename, newFilename, true ,'rename file');
+    if (result.data.commitContent.state) {
+      log.success(
+        `ファイル(${oldFilename})を(${newFilename})にリネームしました`,
+        3000,
+      );
+      onReload();
+    } else {
+      log.error(
+        `ファイル(${oldFilename})のリネームに失敗しました: ${result.data.commitContent.message}`,
+        3000,
+      );
+    }
   };
 
-  /**
-   * ファイル複製コンテクストメニュー
-   * TODO: renameと共通化する
-   * @param e 
-   */
-   const onDuplicateFile = (
-    oldFilename: string,
-    newFilename: string,
-    hash: string | undefined,
-  ) => {
-    (async () => {
-      const oldFilePath = upath.join(currentDir, oldFilename);
-      const newFilePath = upath.join(currentDir, newFilename);
-
-      const result = (await app.gqlclient?.mutate({
-        mutation: gql`
-          mutation duplicateFile(
-            $owner: String!
-            $repo: String!
-            $branch: String!
-            $oldPath: String!
-            $newPath: String!
-            $message: String!
-          ) {
-            commitContent(
-              params: {
-                owner: $owner,
-                repo: $repo,
-                branch: $branch,
-                oldPath: $oldPath,
-                newPath: $newPath,
-                removeOldPath: false,
-                message: $message,
-              }
-            ) {
-              state
-              message
-            }
-          }
-        `,
-        variables: {
-          owner: repository.owner,
-          repo: repository.repo,
-          branch: repository.branch,
-          oldPath: oldFilePath,
-          newPath: newFilePath,
-          message: 'duplicate file',
-        },
-      })) as any;
-
-      console.log('duplicate result', result);
-
-      if (result.data.commitContent.state) {
-        log.success(
-          `ファイル(${oldFilePath})を(${newFilePath})に複製しました`,
-          3000,
-        );
-        onReload();
-      } else {
-        log.error(`ファイル(${oldFilePath})の複製に失敗しました: ${result.data.commitContent.message}`, 3000);
-      }
-    })();
-  };
-
-  const duplicateFile = (e: any) => {
+  const duplicateFile = async (e: any) => {
     setDuplicating(false);
     const oldFilename = file.name;
     const newFilename = e.target!.value;
     if (oldFilename === newFilename) {
       return;
     }
-    onDuplicateFile(oldFilename, newFilename, file.hash);
-  }
-
+    const result = await copyFile(oldFilename, newFilename, false, "duplicate result");
+    if (result.data.commitContent.state) {
+      log.success(
+        `ファイル(${oldFilename})を(${newFilename})に複製しました`,
+        3000,
+      );
+      onReload();
+    } else {
+      log.error(
+        `ファイル(${oldFilename})の複製に失敗しました: ${result.data.commitContent.message}`,
+        3000,
+      );
+    }
+  };
 
   /**
    * ファイル削除コンテクストメニュー
@@ -323,40 +275,62 @@ export default function FileEntry({
           >
             {isRenaming ? (
               <UI.Input
+                autoFocus={true}
                 defaultValue={file.name}
-                onBlur={(e: any) => {
+                onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
                   setRenaming(false);
-                  renameFile(e);
+                  renameFile(event);
                 }}
-                onKeyPress={(e: any) => {
-                  if (e.key == 'Enter') {
-                    e.preventDefault();
-                    renameFile(e);
+                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (event.key == 'Enter') {
+                    event.preventDefault();
+                    renameFile(event);
+                  } else if (event.key === 'Esc' || event.key === 'Escape') {
+                    event.preventDefault();
+                    setRenaming(false);
                   }
+                }}
+                onClick={(event: React.MouseEvent<HTMLInputElement>) => {
+                  event.preventDefault();
+                  event.stopPropagation();
                 }}
               />
             ) : (
               <>
-              <UI.Text>
-                <UI.Icon as={icon} /> {file.name}
-              </UI.Text>
-              { isDuplicating ? (
-                <UI.Input
-                defaultValue={file.name}
-                onBlur={(e: any) => {
-                  setDuplicating(false);
-                  duplicateFile(e);
-                }}
-                onKeyPress={(e: any) => {
-                  if (e.key == 'Enter') {
-                    e.preventDefault();
-                    duplicateFile(e);
-                  }
-                }}
-              />
-              ):null}
+                <UI.Text>
+                  <UI.Icon as={icon} /> {file.name}
+                </UI.Text>
+                {isDuplicating ? (
+                  <UI.Input
+                    autoFocus={true}
+                    defaultValue={file.name}
+                    onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
+                      setDuplicating(false);
+                      duplicateFile(event);
+                    }}
+                    onKeyDown={(
+                      event: React.KeyboardEvent<HTMLInputElement>,
+                    ) => {
+                      console.log(event.key);
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        duplicateFile(event);
+                      } else if (
+                        event.key === 'Esc' ||
+                        event.key === 'Escape'
+                      ) {
+                        event.preventDefault();
+                        setDuplicating(false);
+                      }
+                    }}
+                    onClick={(event: React.MouseEvent<HTMLInputElement>) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                  />
+                ) : null}
               </>
-            ) }
+            )}
           </UI.Text>
         )}
       </ContextMenu>
