@@ -123,13 +123,13 @@ const fetcher = (url: string, idToken: string) =>
   }).then((r) => r.json());
 
 /**
- *
- * @param owner
- * @param repo
- * @param branch
- * @param basePath
- * @param contentRelativePath
- * @param user
+ * GitHubからコンテンツを取得してApplication Cacheに保存する
+ * @param owner    リポジトリオーナー名
+ * @param repo     リポジトリ名
+ * @param branch   ブランチ名
+ * @param basePath mdやhtmlのパス
+ * @param contentRelativePath mdやhtmlからの相対パス
+ * @param user     ログインユーザ
  * @returns
  */
 export const updateCacheFromPath = async (
