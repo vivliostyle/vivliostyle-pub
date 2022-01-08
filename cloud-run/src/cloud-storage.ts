@@ -27,6 +27,6 @@ export async function uploadFile(name: string, path: string): Promise<UploadFile
   })
   return {
     signedUrl: signedUrl[0],
-    url: `https://storage.cloud.google.com/${bucketName}/${filename}?hl=ja`;
+    url: `https://storage.cloud.google.com/${bucketName}/${filename}?hl=ja`
   }
 }
