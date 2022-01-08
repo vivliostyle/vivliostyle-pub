@@ -45,6 +45,7 @@ const themes = [
 
 interface BuildRecord {
   url: string | null;
+  signedUrl: string | null;
   repo: {
     owner: string;
     repo: string;
@@ -63,11 +64,11 @@ function useBuildStatus(
       .collection('builds')
       .doc(buildID)
       .onSnapshot(function (doc) {
-        const {url} = doc.data() as BuildRecord;
+        const {signedUrl} = doc.data() as BuildRecord;
         console.log('Current data: ', doc.data());
-        if (!url) return;
+        if (!signedUrl) return;
         unsubscribe();
-        if (onBuildFinished) onBuildFinished(url);
+        if (onBuildFinished) onBuildFinished(signedUrl);
       });
     return unsubscribe;
   }, [buildID, onBuildFinished]);
