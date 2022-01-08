@@ -12,7 +12,7 @@ export function Footer() {
       paddingLeft={10}
       fontSize={'0.5rem'}
     >
-      Vivliostyle Pub ver.0.0.1α [{currentFile.state ?? ''}]
+      Vivliostyle Pub ver.0.0.2α [{currentFile.state ?? ''}]
     </UI.Box>
   );
 }
