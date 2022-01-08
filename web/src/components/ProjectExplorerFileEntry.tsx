@@ -203,7 +203,7 @@ export default function FileEntry({
           owner: repository.owner,
           repo: repository.repo,
           branch: repository.branch,
-          path: filename,
+          path: filePath,
           message: 'delete file',
         },
       })) as any;
