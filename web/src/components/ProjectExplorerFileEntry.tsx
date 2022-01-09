@@ -236,6 +236,10 @@ export default function FileEntry({
     })();
   };
 
+  /**
+   * ファイルダウンロード コンテクストメニュー
+   * @param e 
+   */
   const onDownloadFile = async (e:any) => {
     e.preventDefault();
     e.stopPropagation();
@@ -248,8 +252,6 @@ export default function FileEntry({
       repo: repository.repo!,
       branch: repository.branch!,
     };
-    console.log('setFile props',props);
-
     WebApiFs.open(props)
       .then((fs) => {
         fs.readFile(path)
