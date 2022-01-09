@@ -19,6 +19,25 @@ import {
   VscSettingsGear,
   VscSymbolNamespace,
 } from 'react-icons/vsc';
+import { WebApiFs } from '@middlewares/fs/WebApiFS';
+import mime from 'mime-types';
+
+/**
+ * 与えられた文字列がBase64ならBufferを、そうでなければ文字列を返す
+ * TODO: メソッド名を替える
+ * @param str ファイルコンテンツの文字列
+ * @returns 
+ */
+function isBase64(str:string):Buffer|string {
+  if (str ==='' || str.trim() ===''){ return str; }
+  try {
+      const buffer = Buffer.from(str,'base64');
+      const str2 = Buffer.from(buffer).toString('base64');
+      return str2  == str.trim().replaceAll("\n","") ? buffer : str;
+  } catch (err) {
+      return str;
+  }
+}
 
 export default function FileEntry({
   file,
@@ -217,6 +236,53 @@ export default function FileEntry({
     })();
   };
 
+  const onDownloadFile = async (e:any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const path = upath.join(currentDir, file.name);
+
+    const props = {
+      user: app.user!,
+      owner: repository.owner!,
+      repo: repository.repo!,
+      branch: repository.branch!,
+    };
+    console.log('setFile props',props);
+
+    WebApiFs.open(props)
+      .then((fs) => {
+        fs.readFile(path)
+        .then((content) => {
+          // console.log('dispatch setFileCallback', seq,action.file,content);
+          if (content == undefined || content == null) { // 0バイトのファイルがあるため、!contentでは駄目
+            log.error(
+              `ファイルの取得が出来ませんでした(${path}) : ${content}`,
+              3000,
+            );
+            return false;
+          }
+          const type = mime.lookup(file.name) || 'application/octet-stream';
+          const decodedData:string|Buffer = isBase64(content as string);
+          const blob = new Blob([decodedData], {type});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          document.body.appendChild(a);
+          a.download = file.name;
+          a.href = url;
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        });
+      })
+      .catch((err) => {
+        log.error(
+          `ファイルの取得が出来ませんでした(${path}) : ${err.messsage}`,
+          3000,
+        );
+      });
+  }
+
   return (
     <UI.Container
       paddingInlineStart={1}
@@ -257,6 +323,13 @@ export default function FileEntry({
               }}
             >
               Delete File
+            </UI.MenuItem>
+            <UI.MenuItem
+              onClick={(e) => {
+                onDownloadFile(e);
+              }}
+            >
+              Download File
             </UI.MenuItem>
           </UI.MenuList>
         )}
