@@ -1,12 +1,9 @@
 import {NextApiHandler} from 'next';
-import {Octokit} from '@octokit/rest';
 import {stringify} from '@vivliostyle/vfm';
 
-import githubApp from '@services/githubApp';
 import firebaseAdmin from '@services/firebaseAdmin';
-import {createOrUpdateFileContentsInternal} from './createOrUpdateFileContents';
-import { createAppAuth } from '@octokit/auth-app';
-import { githubAppPrivateKey } from '@utils/keys';
+import { graphql } from '@octokit/graphql';
+import { decrypt } from '@utils/encryption';
 
 const commitSession: NextApiHandler<null> = async (req, res) => {
   const {sessionId, branch, style} = req.body;
@@ -26,6 +23,11 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
     return res.status(400).send(null);
   }
 
+  if (!idTokenDecoded?.githubAccessToken) {
+    return 405;
+  }
+  const decryptedToken = decrypt(idTokenDecoded.githubAccessToken);
+  
   const sessionSnapshot = await firebaseAdmin
     .firestore()
     .collection('users')
@@ -38,31 +40,105 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   }
   const {owner, repo, text, path} = sessionSnapshot.data()!;
 
-  // Save index.md
-  const installationId = await (async () => {
-    const appAuthentication = await githubApp({type:"app"});
-    const jwt = appAuthentication.token;
-    const octokit = new Octokit({
-      auth: `Bearer ${jwt}`,
-    });
-    const {data} = await octokit.apps.getRepoInstallation({owner, repo});
-    return data.id;
-  })();
-  const octokit = new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      appId: +process.env.GH_APP_ID,
-      privateKey: githubAppPrivateKey,
-      installationId: installationId,
+  const pathWithBranch = `${branch}:${path}`;
+  // ブランチのOIDを取得する
+  // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。
+  const branchObj = (await graphql(
+    `
+    query getBranchOid(
+      $owner: String!,
+      $repo: String!, 
+      $qualifiedName: String!, 
+      $pathWithBranch: String!
+    ) {
+      repository(owner: $owner, name: $repo) {
+        ref(qualifiedName: $qualifiedName) {
+          target {
+            ... on Commit {
+              oid
+            }
+          }
+        },
+        existsFile: object(expression: $pathWithBranch) {
+          ... on Blob {
+            oid
+          }
+        }
+      }
+    }
+  `,
+    {
+      owner,
+      repo,
+      qualifiedName: `refs/heads/${branch}`,
+      pathWithBranch,
+      headers: {
+        authorization: `token ${decryptedToken}`,
+      },
     },
+  )) as any;
+  // 最新のコミットのObjectID
+  const headOid = branchObj.repository.ref.target.oid;
+  console.log('branch obj', JSON.stringify(branchObj));
+
+  const additions = [];
+  additions.push({
+    path: path,
+    contents:  Buffer.from(text, 'utf8').toString('base64')
   });
 
-  await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path, Buffer.from(text, 'utf8').toString('base64'));
   if((path as string).endsWith('.md')) {
     const stringified = stringify(text, {style});
     const encoded =  Buffer.from(stringified, 'utf8').toString('base64');
-    await createOrUpdateFileContentsInternal(octokit, owner, repo, branch, path.replace(/\.md$/, '.html'), encoded);
+    additions.push({
+      path: path.replace(/\.md$/, '.html'),
+      contents: encoded
+    });
   }
+  // TODO: commitSessionはSaveDocumentsボタンが押されたときにだけ使用されるのでたぶんCreateになることはない
+  const message = branchObj.repository.existsFile ? `Update ${path}` : `Create ${path}`;
+
+  const result = await graphql(
+    `
+      mutation commitContents(
+        $repositoryNameWithOwner: String!
+        $branch: String!
+        $message: String!
+        $additions: [FileAddition]
+        $headOid: String!
+      ) {
+        createCommitOnBranch(
+          input: {
+            branch: {
+              repositoryNameWithOwner: $repositoryNameWithOwner
+              branchName: $branch
+            }
+            message: {headline: $message}
+            fileChanges: {additions: $additions}
+            expectedHeadOid: $headOid
+          }
+        ) {
+          # TODO: 対象ブランチ、ディレクトリのファイルリストを返せるようにする
+          commit {
+            # return values
+            oid # The Git object ID. 次のコミットにはこの値が必要
+          }
+        }
+      }
+    `,
+    {
+      repositoryNameWithOwner: `${owner}/${repo}`,
+      branch,
+      message,
+      additions,
+      headOid,
+      headers: {
+        authorization: `token ${decryptedToken}`,
+      },
+    },
+  );
+
+
   res.status(201).send(null);
 };
 

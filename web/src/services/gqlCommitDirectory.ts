@@ -1,9 +1,6 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
-import githubApp from './githubApp';
 import { Octokit } from '@octokit/rest';
-import { createAppAuth } from '@octokit/auth-app';
-import { githubAppPrivateKey } from '@utils/keys';
 
 const getFiles = async (
   token: string,
@@ -112,30 +109,6 @@ export const commitDirectory = async (
   // let newContent = params.newContent; // Base64エンコードされたコンテンツ(更新内容、新規作成内容)
   const removeOldPath = params.removeOldPath ?? false; // trueならoldPathで指定されたファイルを最後に削除
 
-  // GitHub Appによる認証付きGraphQLクライアントオブジェクトを作成
-  const installationId = await (async () => {
-    const appAuthentication = await githubApp({type:"app"});
-    const jwt = appAuthentication.token;
-    const octokit = new Octokit({
-      auth: `Bearer ${jwt}`,
-    });
-    const {data} = await octokit.apps.getRepoInstallation({owner, repo});
-    return data.id;
-  })();
-
-  const auth = createAppAuth({
-    appId: +process.env.GH_APP_ID,
-    privateKey: githubAppPrivateKey,
-    installationId: installationId,
-  });
-
-  const graphqlWithAuth = graphql.defaults({
-    request: {
-      hook: auth.hook
-    }
-  });
-
-
   const files = await getFiles(
     context.token,
     owner,
@@ -148,7 +121,7 @@ export const commitDirectory = async (
 
   // ブランチのOIDを取得する
   // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。
-  const branchObj = (await graphqlWithAuth(`
+  const branchObj = (await graphql(`
     query getBranchOid(
       $owner: String!,
       $repo: String!, 
@@ -205,7 +178,7 @@ export const commitDirectory = async (
 
   const deletions:{path:string}[] = removeOldPath ? files.map(f=> {return {path:f.path};}) : [] as {path:string}[];
 
-  const result = await graphqlWithAuth(`
+  const result = await graphql(`
       mutation commitContents(
         $repositoryNameWithOwner: String!
         $branch: String!
@@ -234,15 +207,15 @@ export const commitDirectory = async (
       }
     `,
     {
-      headers: {
-        authorization: `token ${context.token}`,
-      },
       repositoryNameWithOwner: `${owner}/${repo}`,
       branch,
       message,
       additions,
       deletions,
       headOid,
+      headers: {
+        authorization: `token ${context.token}`,
+      },
     },
   );
   console.log('gql result', result);
