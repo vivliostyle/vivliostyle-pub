@@ -212,6 +212,13 @@ export function MenuBar({
             <UI.MenuGroup title="Export">
               <UI.MenuItem onClick={onBuildPDFButtonClicked}>PDF</UI.MenuItem>
             </UI.MenuGroup>
+            <UI.MenuDivider />
+            <UI.MenuGroup title="Help">
+              <UI.MenuItem onClick={()=>{
+                let option = 'width=1024,height=768,menubar=no,toolbar=no,status=no,location=no';
+                window.open("https://vivliostyle.github.io/vfm/#/vfm","vfmhelp",option);
+              }}>VFM Spec</UI.MenuItem>
+            </UI.MenuGroup>
           </UI.MenuList>
         </UI.Menu>
       </UI.Flex>
