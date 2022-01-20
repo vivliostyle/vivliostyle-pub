@@ -24,7 +24,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   }
 
   if (!idTokenDecoded?.githubAccessToken) {
-    return 405;
+    return res.status(405).send(null);
   }
   const decryptedToken = decrypt(idTokenDecoded.githubAccessToken);
   
