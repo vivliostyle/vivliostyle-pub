@@ -6,15 +6,16 @@ import upath from 'upath';
 import {VFile} from 'theme-manager';
 import FileEntry from './ProjectExplorerFileEntry';
 import DirEntry from './ProjectExplorerDirEntry';
-import {VscNewFile, VscNewFolder} from 'react-icons/vsc';
+import {VscArrowUp, VscNewFile, VscNewFolder} from 'react-icons/vsc';
 import {CgCornerLeftUp} from 'react-icons/cg';
 import {
   getFileContentFromGithub,
   isImageFile,
 } from '@middlewares/frontendFunctions';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
-import {Center} from '@chakra-ui/react';
+import {Center, useDisclosure} from '@chakra-ui/react';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
+import {FileUploadModal} from './FileUploadModal';
 
 /**
  * プロジェクトエクスプローラー
@@ -25,6 +26,12 @@ export function ProjectExplorer() {
   const app = useAppContext();
   const repository = useRepositoryContext();
   const log = useLogContext();
+
+  const {
+    isOpen: isOpenFileUploadModal,
+    onOpen: onOpenFileUploadModal,
+    onClose: onCloseFileUploadModal,
+  } = useDisclosure();
 
   const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
 
@@ -217,6 +224,31 @@ export function ProjectExplorer() {
           >
             <UI.Icon as={VscNewFolder} w="1em" h="1em" p="0" />
           </UI.Button>
+          <UI.Button
+            title="upload file"
+            p="0"
+            h="0"
+            minH="1em"
+            minW="1em"
+            backgroundColor={'transparent'}
+            onClick={onOpenFileUploadModal}
+          >
+            <UI.Icon
+              as={VscArrowUp}
+              w="1em"
+              h="1em"
+              p="0"
+              border="solid 1px black"
+            />
+          </UI.Button>
+          <FileUploadModal
+            user={app.user}
+            isOpen={isOpenFileUploadModal}
+            onOpen={onOpenFileUploadModal}
+            onClose={onCloseFileUploadModal}
+            title="Upload File"
+            accept="*"
+          />
         </UI.Box>
         <hr />
       </UI.Flex>

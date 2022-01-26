@@ -9,18 +9,15 @@ import * as UI from '@components/ui';
 import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
-import {
-  useRepositoryContext,
-} from '@middlewares/contexts/useRepositoryContext';
+import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 
 import {useDisclosure} from '@chakra-ui/react';
 import {EditIcon, HamburgerIcon, ViewIcon} from '@chakra-ui/icons';
 import {Theme} from 'theme-manager';
-import { useCurrentThemeContext } from '@middlewares/contexts/useCurrentThemeContext';
-import { CustomTheme } from '@middlewares/themes/CustomTheme';
-import { PlainTheme } from '@middlewares/themes/PlainTheme';
-
+import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeContext';
+import {CustomTheme} from '@middlewares/themes/CustomTheme';
+import {PlainTheme} from '@middlewares/themes/PlainTheme';
 
 export function MenuBar({
   isProcessing,
@@ -206,6 +203,8 @@ export function MenuBar({
                 isOpen={isOpenFileUploadModal}
                 onOpen={onOpenFileUploadModal}
                 onClose={onCloseFileUploadModal}
+                title="Upload Image"
+                accept="image/*"
               />
             </UI.MenuGroup>
             <UI.MenuDivider />
@@ -214,10 +213,19 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Help">
-              <UI.MenuItem onClick={()=>{
-                let option = 'width=1024,height=768,menubar=no,toolbar=no,status=no,location=no';
-                window.open("https://vivliostyle.github.io/vfm/#/vfm","vfmhelp",option);
-              }}>VFM Spec</UI.MenuItem>
+              <UI.MenuItem
+                onClick={() => {
+                  let option =
+                    'width=1024,height=768,menubar=no,toolbar=no,status=no,location=no';
+                  window.open(
+                    'https://vivliostyle.github.io/vfm/#/vfm',
+                    'vfmhelp',
+                    option,
+                  );
+                }}
+              >
+                VFM Spec
+              </UI.MenuItem>
             </UI.MenuGroup>
           </UI.MenuList>
         </UI.Menu>

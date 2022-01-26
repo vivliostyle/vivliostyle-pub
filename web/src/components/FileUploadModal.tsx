@@ -27,11 +27,15 @@ export const FileUploadModal = ({
   isOpen,
   onOpen,
   onClose,
+  title,
+  accept,
 }: {
   user: User | null;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
+  title: string;
+  accept: string;
 }) => {
   const app = useAppContext();
   const repository = useRepositoryContext();
@@ -67,11 +71,11 @@ export const FileUploadModal = ({
           log.error(`ファイルサイズが大きすぎます(MAX:${MAX_SIZE}KB): ${file.name} GitHubのweb siteからアップロードしてください`, 1000);
           return;
         }
-        const encodedData = isImageFile(file.name) ? (await getBase64(file))?.toString().split(',')[1] : null;
+        const encodedData = (await getBase64(file))?.toString().split(',')[1];
 
         // console.log('upload image encodedData', encodedData);
         if(!encodedData) {
-          log.error(`画像ファイルを取得できませんでした`, 1000);
+          log.error(`ファイルを取得できませんでした`, 1000);
           return; 
         }
         const currentDir = repository.currentTree.map((f) => f.name).join('/');
@@ -103,15 +107,15 @@ export const FileUploadModal = ({
         }) as any;
         console.log('upload image result',result);
         if(result.data.commitContent.state) {
-          log.success(`画像を追加しました : ${file.name}`, 1000);
+          log.success(`ファイルを追加しました : ${file.name}`, 1000);
           repository.selectBranch(repository.branch!); // ファイル一覧の更新
         }else{
-          log.error(`画像を追加できませんでした : ${file.name}`, 1000);
+          log.error(`ファイルを追加できませんでした : ${file.name}`, 1000);
         }
         onClose();
       } catch (error) {
         console.error(error);
-        log.error(`画像を追加できませんでした : ${file.name}`, 1000);
+        log.error(`ファイルを追加できませんでした : ${file.name}`, 1000);
       } finally {
         setBusy(false);
       }
@@ -123,7 +127,7 @@ export const FileUploadModal = ({
     <UI.Modal isOpen={isOpen} onClose={onClose}>
       <UI.ModalOverlay />
       <UI.ModalContent>
-        <UI.ModalHeader>Upload Image</UI.ModalHeader>
+        <UI.ModalHeader>{title}</UI.ModalHeader>
         <UI.ModalCloseButton />
         <UI.ModalBody>
           <UI.InputGroup>
@@ -137,7 +141,7 @@ export const FileUploadModal = ({
             />
             <input
               type="file"
-              accept={'image/*'}
+              accept={accept}
               ref={inputRef}
               style={{display: 'none'}}
               onChange={onFileInputChange}
