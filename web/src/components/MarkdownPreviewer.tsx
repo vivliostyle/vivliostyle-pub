@@ -1,9 +1,8 @@
-import {useRef, useEffect, useMemo, useState} from 'react';
+import {useRef, useEffect, useState, memo} from 'react';
 
-import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
 import {usePreviewSourceContext} from '@middlewares/contexts/usePreviewSourceContext';
-import {useAppContext} from '@middlewares/contexts/useAppContext';
 import { useCurrentThemeContext } from '@middlewares/contexts/useCurrentThemeContext';
+import React from 'react';
 
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
@@ -11,62 +10,49 @@ const VIVLIOSTYLE_VIEWER_HTML_URL =
 interface PreviewerProps {}
 
 export const Previewer: React.FC<PreviewerProps> = ({ }) => {
-  const app = useAppContext();
-  const repository = useRepositoryContext();
-  const [contentReady, setContentReady] = useState<boolean>(false);
   const currentTheme = useCurrentThemeContext();
   const previewSource = usePreviewSourceContext();
 
+  const [currentPath,setCurrentPath] = useState<string|null>(null);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const viewerURL = useMemo(() => {
-    // Why Date.now()? -> disable viewer cache
+  useEffect(()=>{
+
+    const iframeWindow = iframeRef.current?.contentWindow;
+    if( ! iframeWindow){
+      return;
+    }
+
     let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
       previewSource.vpubPath
     }`;
     const stylePath = currentTheme.theme?.getStylePath()
-      ? '/vpubfs/'+currentTheme.theme.getStylePath()
+      ? '/vpubfs/'+currentTheme.theme?.getStylePath()
       : null;
     if (stylePath) {
       url += `&style=${stylePath}`;
     }else{
       console.log('no stylesheet');
     }
-    return url;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewSource, currentTheme.stylePath]);
-
-  useEffect(() => {
-    console.log('rerendering', previewSource.path); //, previewSource.text,repository,user);
-    if (
-      !app.user ||
-      previewSource.text == null ||
-      previewSource.path == null
-    ){
-      console.log('reload cancel');
-      setContentReady(false);
-      return;
+    if(currentPath != previewSource.vpubPath){
+      // 対象のファイルが変更された
+      iframeWindow.location.href = previewSource.vpubPath ? url : VIVLIOSTYLE_VIEWER_HTML_URL + '#x=empty.html';
+      setCurrentPath(previewSource.vpubPath);
+    }else{
+      // 対象のファイルは変わらず、テキストだけ変更された
+      iframeWindow.location.reload();
     }
-    console.log('iframe reload', viewerURL);
-    setContentReady(true);
-
-    if (iframeRef.current) {
-      // TODO: 描画完了するまでは再描画しない
-      // 以下で検知できるのはHTMLのonload
-      iframeRef.current!.onload = () => {
-        // console.log("読込完了"); // 実際にはonloadの後にvivliostyle.jsの処理が走るのでどうやって検知するか。
-      };
-    }
-  }, [app.user, previewSource, repository, viewerURL]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[previewSource, currentTheme.theme]);
 
   return (
-    <iframe
-      ref={iframeRef}
-      src={
-        contentReady ? viewerURL : VIVLIOSTYLE_VIEWER_HTML_URL + '#x=empty.html'
-      }
-      width="100%"
-      height="100%"
-    ></iframe>
+    <ViewerFrame iframeRef={iframeRef}></ViewerFrame>
   );
 };
+
+// iframeを作りなおすとページが先頭に戻ってしまうため、無駄なレンダリングを防ぐためにメモ化する
+type ViewerFrameProps = {iframeRef:any;};
+const ViewerFrame = memo<ViewerFrameProps>(function useViewerFrame({iframeRef}) {
+  return <iframe ref={iframeRef} width="100%" height="100%"></iframe>;
+});
