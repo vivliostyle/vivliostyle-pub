@@ -5,8 +5,8 @@ import {User} from 'firebase/auth';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
 import { useAppContext } from '@middlewares/contexts/useAppContext';
 import { gql } from '@apollo/client';
-import { isImageFile } from '@middlewares/frontendFunctions';
 import upath from 'upath';
+import { useTranslation } from 'react-i18next';
 
 /**
  * 
@@ -37,6 +37,8 @@ export const FileUploadModal = ({
   title: string;
   accept: string;
 }) => {
+  const {t, i18n} = useTranslation();
+
   const app = useAppContext();
   const repository = useRepositoryContext();
   const log = useLogContext();
@@ -57,25 +59,25 @@ export const FileUploadModal = ({
   const onUploadButtonClick = useCallback(() => {
     (async () => {
       if (file === null) {
-        log.warning('file not selected', 3000);
+        log.warning(t('ファイルが選択されていません'), 3000);
         return;
       }
       if (user === null) {
-        log.warning('user not found', 3000);
+        log.warning(t('ユーザ情報が取得できません'), 3000);
         return;
       }
       setBusy(true);
       try {
         const MAX_SIZE = 700; // Vercelによるアップロードサイズ上限(おそらく750KBあたり)
         if(file.size > MAX_SIZE * 1024) {
-          log.error(`ファイルサイズが大きすぎます(MAX:${MAX_SIZE}KB): ${file.name} GitHubのweb siteからアップロードしてください`, 1000);
+          log.error(t('ファイルサイズが大きすぎます',{MAX: MAX_SIZE,filename:file.name}), 1000);
           return;
         }
         const encodedData = (await getBase64(file))?.toString().split(',')[1];
 
         // console.log('upload image encodedData', encodedData);
         if(!encodedData) {
-          log.error(`ファイルを取得できませんでした`, 1000);
+          log.error(t('ファイルを取得できませんでした'), 1000);
           return; 
         }
         const currentDir = repository.currentTree.map((f) => f.name).join('/');
@@ -105,17 +107,17 @@ export const FileUploadModal = ({
             message:"create file"
           }
         }) as any;
-        console.log('upload image result',result);
+        // console.log('upload image result',result);
         if(result.data.commitContent.state) {
-          log.success(`ファイルを追加しました : ${file.name}`, 1000);
+          log.success(t('ファイルを追加しました',{filename: file.name}), 1000);
           repository.selectBranch(repository.branch!); // ファイル一覧の更新
         }else{
-          log.error(`ファイルを追加できませんでした : ${file.name}`, 1000);
+          log.error(t('ファイルを追加できませんでした', {filename: file.name}), 1000);
         }
         onClose();
       } catch (error) {
         console.error(error);
-        log.error(`ファイルを追加できませんでした : ${file.name}`, 1000);
+        log.error(t('ファイルを追加できませんでした', {filename: file.name}), 1000);
       } finally {
         setBusy(false);
       }

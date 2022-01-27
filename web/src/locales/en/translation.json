@@ -1,0 +1,9 @@
+{
+  "利用者アンケート": "Send feedback",
+  "不具合のフィードバック": "Report a problem",
+  "ファイルサイズが大きすぎます": "file too large (MAX:{{MAX}}KB): {{filename}}. upload from GitHub.",
+  "ファイルを取得できませんでした": "file not found",
+  "ユーザ情報が取得できません":"user not found",
+  "ファイルを追加しました":"file uploaded: {{filename}}",
+  "ファイルを追加できませんでした":"could not add the file: {{filename}}"
+}
