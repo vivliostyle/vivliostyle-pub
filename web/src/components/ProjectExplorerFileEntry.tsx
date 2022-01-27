@@ -372,9 +372,7 @@ export default function FileEntry({
               />
             ) : (
               <>
-                <UI.Text>
                   <UI.Icon as={icon} /> {file.name}
-                </UI.Text>
                 {isDuplicating ? (
                   <UI.Input
                     autoFocus={true}

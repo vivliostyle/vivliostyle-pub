@@ -229,9 +229,7 @@ export default function DirEntry({
               />
             ) : (
               <>
-                <UI.Text>
-                  <UI.Icon as={VscFolder} /> {file.name}/
-                </UI.Text>
+                <UI.Icon as={VscFolder} /> {file.name}/
                 {isDuplicating ? (
                   <UI.Input
                     autoFocus={true}
