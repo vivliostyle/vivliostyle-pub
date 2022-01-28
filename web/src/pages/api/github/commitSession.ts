@@ -97,9 +97,8 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   }
   // TODO: commitSessionはSaveDocumentsボタンが押されたときにだけ使用されるのでたぶんCreateになることはない
   const message = branchObj.repository.existsFile ? `Update ${path}` : `Create ${path}`;
-
-  const result = await graphql(
-    `
+try {
+  const result = await graphql(`
       mutation commitContents(
         $repositoryNameWithOwner: String!
         $branch: String!
@@ -137,9 +136,14 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
       },
     },
   );
+  console.log('commitSession result', result);
 
 
   res.status(201).send(null);
+} catch(e:any){
+  console.error('commitSession error',e.message);
+  res.status(400).send(null);
+}
 };
 
 export default commitSession;

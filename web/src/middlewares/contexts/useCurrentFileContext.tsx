@@ -284,11 +284,15 @@ export function CurrentFileContextProvider({
                   'x-id-token': await app.user!.getIdToken(),
                 },
               },
-            ).then(()=>{
-              log.success(`ファイルを保存しました(${upath.join(state.file?.dirname,state.file?.name)})`, 1000);
-              dispatch({type:"commitCallback"});
+            ).then((response)=>{
+              if(response.status == 201) {
+                log.success(`ファイルを保存しました(${upath.join(state.file?.dirname,state.file?.name)})`, 1000);
+                dispatch({type:"commitCallback"});  
+              } else {
+                log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)})`,1000);
+              }
             }).catch((err)=>{
-              log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)}) : ${err.message}`);
+              log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)}) : ${err.message}`,1000);
             });
           })();
           return state;
