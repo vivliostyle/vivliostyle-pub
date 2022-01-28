@@ -82,7 +82,7 @@ app.post('/', async (req, res) => {
       Buffer.from(req.body.message.data, 'base64').toString(),
     );
     const url = await buildAndUpload(owner, repo);
-    if (id) await firestore.collection('builds').doc(id).update({url});
+    if (id) await firestore.collection('builds').doc(id).update(url);
     console.log('>> Complete build: ' + url);
     res.status(204).send();
   } catch (error) {

@@ -27,6 +27,7 @@ import {db} from '@services/firebase';
 
 interface BuildRecord {
   url: string | null;
+  signedUrl: string | null;
   repo: {
     owner: string;
     repo: string;
@@ -42,12 +43,12 @@ function useBuildStatus(
     if (!buildID) return;
     console.log('useBuildStatus', buildID);
     const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
-      const {url} = doc.data() as BuildRecord;
+      const {signedUrl} = doc.data() as BuildRecord;
       console.log('Current data: ', doc.data());
-      if (!url) return;
+      if (!signedUrl) return;
       unsubscribe();
       console.log('buildStatus unsubscribed', unsubscribe);
-      if (onBuildFinished) onBuildFinished(url);
+      if (onBuildFinished) onBuildFinished(signedUrl);
     });
 
     // const unsubscribe = firebase
