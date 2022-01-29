@@ -1,54 +1,109 @@
-import {DocumentReference, updateDoc, serverTimestamp} from 'firebase/firestore';
+import {
+  DocumentReference,
+  updateDoc,
+  serverTimestamp,
+  DocumentData,
+} from 'firebase/firestore';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useReducer,
+  useState,
 } from 'react';
 import {FileState, getExt, isEditableFile} from '../frontendFunctions';
 import {useAppContext} from './useAppContext';
-import {useLogContext} from './useLogContext';
+import {Log, useLogContext} from './useLogContext';
 import {useRepositoryContext} from './useRepositoryContext';
 import {WebApiFs} from '../fs/WebApiFS';
 import upath from 'upath';
-import { VFile } from 'theme-manager';
-import { useCurrentThemeContext } from './useCurrentThemeContext';
-import { VPUBFS_ROOT } from '@middlewares/previewFunctions';
+import {VFile} from 'theme-manager';
+import {useCurrentThemeContext} from './useCurrentThemeContext';
+import {VPUBFS_ROOT} from '@middlewares/previewFunctions';
+import {t} from 'i18next';
 
 /**
  * エディタで編集しているファイル情報
  */
 export type CurrentFile = {
-  dirname: string | null;
   file: VFile | null; // ファイル情報
   text: string; // 現在のテキスト
-  ext: string; // 拡張子
+  ext: string; // 拡張子 何箇所かで使うのでここに保持しておく
   state: FileState; // 状態
-  session?: DocumentReference; // firestoreのセッションID
+  timer?: NodeJS.Timeout;
   modify: (text: string) => void; // テキスト更新の更新メソッド
   commit: () => void; // ファイルのコミットメソッド
-  timer?: NodeJS.Timeout;
 };
 
+/**
+ * React Context
+ */
 const CurrentFileContext = createContext({} as CurrentFile);
 
 export function useCurrentFileContext() {
   return useContext(CurrentFileContext);
 }
 
+/**
+ * useReducer用のAction定義
+ */
 type CurrentFileActions =
-  | {type: 'modify'; text: string}
-  | {type: 'setFile'; file: VFile | null}
+  | {type: 'modify'; text: string; session: DocumentReference}
   | {
       type: 'setFileCallback';
-      seq: number;
       file: VFile | null;
       content: string;
-      session: DocumentReference;
+      session: DocumentReference | null;
+      state: FileState;
+      _log: Log;
     }
-  | {type: 'commit'}
   | {type: 'commitCallback'};
+
+/**
+ * useReducer用のディスパッチャ定義
+ * コンポーネント内でディスパッチャを定義すると更新の度に新しい関数オブジェクトが作られて多重呼び出しになるので注意
+ * @param state  現在の状態
+ * @param action アクションオブジェクト
+ * @returns 新しい状態
+ */
+const reducer = (
+  state: CurrentFile,
+  action: CurrentFileActions,
+): CurrentFile => {
+  switch (action.type) {
+    // 内容の編集
+    case 'modify':
+      // console.log('modify');
+      if (state.timer) {
+        // タイマーが有効なら一度解除する
+        clearTimeout(state.timer);
+      }
+      const timer = setTimeout(() => {
+        // 編集後2秒間次の編集がされなければfirestoreに編集内容をアップロードする
+        updateDoc(action.session!, {
+          userUpdatedAt: serverTimestamp(),
+          text: action.text,
+        }).then(() => {});
+      }, 2000);
+      return {...state, state: FileState.modified, text: action.text, timer};
+
+    // ファイルの選択が完了
+    case 'setFileCallback':
+      // console.log('setFileCallback', action);
+      return {
+        ...state,
+        state: FileState.init,
+        file: action.file,
+        text: action.content,
+        ext: action.file ? getExt(action.file.name) : '',
+      };
+
+    // ファイル保存が完了
+    case 'commitCallback':
+      return {...state, state: FileState.clean};
+  }
+};
 
 /**
  * テキスト編集ごとにかかる更新範囲を限定するため、
@@ -72,237 +127,197 @@ export function CurrentFileContextProvider({
   const log = useLogContext();
   const currentTheme = useCurrentThemeContext();
 
+  const [state, setState] = useState<FileState>(FileState.none);
+  // firestoreのsessionId commitSession APIを利用するために必要
+  const [session, setSession] =
+    useState<DocumentReference<DocumentData> | null>(null);
+
   /**
    * テキストが編集された
    */
   const modify = useCallback((text: string) => {
-    dispatch({type: 'modify', text: text});
+    setSession((pre) => {
+      // preにはレンダリング前でも最新の値が入っている
+      if (pre) {
+        dispatch({type: 'modify', text: text, session: pre});
+      }
+      return pre;
+    });
   }, []);
 
   /**
    * 編集ファイルの保存
    * TODO: ファイルリストの再読み込み
    */
-  const commit = useCallback(() => {
-    dispatch({type: 'commit'});
-  }, []);
+  const commit = () => {
+    // console.log('commit action currentTheme', currentTheme, state);
+    (async () => {
+      // カスタムテーマが選択されている場合、CSSのパスを取得する
+      let style;
+      if (currentTheme.theme?.name === 'vivliostyle-custom-theme') {
+        // TODO: 以下のパスの処理を整理する
+        const docPath = file?.dirname!;
+        const stylePath = currentTheme.stylePath
+          ? upath.relative(VPUBFS_ROOT, currentTheme.stylePath)
+          : undefined;
+        style = stylePath ? upath.relative(docPath, stylePath) : undefined;
+      }
+
+      try {
+        // Web APIを呼び出すためのアクセストークンを取得する
+        const idToken = await app.user!.getIdToken();
+        let sessionId;
+        setSession((pre) => {
+          // preにはレンダリング前でも最新の値が入っている
+          sessionId = pre?.id;
+          return pre;
+        });
+        // コミットAPIの呼び出し
+        const response = await fetch('/api/github/commitSession', {
+          method: 'PUT',
+          body: JSON.stringify({
+            sessionId: sessionId,
+            branch: repository.branch,
+            style: style,
+          }),
+          headers: {
+            'content-type': 'application/json',
+            'x-id-token': idToken,
+          },
+        });
+        if (response.status == 201) {
+          log.success(
+            t('ファイルを保存しました', {filepath: file?.path}),
+            1000,
+          );
+          dispatch({type: 'commitCallback'});
+        } else {
+          // TODO: ステータスコードに応じたエラーメッセージを出力
+          log.error(
+            t('ファイルの保存に失敗しました', {
+              filepath: file?.path,
+              error: `status code ${response.status}`,
+            }),
+            1000,
+          );
+        }
+      } catch (err: any) {
+        log.error(
+          t('ファイルの保存に失敗しました', {
+            filepath: file?.path,
+            error: err.message,
+          }),
+          1000,
+        );
+      }
+    })();
+  };
 
   useEffect(() => {
-    console.log('call setFileDispatch', file);
-    dispatch({type: 'setFile', file: file});
+    // 上位コンポーネントから渡されたfileが更新された
+    (async () => {
+      if (state == FileState.modified || state == FileState.saved) {
+        if (!confirm(t('ファイルを保存していません。変更を破棄しますか?'))) {
+          // ファイルの切り替えをキャンセル
+          return;
+        }
+      }
+      // 同じファイルを選択した場合何もしない
+      // const newFilePath = file?.path;
+      // const pastFilePath = state.file
+      //   ? upath.join(state.file?.dirname, state.file?.name)
+      //   : '';
+      // if (
+      //   (action.file == null && state.file == null) ||
+      //   newFilePath === pastFilePath
+      // ) {
+      //   if (isEditableFile(action.file?.name)) {
+      //     // 同じファイルを選択していても編集可能ファイルならスピナーを解除する
+      //     onReady(action.file);
+      //     return {...state, state: FileState.init};
+      //   }
+      //   return state;
+      // }
+      if (!file) {
+        // ファイル未選択なら選択解除
+        onReady(null);
+        setState(FileState.none);
+        dispatch({
+          type: 'setFileCallback',
+          file: null,
+          content: '',
+          session: null,
+          state: FileState.none,
+          _log: log,
+        });
+        return;
+      }
+      // console.log('setFile filePath', file.path);
+      if (!isEditableFile(file.path)) {
+        // エディタで編集不可能なファイル
+        // 画像ファイルはProjectExplorerの段階でライトボックス表示しているのでここまでこない
+        log.error(
+          t('編集できないファイル形式です', {filepath: file.path}),
+          3000,
+        );
+        onReady(file);
+        return;
+      }
+      // console.log('setFile props', props);
+      try {
+        const props = {
+          user: app.user!,
+          owner: repository.owner!,
+          repo: repository.repo!,
+          branch: repository.branch!,
+        };
+        const fs = await WebApiFs.open(props);
+        const content = await fs.readFile(file.path);
+        // console.log('dispatch setFileCallback', seq,action.file,content);
+        if (content == undefined || content == null) {
+          // 0バイトのファイルがあるため、!contentでは駄目
+          log.error(
+            t('ファイルの取得が出来ませんでした', {filepath: file.path}),
+            3000,
+          );
+          return state;
+        }
+        const session = await fs.getFileSession(file.path);
+        // クエリパラメータにファイル名を設定
+        setQueryParam(file);
+        log.info(t('ファイルを選択しました', {filepath: file.path}));
+        setSession(session);
+        onReady(file);
+        dispatch({
+          type: 'setFileCallback',
+          file: file,
+          content: content.toString(),
+          session,
+          state: FileState.init,
+          _log: log,
+        });
+      } catch (err: any) {
+        log.error(
+          t('セッション情報が取得できませんでした', {filepath: file.path}),
+          3000,
+        );
+        console.error(err);
+        onReady(file);
+      }
+    })();
   }, [file]);
 
   /**
    * 初期値
    */
   const initialState = {
-    state: FileState.none,
+    // 状態
+    state,
+    // メソッド
     modify,
     commit,
   } as CurrentFile;
 
-  let seq = 0;
-
-  const reducer = useCallback(
-    (state: CurrentFile, action: CurrentFileActions): CurrentFile => {
-      switch (action.type) {
-
-        // 内容の編集
-        case 'modify':
-          console.log('modify');
-          // 2秒たっても次のmodifyがこなければsessionを更新する
-          if(state.timer) {
-            clearTimeout(state.timer);            
-          }
-          const timer = setTimeout(()=>{
-            console.log('modify uppdate session');
-            updateDoc(state.session!,{
-              userUpdatedAt: serverTimestamp(),
-              text: action.text,
-            })
-            .then(() => {
-            });
-          },2000);
-          return {...state, state: FileState.modified, text: action.text, timer};
-
-        // ファイルの選択
-        case 'setFile':
-          console.log('setFile', action);
-          if(state.state == FileState.modified || state.state == FileState.saved) {
-            if(! confirm('ファイルを保存していません。変更を破棄しますか?')){
-              // ファイルの切り替えをキャンセル
-              return state;
-            }
-          }
-          // 同じファイルを選択した場合何もしない
-          const newFilePath = action.file ? upath.join(action.file?.dirname, action.file?.name) : '';
-          const pastFilePath = state.file ? upath.join(state.file?.dirname, state.file?.name) : '';
-          if ( (action.file == null && state.file == null)  ||
-            newFilePath === pastFilePath
-          ) {
-            if(isEditableFile(action.file?.name)) {
-              // 同じファイルを選択していても編集可能ファイルならスピナーを解除する
-              onReady(action.file);
-              return {...state, state: FileState.init};
-            }
-            return state;
-          }
-          if (!action.file) {
-            // 選択解除
-            onReady(null);
-            return {...state, file: null, state: FileState.none, timer:undefined};
-          }
-          const filePath = action.file?.name!;
-          const dir = repository.currentTree.map(t=>t.name).join('/');
-          const path = upath.join(dir,filePath);
-          console.log('setFile filePath', path);
-          if (action.file) {
-            log.info('ファイルが選択されました : ' + path);
-          }
-          if (!isEditableFile(path)) {
-            // 画像などのエディタで編集不可能なファイル
-            // TODO: 画像ビューワー
-            log.error(
-              '編集できないファイル形式です : ' + path,
-              3000,
-            );
-            onReady(action.file);
-            return {...state, state: FileState.none, timer:undefined};
-          }
-          const props = {
-            user: app.user!,
-            owner: repository.owner!,
-            repo: repository.repo!,
-            branch: repository.branch!,
-          };
-          console.log('setFile props',props);
-
-          WebApiFs.open(props)
-            .then((fs) => {
-              fs.readFile(path)
-              .then((content) => {
-                // console.log('dispatch setFileCallback', seq,action.file,content);
-                if (content == undefined || content == null) { // 0バイトのファイルがあるため、!contentでは駄目
-                  log.error(
-                    `ファイルの取得が出来ませんでした(${path}) : ${content}`,
-                    3000,
-                  );
-                  return state;
-                }
-                fs.getFileSession(path)
-                  .then((session) => {
-                    dispatch({
-                      type: 'setFileCallback',
-                      seq,
-                      file: action.file,
-                      content: content.toString(),
-                      session,
-                    });
-                  })
-                  .catch((err) => {
-                    log.error(
-                      `セッション情報が取得できませんでした(${path}): ${err.message}`,
-                      3000,
-                    );
-                  });
-              });
-            })
-            .catch((err) => {
-              log.error(
-                `ファイルの取得が出来ませんでした(${path}) : ${err.messsage}`,
-                3000,
-              );
-              console.error(err);
-              onReady(action.file);
-            });
-          return {...state, state: FileState.none};
-
-        // ファイルの選択が完了
-        case 'setFileCallback':
-          console.log('setFileCallback' /*, action*/);
-          // 多重処理をキャンセル
-          if (action.seq != seq) {
-            console.log('dispatch cancel');
-            return state;
-          } else {
-            seq++;
-          }
-          if (action.file) {
-            onReady(action.file);
-            
-            // クエリパラメータにファイル名を設定
-            const url = new URL(window.location.toString());
-            if(action.file) {
-              url.searchParams.set('file', action.file?.path!);
-            }else{
-              url.searchParams.delete('file');
-            }
-            history.pushState({}, '', url);    
-  
-            return {
-              ...state,
-              state: FileState.init,
-              file: action.file,
-              text: action.content,
-              ext: getExt(action.file.name),
-              session: action.session,
-            };
-          } else {
-            // ファイル情報が取得できなかった
-            log.error(`ファイル情報が取得できませんでした(${action.file!.name!})`);
-            onReady(action.file);
-            return {
-              ...state,
-              state: FileState.none,
-              file: null,
-              session: undefined,
-            };
-          }
-        
-        // ファイルを保存
-        case 'commit':
-          (async () => {
-          console.log("commit action currentTheme", currentTheme,state);
-          let style;
-          if(currentTheme.theme?.name ==="vivliostyle-custom-theme" ) {
-            // TODO: 以下のパスの処理を整理する
-            const docPath = state.file?.dirname!;
-            const stylePath = currentTheme.stylePath ? upath.relative( VPUBFS_ROOT,currentTheme.stylePath) : undefined;
-            style = stylePath ? upath.relative(docPath, stylePath) : undefined;
-          }
-          await fetch(
-              '/api/github/commitSession',
-              {
-                method: 'PUT',
-                body: JSON.stringify({
-                  sessionId:state.session?.id, 
-                  branch:repository.branch,
-                  style: style,
-                }),
-                headers: {
-                  'content-type': 'application/json',
-                  'x-id-token': await app.user!.getIdToken(),
-                },
-              },
-            ).then((response)=>{
-              if(response.status == 201) {
-                log.success(`ファイルを保存しました(${upath.join(state.file?.dirname,state.file?.name)})`, 1000);
-                dispatch({type:"commitCallback"});  
-              } else {
-                log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)})`,1000);
-              }
-            }).catch((err)=>{
-              log.error(`ファイルの保存に失敗しました。(${upath.join(state.file?.dirname,state.file?.name)}) : ${err.message}`,1000);
-            });
-          })();
-          return state;
-        case 'commitCallback':
-          return {...state, state: FileState.clean};
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app, repository, currentTheme],
-  );
   const [context, dispatch] = useReducer(reducer, initialState);
 
   return (
@@ -310,4 +325,18 @@ export function CurrentFileContextProvider({
       {children}
     </CurrentFileContext.Provider>
   );
+
+  /**
+   * クエリパラメータのfile属性にファイルパスをセットする
+   * @param file
+   */
+  function setQueryParam(file: VFile) {
+    const url = new URL(window.location.toString());
+    if (file) {
+      url.searchParams.set('file', file.path);
+    } else {
+      url.searchParams.delete('file');
+    }
+    history.pushState({}, '', url);
+  }
 }

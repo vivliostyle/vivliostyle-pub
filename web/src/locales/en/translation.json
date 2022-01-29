@@ -5,5 +5,12 @@
   "ファイルを取得できませんでした": "file not found",
   "ユーザ情報が取得できません":"user not found",
   "ファイルを追加しました":"file uploaded: {{filename}}",
-  "ファイルを追加できませんでした":"could not add the file: {{filename}}"
+  "ファイルを追加できませんでした":"could not add the file: {{filename}}",
+  "ファイルを保存しました":"file saved: {{filepath}}",
+  "ファイルの保存に失敗しました":"failed to save the file ({{filepath}}): {{error}}",
+  "ファイルを保存していません。変更を破棄しますか?":"You have not saved the file. Do you want to discard the changes?",
+  "編集できないファイル形式です":"File format cannot be edited: {{filepath}}",
+  "ファイルの取得が出来ませんでした":"could not retrieve the file: {{filepath}}",
+  "ファイルを選択しました":"selected a file: {{filepath}}",
+  "セッション情報が取得できませんでした":"session could not be retrieved: {{filepath}}"
 }

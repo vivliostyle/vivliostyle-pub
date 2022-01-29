@@ -2,7 +2,7 @@
 import {Fs} from "theme-manager";
 import upath from "upath";
 
-type VFileType = "dir" | "file" | "others";
+export type VFileType = "dir" | "file" | "others";
 
 /**
  * 仮想ファイル
@@ -72,6 +72,7 @@ export class VFile {
    */
   public async getContent(json?: boolean) {
     try {
+      // console.log('getContent',this.dirname,this.name);
       const filePath = upath.relative("/",upath.join(this.dirname, this.name));
       // TODO: hash値を使って無駄なトラフィックを減らす
       // readFileの引数はfilePathではなく、VFileで良いのでは

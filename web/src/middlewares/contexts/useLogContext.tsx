@@ -16,7 +16,7 @@ type LogEntry = {
   message: ReactNode;
 };
 
-type Log = {
+export type Log = {
   info: (message: ReactNode, toastDuration?: number) => void;
   error: (message: ReactNode, toastDuration?: number) => void;
   success: (message: ReactNode, toastDuration?: number) => void;
