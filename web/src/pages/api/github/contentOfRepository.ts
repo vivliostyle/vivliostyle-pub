@@ -14,6 +14,7 @@ export type ContentOfRepositoryApiResponse = {
   oid: string;
 };
 
+// pathは先頭に/が無いこと
 const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null> =
   async (req, res) => {
     const {owner, repo, path, branch, oid} = req.query;
@@ -27,6 +28,8 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
       console.log('validation error');
       return res.status(400).send(null);
     }
+
+
     const idToken = req.headers['x-id-token'];
     if (!idToken) {
       return res.status(401).send(null);

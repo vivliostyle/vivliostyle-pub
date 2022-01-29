@@ -6,4 +6,4 @@ import {SingleFileTheme} from './SingleFileTheme';
 import {VFile,VFileType} from './VFile';
 
 export {ThemeManager, PackageTheme, SingleFileTheme, VFile};
-export type {Theme, Fs};
+export type {Theme, Fs, VFileType};

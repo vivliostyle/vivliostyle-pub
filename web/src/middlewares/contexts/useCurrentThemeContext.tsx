@@ -10,7 +10,6 @@ import {t} from 'i18next';
 type CurrentTheme = {
   theme: Theme | null;
   stylePath: string | null; // viewer.jsのstyle= に渡すパス
-
   changeTheme: (theme: Theme | null) => void;
 };
 

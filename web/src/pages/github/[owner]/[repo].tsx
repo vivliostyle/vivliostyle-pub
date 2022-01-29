@@ -82,6 +82,12 @@ const GitHubOwnerRepo = () => {
 
   const [isAutoReload, setAutoReload] = useState<boolean>(true);
 
+  // クエリパラメータでカレントブランチ、カレントファイルが指定されている
+  const url = new URL(window.location.toString());
+  const paramBranch = url.searchParams.get('branch')?? undefined;
+  const paramFile = url.searchParams.get('file') ?? undefined;
+  
+
   // check login
   useEffect(() => {
     if (!app.user) {
@@ -212,7 +218,7 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <CurrentThemeContextProvider>
-          <RepositoryContextProvider owner={owner} repo={repo}>
+          <RepositoryContextProvider owner={owner} repo={repo} branch={paramBranch} file={paramFile} >
             <PreviewSourceContextProvider isAutoReload={isAutoReload}>
               <UI.Box height={'calc(100vh - 4rem)'}>
                 {/* Wrapper  サイズ固定*/}

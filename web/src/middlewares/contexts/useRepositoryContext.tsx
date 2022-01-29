@@ -13,6 +13,7 @@ import {useLogContext} from './useLogContext';
 import {CoreProps} from '../vivliostyle.config';
 import {WebApiFs} from '../fs/WebApiFS';
 import {gql} from '@apollo/client';
+import upath from 'upath';
 
 export type Repository = {
   id: number;
@@ -23,7 +24,7 @@ export type Repository = {
   branch: string | null;
   currentFile: VFile | null;
   currentConfig: CoreProps | null;
-  currentTree: VFile[]; // カレントディレクトリを配列として保持 Rootは含まない 例[SubのVFile,Sub2のVFile]
+  currentTree: VFile[]; // カレントディレクトリを配列として保持 Rootは含まない 例 /Sub/Sub2 => [SubのVFile,Sub2のVFile]
   branches: string[];
   full_name: string;
   defaultBranch: string;
@@ -52,6 +53,7 @@ type Actions =
       defaultBranch: string;
       branch: string;
       files: VFile[];
+      file?: VFile;
     }
   | {type: 'selectBranch'; branch: string; tree?:VFile[]; }
   | {type: 'selectBranchCallback'; branch: string; files: VFile[]; tree?: VFile[];}
@@ -71,15 +73,19 @@ export function RepositoryContextProvider({
   children,
   owner,
   repo,
+  branch,
+  file
 }: {
   children: JSX.Element;
   owner: string;
   repo: string;
+  branch?: string;
+  file?: string;
 }) {
   console.log('[repositoryContext]', owner, repo);
   const log = useLogContext();
   const app = useAppContext();
-  const [file, setFile] = useState<VFile | null>(null);
+  const [currentFile, setFile] = useState<VFile | null>(null);
 
   const config = async () => {
     // const config = useVivlioStyleConfig({
@@ -162,6 +168,9 @@ export function RepositoryContextProvider({
     (state: Repository, action: Actions): Repository => {
       switch (action.type) {
         case 'selectRepositoryCallback':
+          if(action.file) {
+            setFile(action.file);
+          }
           return {
             ...state,
             owner: action.owner,
@@ -342,7 +351,7 @@ export function RepositoryContextProvider({
       if (!app.user || app.isPending) {
         return null;
       }
-      console.log('selectRepostiory', owner, repo);
+      console.log('selectRepostiory', owner, repo, branch, filePath);
       (async () => {
         const repository = app.repositories?.find(
           (rep) => rep.owner == owner && rep.repo == repo,
@@ -360,7 +369,14 @@ export function RepositoryContextProvider({
         };
         console.log('selectRepository', props);
         const fs: WebApiFs = await WebApiFs.open(props);
-        const files = await fs.readdir('/');
+        const dirname = filePath ? upath.dirname(filePath):'';
+        const files = await fs.readdir(dirname);
+        let file;
+        if(filePath) {
+          const name = upath.basename(filePath);
+          file = new VFile({fs,dirname,type:'file',name});
+        }
+
         if (dispatch) {
           dispatch({
             type: 'selectRepositoryCallback',
@@ -370,13 +386,10 @@ export function RepositoryContextProvider({
             defaultBranch,
             branch: branch ?? defaultBranch,
             files,
+            file
           });
         }
-        // fetchFiles(app.user!, owner, repo, defaultBranch, '')
-        //   .then((files) => {
 
-        //   })
-        //   .catch((e) => console.error(e));
       })();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -387,12 +400,8 @@ export function RepositoryContextProvider({
     if (!app.user || app.isPending) {
       return;
     }
-    // クエリパラメータでカレントブランチ、カレントファイルが指定されている
-    const url = new URL(window.location.toString());
-    const paramBranch = url.searchParams.get('branch')?? undefined;
-    const paramFile = url.searchParams.get('file') ?? undefined;
-    selectRepository(owner, repo, paramBranch, paramFile);
-  }, [app.isPending, app.user, owner, repo, selectRepository]);
+    selectRepository(owner, repo, branch, file);
+  }, [app.isPending, app.user, branch, file, owner, repo, selectRepository]);
 
 
   /**
@@ -415,7 +424,7 @@ export function RepositoryContextProvider({
   */
   return (
     <RepositoryContext.Provider value={repository}>
-      <CurrentFileContextProvider onReady={onReady} file={file}>
+      <CurrentFileContextProvider onReady={onReady} file={currentFile}>
         {children}
       </CurrentFileContextProvider>
     </RepositoryContext.Provider>

@@ -15,5 +15,6 @@
   "セッション情報が取得できませんでした":"session could not be retrieved: {{filepath}}",
   "テーマを変更しました":"theme has been changed.:{{themeName}} {{themePath}}",
   "テーマの準備に失敗しました":"failed to prepare the theme: {{themeStyle}} {{error}}",
-  "テーマが大きすぎます":"file size too large: {{error}}"
+  "テーマが大きすぎます":"file size too large: {{error}}",
+  "プレビュー変換に失敗しました":"プレビュー変換に失敗しました({{filepath}}):{{error}}"
 }

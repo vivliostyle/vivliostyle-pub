@@ -160,6 +160,7 @@ export class WebApiFs implements Fs {
     path: string, // TODO: pathからtree_shaを取得する
     options?: string | Object,
   ): Promise<VFile[]> {
+    console.log('readdir',path);
     if (options) {
       throw new Error('WebApiFs::readdir options not implemented');
     } // オプション未実装
@@ -178,6 +179,7 @@ export class WebApiFs implements Fs {
         },
       },
     );
+    path = path ?? '/';
     const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
     // console.log('data', data.tree);
     const files = data.tree.map((tree) => {

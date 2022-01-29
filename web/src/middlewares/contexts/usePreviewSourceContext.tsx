@@ -5,16 +5,14 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import {DocumentData, DocumentReference} from 'firebase/firestore';
 import {FileState, isEditableFile} from '../frontendFunctions';
-import {useRepositoryContext} from './useRepositoryContext';
-import {useAppContext} from './useAppContext';
+import {Repository, useRepositoryContext} from './useRepositoryContext';
+import {AppContext, useAppContext} from './useAppContext';
 import {CurrentFile, useCurrentFileContext} from './useCurrentFileContext';
-import {
-  transpileMarkdown,
-} from '../previewFunctions';
-import {useLogContext} from './useLogContext';
-import { VFile } from 'theme-manager';
+import {transpileMarkdown} from '../previewFunctions';
+import {Log, useLogContext} from './useLogContext';
+import {VFile} from 'theme-manager';
+import {t} from 'i18next';
 
 /**
  * 遅延処理
@@ -42,14 +40,12 @@ export type PreviewSource = {
   vpubPath: string | null; // viewer.jsのx= に渡すパス
   text: string | null;
   // パブリック メソッドに相当
-  // changeFile: (file:VFile|null) => void; // TODO: 使われていない?
-  commit: (
-    session: DocumentReference<DocumentData> | undefined,
-    branch: string | undefined,
-  ) => void;
-  reload: (file:VFile|null) => void;
+  reload: (file: VFile | null) => void;
 };
 
+/**
+ * useReducer用のAction定義
+ */
 type Actions =
   | {
       type: 'changeFileCallback';
@@ -57,12 +53,7 @@ type Actions =
       vPubPath: string | null;
       text: string | null;
     }
-  | {type: 'reload'; currentFile:CurrentFile|null; }
-  | {
-      type: 'commit';
-      session: DocumentReference | undefined;
-      branch: string | undefined;
-    };
+  | {type: 'reload'; currentFile: CurrentFile | null};
 
 const PreviewSourceContext = createContext({} as PreviewSource);
 
@@ -73,6 +64,72 @@ const PreviewSourceContext = createContext({} as PreviewSource);
 export function usePreviewSourceContext() {
   return useContext(PreviewSourceContext);
 }
+
+/**
+ * MarkDownファイルをHTMLに変換する
+ * @param path
+ * @param text
+ * @returns {path, text}
+ */
+const transpile = async (
+  currentFile: CurrentFile,
+  app: AppContext,
+  repository: Repository,
+  log: Log,
+): Promise<{
+  file: VFile | null;
+  vPubPath: string | null;
+  text: string | null;
+} | null> => {
+  console.log('transpile', currentFile);
+  try {
+    if (!currentFile.file) {
+      return null;
+    }
+    const {
+      vPubPath,
+      text: resultText,
+      errors,
+    } = await transpileMarkdown(app, repository, currentFile);
+    if (errors.length > 0) {
+      log.error(`以下のファイルの処理に失敗しました ${errors.join(' , ')}`);
+    }
+    // 準備が終わったら状態を変化させる
+    // console.log('call dispatcher', dispatch);
+    return {file: currentFile.file, vPubPath: vPubPath, text: resultText};
+  } catch (err: any) {
+    log.error(
+      t('プレビュー変換に失敗しました', {
+        filepath: currentFile.file!.path,
+        error: err.message,
+      }),
+      3000,
+    );
+    return null;
+  }
+};
+
+/**
+ * useReducer用のディスパッチャ定義
+ * コンポーネント内でディスパッチャを定義すると更新の度に新しい関数オブジェクトが作られて多重呼び出しになるので注意
+ * @param state  現在の状態
+ * @param action アクションオブジェクト
+ * @returns 新しい状態
+ */
+const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
+  switch (action.type) {
+    case 'changeFileCallback': // ドキュメントの準備が完了
+      console.log('changeFileCallback', action.vPubPath /*, action.text */);
+      return {
+        ...state,
+        path: action.file?.path ?? null,
+        vpubPath: action.vPubPath,
+        text: action.text,
+      };
+    case 'reload':
+      return {...state};
+  }
+};
 
 type PreviewSourceProps = {
   children: JSX.Element;
@@ -93,107 +150,54 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
-  // useEffect(() => {
-  // console.log('modifiedText', currentFile.text);
-  // }, [currentFile.text]);
-
   console.log('[PreviewSourceContext]' /*currentFile, repository*/);
-  /**
-   * ファイルをリポジトリにコミットする
-   * @param session
-   * @param branch
-   */
-  const commit = useCallback(
-    (
-      session: DocumentReference<DocumentData> | undefined,
-      branch: string | undefined,
-    ) => {},
-    [],
-  );
-  /**
-   * 対象となるファイルを切り替える
-   * TODO: 使われていないのでは
-   * @param path
-   * @param text
-   */
-  // const changeFile = (file:VFile) => {
-  //   // TODO: ファイル未選択や空ファイルへの対応
-  //   transpile(file);
-  // };
-
-  /**
-   * MarkDownファイルをHTMLに変換する
-   * @param path
-   * @param text
-   * @returns {path, text}
-   */
-  const transpile = useCallback(
-    (currentFile:CurrentFile): void => {
-      console.log("transpile", currentFile);
-      (async () => {
-        try {
-          if(!currentFile.file) { return; }
-          const {vPubPath, text: resultText, errors} = await transpileMarkdown(
-            app,
-            repository,
-            currentFile
-          );
-          if(errors.length > 0) {
-            log.error(`以下のファイルの処理に失敗しました ${errors.join(" , ")}`);
-          }
-          // 準備が終わったら状態を変化させる
-          // console.log('call dispatcher', dispatch);
-          dispatch({
-            type: 'changeFileCallback',
-            file: currentFile.file,
-            vPubPath: vPubPath,
-            text: resultText,
-          });
-        } catch (err: any) {
-          log.error(
-            'プレビュー変換に失敗しました(' + currentFile.file!.path + ') ： ' + err.message,
-            3000,
-          );
-        }
-      })();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app, repository],
-  );
 
   /**
    * プレビューを更新
    */
-  const updatePreview = useCallback((force:boolean=false) => {
-    if(!(isAutoReload || force)){ 
-      console.log('自動更新停止中');
-      return;
-    }
-    if (currentFile.file && currentFile.text) {
-      console.log('編集対象が変更された', currentFile);
-      if (
-        currentFile.file.name &&
-        isEditableFile(currentFile.file.name) &&
-        (currentFile.ext == 'md' || currentFile.ext == 'html')
-      ) {
-        console.log('編集対象ファイルはプレビュー可能',currentFile);
-        transpile(currentFile);
-      } else {
-        console.log('編集対象ファイルはプレビュー不可');
-      }
-    } else {
-      console.log('編集対象が無効', currentFile.file, currentFile.text);
-    }
-  },[currentFile, isAutoReload, transpile]);
+  const updatePreview = useCallback(
+    (force: boolean = false) => {
+      (async () => {
+        if (!(isAutoReload || force)) {
+          // console.log('自動更新停止中');
+          return;
+        }
+        if (currentFile.file && currentFile.text) {
+          // console.log('編集対象が変更された', currentFile);
+          if (
+            currentFile.file.name &&
+            isEditableFile(currentFile.file.name) &&
+            (currentFile.ext == 'md' || currentFile.ext == 'html')
+          ) {
+            // console.log('編集対象ファイルはプレビュー可能', currentFile);
+            const result = await transpile(currentFile, app, repository, log);
+            if(result) {
+              dispatch({
+                type: 'changeFileCallback',
+                ...result,
+              });  
+            }
+          } else {
+            // console.log('編集対象ファイルはプレビュー不可');
+          }
+        } else {
+          // console.log('編集対象が無効', currentFile.file, currentFile.text);
+        }
+      })();
+    },
+    [currentFile, isAutoReload, transpile],
+  );
 
   /**
    * 手動リロード 動作しない
    */
-  const reload = useCallback((currentFile:CurrentFile|null)=>{
-    console.log('reload by user action');
-    dispatch({type:'reload', currentFile});
-    //updatePreview(true); // 古いupdatePreviewを呼び出すと、クロージャ内のテキストを使ってしまうのでuseCallback不可
-  },[]);
+  const reload = useCallback((currentFile: CurrentFile | null) => {
+    if (currentFile) {
+      console.log('reload by user action');
+      transpile(currentFile, app, repository, log);
+      dispatch({type: 'reload', currentFile});
+    }
+  }, []);
 
   /**
    * 初期値
@@ -206,8 +210,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     theme: null,
     stylePath: null,
     // methods
-    // changeFile,
-    commit: commit,
     reload,
   } as PreviewSource;
 
@@ -234,37 +236,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     },
     [currentFile.text],
     REFRESH_MS,
-  );
-
-  /**
-   * 処理のディスパッチ
-   * @param state
-   * @param action
-   * @returns
-   */
-  const reducer = useCallback(
-    (state: PreviewSource, action: Actions): PreviewSource => {
-      switch (action.type) {
-        case 'changeFileCallback': // ドキュメントの準備が完了
-          console.log('changeFileCallback', action.vPubPath /*, action.text */);
-          return {
-            ...state,
-            path: action.file?.path ?? null,
-            vpubPath: action.vPubPath,
-            text: action.text,
-          };
-        case 'reload':
-          if(action.currentFile) {
-            transpile(action.currentFile);
-          }
-          return {...state};
-        case 'commit': // コミット
-          commit(action.session!, action.branch);
-          return state;
-      }
-    },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [app],
   );
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);

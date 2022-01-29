@@ -6,7 +6,7 @@ import { useAppContext } from '@middlewares/contexts/useAppContext';
 
 const Index = () => {
   const app = useAppContext();
-  console.log('index',app.user);
+  console.log('[Index]',app.user);
   return (
     <UI.Box>
       {app.user ? (
