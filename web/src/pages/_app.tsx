@@ -2,7 +2,7 @@ import React from 'react';
 import {AppProps} from 'next/app';
 import {ChakraProvider, CSSReset} from '@chakra-ui/react';
 import {AppContextProvider} from '@middlewares/contexts/useAppContext';
-import {LogContextProvider} from '@middlewares/contexts/useLogContext';
+import {LogBufferContextProvider} from '@middlewares/contexts/useLogContext';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -22,15 +22,18 @@ i18n
 
 import '../styles/styles.css';
 
-const MyApp = ({Component, pageProps}: AppProps) => (
+const MyApp = ({Component, pageProps}: AppProps) => { 
+  // console.log('[MyApp]',Component,pageProps);
+  return (
   <ChakraProvider>
     <CSSReset />
-    <LogContextProvider>
+    <LogBufferContextProvider>
       <AppContextProvider>
         <Component {...pageProps} />
       </AppContextProvider>
-    </LogContextProvider>
+    </LogBufferContextProvider>
   </ChakraProvider>
 );
+}
 
 export default MyApp;

@@ -14,10 +14,10 @@ export function LogView({
 
   useEffect(() => {
     onLogging(logBuffer.length);
-  }, [logBuffer.length, onLogging]);
+  }, [logBuffer, onLogging]);
 
   const clearLog = useCallback(() => {
-    console.log('clear');
+    console.log('[LogView] clear');
     log.clear();
   }, [log]);
 

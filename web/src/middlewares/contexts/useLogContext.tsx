@@ -1,18 +1,18 @@
-import {
+import React, {
   createContext,
-  Dispatch,
   ReactNode,
-  SetStateAction,
   useCallback,
   useContext,
-  useReducer,
+  useMemo,
   useState,
 } from 'react';
-import { RenderProps, useToast } from "@chakra-ui/react"
+import {useToast} from '@chakra-ui/react';
+
+type MessageType = 'info' | 'success' | 'warning' | 'error';
 
 type LogEntry = {
   timestamp: number;
-  type: 'info' | 'error' | 'success' | 'warning';
+  type: MessageType;
   message: ReactNode;
 };
 
@@ -23,19 +23,6 @@ type Log = {
   warning: (message: ReactNode, toastDuration?: number) => void;
   clear: () => void;
 };
-
-// type LogBuffer = {
-//   entries: LogEntry[];
-// }
-
-type Actions =
-  | {
-      type: 'logging';
-      entry: LogEntry;
-      entries: LogEntry[];
-      setBuf: Dispatch<SetStateAction<LogEntry[]>>;
-    }
-  | {type: 'clear'; setBuf: Dispatch<SetStateAction<LogEntry[]>>};
 
 const LogContext = createContext({} as Log);
 const LogBufferContext = createContext([] as LogEntry[]);
@@ -56,90 +43,102 @@ export function useLogBufferContext() {
   return useContext(LogBufferContext);
 }
 
-type MessageType ="info" | "warning" | "success" | "error" | undefined;
-
 /**
- * LogContextProviderコンポーネント
+ * LogContextBufferProviderコンポーネント
+ * ログ保存コンテクスト
  * @param param0
  * @returns
  */
-export function LogContextProvider({children}: {children: JSX.Element}) {
-  const toast = useToast();
-
+export function LogBufferContextProvider({children}: {children: JSX.Element}) {
   const [buf, setBuf] = useState<LogEntry[]>([]);
 
-  const createEntry = useCallback(
-    (type: MessageType, message: ReactNode): LogEntry => {
-      // type指定がundefinedならとりあえず'info'にする
-      return {type:type??'info', message, timestamp: Date.now()};
-    },
-    [],
-  );
-
-  const logging = useCallback((status:MessageType, message:ReactNode, toastDuration: number | null = 0) => { 
-    if(toastDuration && toastDuration > 0) {
-      toast({
-        title: message,
-        status: status,
-        duration: toastDuration
-      })  
-    }
-    const entry = createEntry(status, message);
-    dispatch({type: 'logging', entries: buf, entry, setBuf});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  const info = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
-    logging('info', message, toastDuration);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const warning = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
-    logging('warning', message, toastDuration);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  const success = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
-    logging('success', message, toastDuration);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  const error = useCallback((message: ReactNode, toastDuration: number | null = 0) => {
-      logging('error', message, toastDuration);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  const clear = useCallback(() => {
-    console.log('clear');
-    dispatch({type: 'clear', setBuf});
-  }, []);
-
-  const reducer = useCallback((state: Log, action: Actions): Log => {
-    switch (action.type) {
-      case 'logging':
-        buf.unshift(action.entry);
-        return {...state};
-      case 'clear':
-        buf.splice(0);
-        return {...state};
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const state = {
-    info,
-    error,
-    success,
-    warning,
-    clear,
+  /**
+   * ログ項目を追加
+   * @param entry 記録内容
+   */
+  const handleLogging = (entry: LogEntry) => {
+    setBuf((pre)=>{ // preにはレンダリング前でも最新の値が入っている
+      const newBuf = [entry, ...pre];
+      return newBuf
+    });
   };
-  const [log, dispatch] = useReducer(reducer!, state);
 
+  /**
+   * ログ項目を全て削除
+   */
+  const handleClear = () => {
+    setBuf([]);
+  };
+
+  // console.log('[LogBufferContext] render');
   return (
-    <LogContext.Provider value={log}>
+    <React.StrictMode>
       <LogBufferContext.Provider value={buf}>
-        {children}
+        <LogContextProvider onLogging={handleLogging} onClear={handleClear}>
+          {children}
+        </LogContextProvider>
       </LogBufferContext.Provider>
-    </LogContext.Provider>
+    </React.StrictMode>
   );
+}
+
+/**
+ * LogContextProviderコンポーネント
+ * このコンポーネントの状態は変化しない
+ * @param param0
+ * @returns
+ */
+function LogContextProvider({
+  children,
+  onLogging,
+  onClear,
+}: {
+  children: JSX.Element;
+  onLogging: (entry: LogEntry) => void;
+  onClear: () => void;
+}) {
+  // console.log('[LogContext]',onLogging,onClear);
+
+  const toast = useToast();
+
+  const logging = useCallback(
+    (
+      status: MessageType | undefined,
+      message: ReactNode,
+      toastDuration: number | null = 0,
+    ) => {
+      const entry = {type: status ?? 'info', message, timestamp: Date.now()};
+      onLogging(entry);
+      if (toastDuration && toastDuration > 0) {
+        toast({
+          title: message,
+          status: status,
+          duration: toastDuration,
+        });
+      }
+    },
+    [onLogging, toast],
+  );
+
+  const log = useMemo(() => {
+    return {
+      info: (message: ReactNode, toastDuration: number | null = 0) => {
+        logging('info', message, toastDuration);
+      },
+      error: (message: ReactNode, toastDuration: number | null = 0) => {
+        logging('error', message, toastDuration);
+      },
+      success: (message: ReactNode, toastDuration: number | null = 0) => {
+        logging('success', message, toastDuration);
+      },
+      warning: (message: ReactNode, toastDuration: number | null = 0) => {
+        logging('warning', message, toastDuration);
+      },
+      clear: () => {
+        console.log('clear');
+        onClear();
+      },
+    };
+  }, []);
+  return <LogContext.Provider value={log}>{children}</LogContext.Provider>;
 }
