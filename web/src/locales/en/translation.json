@@ -12,5 +12,8 @@
   "編集できないファイル形式です":"File format cannot be edited: {{filepath}}",
   "ファイルの取得が出来ませんでした":"could not retrieve the file: {{filepath}}",
   "ファイルを選択しました":"selected a file: {{filepath}}",
-  "セッション情報が取得できませんでした":"session could not be retrieved: {{filepath}}"
+  "セッション情報が取得できませんでした":"session could not be retrieved: {{filepath}}",
+  "テーマを変更しました":"theme has been changed.:{{themeName}} {{themePath}}",
+  "テーマの準備に失敗しました":"failed to prepare the theme: {{themeStyle}} {{error}}",
+  "テーマが大きすぎます":"file size too large: {{error}}"
 }

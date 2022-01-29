@@ -35,11 +35,14 @@ import {NpmFs} from '../fs/NpmFS';
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (
   query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
-  aptions: OperationVariables
+  options: OperationVariables,
 ) => Promise<ApolloQueryResult<any>>;
 
 const provider = new GithubAuthProvider();
 
+/**
+ * AppContextで管理する状態オブジェクトの型定義
+ */
 export type AppContext = {
   user: User | null;
   isPending: boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
@@ -53,9 +56,21 @@ export type AppContext = {
   reload: () => void;
 };
 
+/**
+ * React Context
+ */
+const AppContext = createContext({} as AppContext);
+
+export function useAppContext() {
+  return useContext(AppContext);
+}
+
+/**
+ * useReducer用のAction定義
+ */
 type Actions =
   | {
-      type: 'init';
+      type: 'initCallback';
       user: User | null;
       fs?: AppCacheFs;
       themes?: Theme[];
@@ -64,14 +79,7 @@ type Actions =
       repositories?: Repository[];
     }
   | {type: 'notSignedIn'}
-  | {type: 'signOut'}
-  | {type: 'reload'};
-
-const AppContext = createContext({} as AppContext);
-
-export function useAppContext() {
-  return useContext(AppContext);
-}
+  | {type: 'signOutCallback'}
 
 /**
  * 公式テーマのリストを返す
@@ -132,12 +140,48 @@ async function getRepositories(
 }
 
 /**
+ * useReducer用のディスパッチャ定義
+ * コンポーネント内でディスパッチャを定義すると更新の度に新しい関数オブジェクトが作られて多重呼び出しになるので注意
+ * @param state  現在の状態
+ * @param action アクションオブジェクト
+ * @returns 新しい状態
+ */
+const reducer = (state: AppContext, action: Actions): AppContext => {
+  switch (action.type) {
+    case 'initCallback':
+      return {
+        ...state,
+        user: action.user,
+        isPending: false,
+        vpubFs: action.fs,
+        onlineThemes: action.themes ?? [],
+        query: action.query,
+        gqlclient: action.gqlclient,
+        repositories: action.repositories,
+      };
+    case 'notSignedIn':
+      // サインインしていない
+      return {...state, isPending: false};
+    case 'signOutCallback':
+      // ApplicationCacheを削除
+      state.vpubFs?.unlinkCache().then(() => {});
+      return {
+        ...state,
+        user: null,
+        query: undefined,
+        repositories: undefined,
+      };
+  }
+};
+
+/**
  * アプリケーションコンテクスト
  *
  * @param param0
  * @returns
  */
 export function AppContextProvider({children}: {children: JSX.Element}) {
+  // console.log('[AppContext]');
   /**
    * ユーザがサインインしている場合の初期化処理
    * @param user
@@ -150,12 +194,10 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       return;
     }
     (async () => {
-      console.log('init', 1);
       // ユーザアカウントの初期化
       user.getIdToken(true);
       // console.log('providerData', user.providerData);
       await user.getIdTokenResult(true);
-      console.log('init', 2);
 
       // Application CacheへのI/O
       const fs = await AppCacheFs.open();
@@ -177,12 +219,18 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       console.log('repositories\n', repositories);
 
       // テーマ一覧を取得
-      console.log('init', 3);
       const themes: Theme[] = await getOfficialThemes();
       console.log('themes', themes);
       //
-      console.log('init', 4);
-      dispatch({type: 'init', user, fs, themes, repositories, query, gqlclient:client});
+      dispatch({
+        type: 'initCallback',
+        user,
+        fs,
+        themes,
+        repositories,
+        query,
+        gqlclient: client,
+      });
     })();
   };
   /**
@@ -208,78 +256,49 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     (async () => {
       const auth = getAuth(firebase);
       await auth.signOut();
-      dispatch({type: 'signOut'});
+      dispatch({type: 'signOutCallback'});
     })();
   };
-
-  const reload = () => {};
 
   /**
    * 初期値
    */
   const [state] = useState<AppContext>({
+    // 状態
     user: null,
     isPending: true,
+    onlineThemes: [],
+    repositories: null,
+    // メソッド
     signIn: signIn,
     signOut: signOut,
-    onlineThemes: [],
     query: async (
       query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
     ): Promise<ApolloQueryResult<any>> => {
       return {data: null, loading: false, networkStatus: NetworkStatus.ready};
     },
-    repositories: null,
     reload: () => {
-      dispatch({type: 'reload'});
+      init(app.user);
     },
   });
 
-  /**
-   *
-   */
-  const reducer = (state: AppContext, action: Actions): AppContext => {
-    switch (action.type) {
-      case 'init':
-        return {
-          ...state,
-          user: action.user,
-          isPending: false,
-          vpubFs: action.fs,
-          onlineThemes: action.themes ?? [],
-          query: action.query,
-          gqlclient: action.gqlclient,
-          repositories: action.repositories,
-        };
-      case 'notSignedIn':
-        // サインインしていない
-        return {...state, isPending: false};
-      case 'signOut':
-        // ApplicationCacheを削除
-        state.vpubFs?.unlinkCache().then(() => {});
-        return {
-          ...state,
-          user: null,
-          query: undefined,
-          repositories: undefined,
-        };
-      case 'reload':
-        init(state.user);
-        return state;
-    }
-  };
-
   const [app, dispatch] = useReducer(reducer, state);
 
-  return app.isPending ? (
-    <UI.Container mt={6}>
-      <UI.Text>Loading Vivliostyle Editor...</UI.Text>
-    </UI.Container>
-  ) : (
-    <AppContext.Provider value={app}>
-      <UI.Box>
-        <Header />
-        {children}
-      </UI.Box>
-    </AppContext.Provider>
-  );
+  if (app.isPending) {
+    return (
+      <UI.Container mt={6}>
+        <UI.Text>Loading Vivliostyle Editor...</UI.Text>
+      </UI.Container>
+    );
+  } else {
+    console.log('[AppContext] render');
+    return (
+      <AppContext.Provider value={app}>
+        <UI.Box>
+          <Header />
+          {children}
+        </UI.Box>
+      </AppContext.Provider>
+    );
+  }
 }
