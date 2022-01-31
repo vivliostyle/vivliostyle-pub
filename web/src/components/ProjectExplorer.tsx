@@ -82,7 +82,9 @@ export function ProjectExplorer() {
         );
         if (!content) {
           log.error(
-            `ファイルの取得に失敗しました。GitHubで確認してください。: ${srcPath}`,
+            t('ファイルの取得に失敗しました。GitHubで確認してください。', {
+              filepath: srcPath,
+            }),
             3000,
           );
           return;
@@ -99,7 +101,7 @@ export function ProjectExplorer() {
           type = 'svg+xml,';
           content = encodeURIComponent(content);
         } else {
-          log.error(`不明な画像ファイル形式です: ${srcPath}`, 3000);
+          log.error(t('不明な画像ファイル形式です', {fileptah: srcPath}), 3000);
           return;
         }
         const data = content ? `data:image/${type}${content}` : '';

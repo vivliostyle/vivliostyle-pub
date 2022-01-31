@@ -19,7 +19,6 @@ export const BranchSelecter = () => {
       }
     }
     repository.selectBranch(e.target.value);
-    log.info(t('ブランチを変更しました',{branch: e.target.value}));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repository])
 
