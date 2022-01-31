@@ -24,6 +24,7 @@ import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentTheme
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {doc, onSnapshot, Unsubscribe} from 'firebase/firestore';
 import {db} from '@services/firebase';
+import { t } from 'i18next';
 
 interface BuildRecord {
   url: string | null;
@@ -130,7 +131,7 @@ const GitHubOwnerRepo = () => {
     console.log('build complete:' + artifactURL);
     log.success(
       <UI.Text>
-        以下のリンクをクリックして表示してください。
+        {t('以下のリンクをクリックして表示してください')}
         <UI.Link href={artifactURL} isExternal textDecoration={'underline'}>
           View PDF
         </UI.Link>
@@ -202,7 +203,7 @@ const GitHubOwnerRepo = () => {
         console.log('buildPDF function', result);
         const buildID = result.data.buildID;
         setBuildID(buildID);
-        log.info('Your build has been started', 5000);
+        log.info(t('ビルドを開始しました'), 5000);
       })
       .catch((err: any) => {
         log.error(err.message, 9000);

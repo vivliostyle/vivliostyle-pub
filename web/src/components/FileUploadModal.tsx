@@ -74,14 +74,14 @@ export const FileUploadModal = ({
           return;
         }
         const encodedData = (await getBase64(file))?.toString().split(',')[1];
-
-        // console.log('upload image encodedData', encodedData);
-        if(!encodedData) {
-          log.error(t('ファイルを取得できませんでした'), 1000);
-          return; 
-        }
         const currentDir = repository.currentTree.map((f) => f.name).join('/');
         const filePath = upath.join(currentDir, fileName);
+        // console.log('upload image encodedData', encodedData);
+        if(!encodedData) {
+          log.error(t('ファイルを取得できませんでした',{filepath:filePath,error:"conent error"}), 1000);
+          return; 
+        }
+
         // TODO: リポジトリコンテクストにメソッド化したほうがowner,repo,branchの指定が不要になるので良いか
         const result = await app.gqlclient?.mutate({mutation:gql`
           mutation createFile($owner: String!, $repo: String!, $branch: String!, $path: String!, $encodedData: String!, $message: String!) {

@@ -21,6 +21,7 @@ import {
 } from 'react-icons/vsc';
 import { WebApiFs } from '@middlewares/fs/WebApiFS';
 import mime from 'mime-types';
+import { t } from 'i18next';
 
 /**
  * 与えられた文字列がBase64ならBufferを、そうでなければ文字列を返す
@@ -149,13 +150,13 @@ export default function FileEntry({
     const result = await copyFile(oldFilename, newFilename, true ,'rename file');
     if (result.data.commitContent.state) {
       log.success(
-        `ファイル(${oldFilename})を(${newFilename})にリネームしました`,
+        t("ファイルをリネームしました",{oldfilepath:oldFilename,newfilepath:newFilename}),
         3000,
       );
       onReload();
     } else {
       log.error(
-        `ファイル(${oldFilename})のリネームに失敗しました: ${result.data.commitContent.message}`,
+        t("ファイルのリネームに失敗しました",{oldfilepath:oldFilename,error:result.data.commitContent.message}),
         3000,
       );
     }
@@ -171,13 +172,13 @@ export default function FileEntry({
     const result = await copyFile(oldFilename, newFilename, false, "duplicate result");
     if (result.data.commitContent.state) {
       log.success(
-        `ファイル(${oldFilename})を(${newFilename})に複製しました`,
+        t(`ファイルを複製しました`,{oldfilepath:oldFilename,newfilepath:newFilename}),
         3000,
       );
       onReload();
     } else {
       log.error(
-        `ファイル(${oldFilename})の複製に失敗しました: ${result.data.commitContent.message}`,
+        t('ファイルの複製に失敗しました',{oldfilepath:oldFilename,error:result.data.commitContent.message}),
         3000,
       );
     }
@@ -191,7 +192,7 @@ export default function FileEntry({
   const onDeleteFile = (filename: string, hash: string | undefined) => {
     (async () => {
       const filePath = upath.join(currentDir, filename);
-      if (!confirm(`ファイル(${filePath})を削除しますか?`)) {
+      if (!confirm(t('ファイル(${filePath})を削除しますか?',{filepath:filePath}))) {
         return;
       }
       const result = (await app.gqlclient?.mutate({
@@ -228,10 +229,10 @@ export default function FileEntry({
       })) as any;
       console.log('delete result', result);
       if (result.data.commitContent.state) {
-        log.success(`ファイル(${filePath})を削除しました`, 3000);
+        log.success(t("ファイルを削除しました",{filepath:filePath}), 3000);
         onReload();
       } else {
-        log.error(`ファイル(${filePath})の削除に失敗しました`, 3000);
+        log.error(t("ファイルの削除に失敗しました",{filepath:filePath,error:"API error"}), 3000);
       }
     })();
   };
@@ -259,7 +260,7 @@ export default function FileEntry({
           // console.log('dispatch setFileCallback', seq,action.file,content);
           if (content == undefined || content == null) { // 0バイトのファイルがあるため、!contentでは駄目
             log.error(
-              `ファイルの取得が出来ませんでした(${path}) : ${content}`,
+              t('ファイルを取得できませんでした',{filepath:path,error:"content error"}),
               3000,
             );
             return false;
@@ -279,7 +280,7 @@ export default function FileEntry({
       })
       .catch((err) => {
         log.error(
-          `ファイルの取得が出来ませんでした(${path}) : ${err.messsage}`,
+          t('ファイルを取得できませんでした',{filepath:path,error:err.messsage}),
           3000,
         );
       });

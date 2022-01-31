@@ -92,7 +92,7 @@ const transpile = async (
       errors,
     } = await transpileMarkdown(app, repository, currentFile);
     if (errors.length > 0) {
-      log.error(`以下のファイルの処理に失敗しました ${errors.join(' , ')}`);
+      log.error(t('以下のファイルの処理に失敗しました', {error:errors.join(' , ')}));
     }
     // 準備が終わったら状態を変化させる
     // console.log('call dispatcher', dispatch);
