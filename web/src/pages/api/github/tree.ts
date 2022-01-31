@@ -42,8 +42,13 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
 
   let sha:string = tree_sha;
   if( sha.length != 40  ) { /* ハッシュ値の桁数でなければルートディレクトリのファイルを取得する */
-    const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, {owner, repo, per_page: 1});
-    sha = ret.data.sha;
+    try{
+      const ret = await octokit.request(`GET /repos/{owner}/{repo}/commits/${branch}`, {owner, repo, per_page: 1});
+      sha = ret.data.sha;
+    }catch(e:any){
+//      console.error(e);
+      return res.status(e.status).send(null);
+    }
   }
   const tree = await octokit.git.getTree({owner, repo, tree_sha:sha});
   const files = tree.data as unknown as CommitsOfRepositoryApiResponse;
@@ -84,14 +89,3 @@ async function getTreeSha(octokit:Octokit, owner:string, repo:string, branch:str
   // console.log('getTreeSha result', sha);
   return sha;
 }
-
-  // private async getTreeSha(path:string[]):Promise<string>{
-  //   console.log('getTreeSha',path);
-  //   let sha = '';
-  //   for (const name of path) {
-  //     if(name == '') {continue;}
-  //     this.readFile()
-  //   }
-  //   console.log('getTreeSha result:',sha);
-  //   return sha;
-  // }

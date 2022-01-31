@@ -180,6 +180,10 @@ export class WebApiFs implements Fs {
       },
     );
     path = path ?? '/';
+    if(resp.status == 409) {
+      // リポジトリにファイルが存在しない
+      return [];
+    }
     const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
     // console.log('data', data.tree);
     const files = data.tree.map((tree) => {
