@@ -13,6 +13,7 @@ import {transpileMarkdown} from '../previewFunctions';
 import {Log, useLogContext} from './useLogContext';
 import {VFile} from 'theme-manager';
 import {t} from 'i18next';
+import {useCurrentThemeContext} from './useCurrentThemeContext';
 
 /**
  * 遅延処理
@@ -92,7 +93,9 @@ const transpile = async (
       errors,
     } = await transpileMarkdown(app, repository, currentFile);
     if (errors.length > 0) {
-      log.error(t('以下のファイルの処理に失敗しました', {error:errors.join(' , ')}));
+      log.error(
+        t('以下のファイルの処理に失敗しました', {error: errors.join(' , ')}),
+      );
     }
     // 準備が終わったら状態を変化させる
     // console.log('call dispatcher', dispatch);
@@ -149,6 +152,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   const app = useAppContext();
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
+  const currentTheme = useCurrentThemeContext();
 
   console.log('[PreviewSourceContext]' /*currentFile, repository*/);
 
@@ -171,21 +175,22 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           ) {
             // console.log('編集対象ファイルはプレビュー可能', currentFile);
             const result = await transpile(currentFile, app, repository, log);
-            if(result) {
+            if (result) {
               dispatch({
                 type: 'changeFileCallback',
                 ...result,
-              });  
+              });
             }
           } else {
             // console.log('編集対象ファイルはプレビュー不可');
           }
         } else {
           // console.log('編集対象が無効', currentFile.file, currentFile.text);
+          dispatch({type: 'changeFileCallback', file:null, vPubPath:null, text:null});
         }
       })();
     },
-    [currentFile, isAutoReload, transpile],
+    [currentFile, isAutoReload, transpile, currentTheme],
   );
 
   /**
