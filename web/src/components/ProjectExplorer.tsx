@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {memo, useCallback, useMemo, useState} from 'react';
 import * as UI from '@components/ui';
 import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
 import {RepeatIcon} from '@chakra-ui/icons';
@@ -16,9 +16,11 @@ import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {Center, useDisclosure} from '@chakra-ui/react';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {FileUploadModal} from './FileUploadModal';
+import {t} from 'i18next';
+import {User} from 'firebase/auth';
 
 /**
- * プロジェクトエクスプローラー
+ * プロジェクトエクスプローラーコンポーネント
  * @returns
  */
 export function ProjectExplorer() {
@@ -33,8 +35,13 @@ export function ProjectExplorer() {
     onClose: onCloseFileUploadModal,
   } = useDisclosure();
 
-  const [filenamesFilterText, setFilenamesFilterText] = useState(''); // 絞り込みキーワード
+  // 絞り込みキーワード
+  const [filenamesFilterText, setFilenamesFilterText] = useState('');
 
+  // ファイル名入力フォームの表示フラグ 種別兼用 'file':新規ファイル,'dir':新規ディレクトリ,null:非表示
+  const [createForm, setCreateForm] = useState<'file' | 'dir' | null>(null);
+
+  // ライトボックスの表示フラグ
   const [lightBoxContent, setLightBoxContent] = useState<{
     name: string;
     data: string;
@@ -48,8 +55,9 @@ export function ProjectExplorer() {
 
   // 表示用のカレントディレクトリ
   const currentDir = useMemo(() => {
+    console.log('change currentDir');
     let path = repository.currentTree.map((f) => f.name).join('/');
-    // 流すぎるパスは省略
+    // 長すぎるパスは省略
     if (path.length > 15) {
       path = '...' + path.slice(-15);
     }
@@ -108,9 +116,8 @@ export function ProjectExplorer() {
         setLightBoxContent({name: srcPath, data});
         return;
       }
-
-      // ファイル 多重呼び出しをキャンセルするためにタイムスタンプも渡す。あまり役に立ってない?
-      repository.selectFile(file, new Date().getTime());
+      // 画像でなければエディタで編集できるよう選択する
+      repository.selectFile(file);
     } else if (file.type === 'dir') {
       // ディレクトリ
       repository.selectTree(file);
@@ -118,31 +125,14 @@ export function ProjectExplorer() {
   };
 
   /**
-   * 親ディレクトリへ移動する
-   */
-  const upTree = () => {
-    repository.selectTree('..');
-    setCreateForm(null);
-  };
-
-  /**
    * リポジトリからファイルリストを取得しなおす
+   * 複数のコンポーネントから呼び出されるので独立したコールバックメソッドとして定義
    * TODO: GitHubのリポジトリに直接変更を加えた場合にリロードしてもらうようマニュアルに追加
    */
   const reload = useCallback(async () => {
     console.log('ProjectExplorer reload', currentDir);
     repository.selectTree('.');
   }, [repository, currentDir]);
-
-  // ファイル名入力フォームの表示フラグ 種別兼用 'file':新規ファイル,'dir':新規ディレクトリ,null:非表示
-  const [createForm, setCreateForm] = useState<'file' | 'dir' | null>(null);
-  const createFile = () => {
-    setCreateForm('file');
-  };
-
-  const createDirectory = () => {
-    setCreateForm('dir');
-  };
 
   const createFileOrDirectory = (e: any) => {
     const name = e.target.value;
@@ -162,15 +152,137 @@ export function ProjectExplorer() {
     setCreateForm(null);
   };
 
-  const onCloseLightBox = () => {
-    setLightBoxContent(null);
-  };
+  /**
+   * 親ディレクトリへ移動するボタン
+   */
+  const UpToParentDirectoryButton = memo(
+    function upToParentDirectoryButton(props: {currentTree: VFile[]}) {
+      if (props.currentTree.length > 0) {
+        return (
+          <UI.Container
+            p={0}
+            onClick={() => {
+              repository.selectTree('..');
+              setCreateForm(null);
+            }}
+            cursor="pointer"
+          >
+            <UI.Text mt={3} fontSize="sm">
+              <UI.Icon as={CgCornerLeftUp} /> ..
+            </UI.Text>
+          </UI.Container>
+        );
+      } else {
+        return null;
+      }
+    },
+  );
 
-  return (
-    <UI.Box w={'100%'} resize="horizontal" p={1}>
+  /**
+   * 新規ファイル作成ボタン
+   */
+  const NewFileButton = memo(function newFileButton() {
+    return (
+      <UI.Button
+        title="new File"
+        p="0"
+        h="0"
+        minH="1em"
+        minW="1em"
+        backgroundColor={'transparent'}
+        onClick={() => {
+          setCreateForm('file');
+        }}
+      >
+        <UI.Icon as={VscNewFile} w="1em" h="1em" p="0" />
+      </UI.Button>
+    );
+  });
+
+  /**
+   * 新規フォルダ作成ボタン
+   */
+  const NewFolderButton = memo(function newFolderButton() {
+    return (
+      <UI.Button
+        title="new Folder"
+        p="0"
+        h="0"
+        minH="1em"
+        minW="1em"
+        backgroundColor={'transparent'}
+        onClick={() => {
+          setCreateForm('dir');
+        }}
+      >
+        <UI.Icon as={VscNewFolder} w="1em" h="1em" p="0" />
+      </UI.Button>
+    );
+  });
+
+  /**
+   * ファイルアップロードボタン
+   */
+  const UploadButton = memo(function uploadButton(props: {user: User | null}) {
+    return (
+      <>
+        <UI.Button
+          title="upload file"
+          p="0"
+          h="0"
+          minH="1em"
+          minW="1em"
+          backgroundColor={'transparent'}
+          onClick={onOpenFileUploadModal}
+        >
+          <UI.Icon
+            as={VscArrowUp}
+            w="1em"
+            h="1em"
+            p="0"
+            border="solid 1px black"
+          />
+        </UI.Button>
+        <FileUploadModal
+          user={props.user}
+          isOpen={isOpenFileUploadModal}
+          onOpen={onOpenFileUploadModal}
+          onClose={onCloseFileUploadModal}
+          title="Upload File"
+          accept="*"
+        />
+      </>
+    );
+  });
+
+  /**
+   * カレントディレクトリの内容のリロードボタン
+   */
+  const ReloadButton = memo(function reloadButton() {
+    return (
+      <UI.Button textAlign="right" onClick={reload}>
+        <RepeatIcon />
+      </UI.Button>
+    );
+  });
+
+  /**
+   * 画像表示用 ライトボックスコンポーネント
+   * @param param0
+   * @returns
+   */
+  const LightBox = memo(function lightBox(props: {
+    lightBoxContent: {
+      name: string;
+      data: string;
+    } | null;
+  }) {
+    return (
       <UI.Modal
         isOpen={lightBoxContent != null}
-        onClose={onCloseLightBox}
+        onClose={() => {
+          setLightBoxContent(null);
+        }}
         isCentered
         size={'6xl'}
       >
@@ -185,6 +297,12 @@ export function ProjectExplorer() {
           </UI.ModalBody>
         </UI.ModalContent>
       </UI.Modal>
+    );
+  });
+
+  return (
+    <UI.Box w={'100%'} resize="horizontal" p={1}>
+      <LightBox lightBoxContent={lightBoxContent} />
 
       <UI.Box h="48px">
         <UI.Input
@@ -195,79 +313,27 @@ export function ProjectExplorer() {
           }}
           w={'calc(100% - 3em)'}
         />
-        <UI.Button textAlign="right" onClick={reload}>
-          <RepeatIcon />
-        </UI.Button>
+        <ReloadButton />
       </UI.Box>
 
       <UI.Flex>
         {currentDir}/
         <UI.Spacer />
         <UI.Box h="24px">
-          <UI.Button
-            title="new File"
-            p="0"
-            h="0"
-            minH="1em"
-            minW="1em"
-            backgroundColor={'transparent'}
-            onClick={createFile}
-          >
-            <UI.Icon as={VscNewFile} w="1em" h="1em" p="0" />
-          </UI.Button>
-          <UI.Button
-            title="new Folder"
-            p="0"
-            h="0"
-            minH="1em"
-            minW="1em"
-            backgroundColor={'transparent'}
-            onClick={createDirectory}
-          >
-            <UI.Icon as={VscNewFolder} w="1em" h="1em" p="0" />
-          </UI.Button>
-          <UI.Button
-            title="upload file"
-            p="0"
-            h="0"
-            minH="1em"
-            minW="1em"
-            backgroundColor={'transparent'}
-            onClick={onOpenFileUploadModal}
-          >
-            <UI.Icon
-              as={VscArrowUp}
-              w="1em"
-              h="1em"
-              p="0"
-              border="solid 1px black"
-            />
-          </UI.Button>
-          <FileUploadModal
-            user={app.user}
-            isOpen={isOpenFileUploadModal}
-            onOpen={onOpenFileUploadModal}
-            onClose={onCloseFileUploadModal}
-            title="Upload File"
-            accept="*"
-          />
+          <NewFileButton />
+          <NewFolderButton />
+          <UploadButton user={app.user} />
         </UI.Box>
         <hr />
       </UI.Flex>
       <UI.Box height={'100%'} w={'100%'} backgroundColor={'black'}>
+        {/* TODO:ここの高さ計算をもっと的確に。 */}
         <UI.Box
           height={'calc(100vh - 48px - 24px - 140px)'}
           overflowY="scroll"
           backgroundColor="white"
         >
-          {/* TODO:ここの高さ計算をもっと的確に。 */}
-          {repository.currentTree.length > 0 ? (
-            <UI.Container p={0} onClick={upTree} cursor="pointer">
-              <UI.Text mt={3} fontSize="sm">
-                <UI.Icon as={CgCornerLeftUp} /> ..
-              </UI.Text>
-            </UI.Container>
-          ) : null}
+          <UpToParentDirectoryButton currentTree={repository.currentTree} />
           {!createForm ? null : (
             <UI.Input
               onBlur={() => setCreateForm(null)}
