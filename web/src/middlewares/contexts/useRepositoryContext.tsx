@@ -9,11 +9,12 @@ import React, {
 import {VFile} from 'theme-manager';
 import {useAppContext} from './useAppContext';
 import {CurrentFileContextProvider} from './useCurrentFileContext';
-import {useLogContext} from './useLogContext';
+import {Log, useLogContext} from './useLogContext';
 import {CoreProps} from '../vivliostyle.config';
 import {WebApiFs} from '../fs/WebApiFS';
 import {gql} from '@apollo/client';
 import upath from 'upath';
+import {t} from 'i18next';
 
 export type Repository = {
   id: number;
@@ -22,20 +23,18 @@ export type Repository = {
   owner: string | null;
   repo: string | null;
   branch: string | null;
-  currentFile: VFile | null;
   currentConfig: CoreProps | null;
   currentTree: VFile[]; // カレントディレクトリを配列として保持 Rootは含まない 例 /Sub/Sub2 => [SubのVFile,Sub2のVFile]
   branches: string[];
   full_name: string;
   defaultBranch: string;
-
   files: VFile[];
+  fs: WebApiFs | null;
+  // メソッド
   selectBranch: (branch: string) => void;
   selectTree: (tree: '.' | '..' | VFile) => void; // .は現在のディレクトリのリロード用
-  selectFile: (path: VFile | null, key: number) => void;
+  selectFile: (path: VFile | null) => void;
   createFile: (path: string, file: File) => void; // JavaScript標準のFile TODO: VFileにできればする
-  fs: WebApiFs | null;
-  // getFileContent: () => Promise<any>;
 };
 
 const RepositoryContext = createContext({} as Repository);
@@ -44,6 +43,9 @@ export function useRepositoryContext() {
   return useContext(RepositoryContext);
 }
 
+/**
+ * useReducer用のAction定義
+ */
 type Actions =
   | {
       type: 'selectRepositoryCallback';
@@ -55,14 +57,73 @@ type Actions =
       files: VFile[];
       file?: VFile;
     }
-  | {type: 'selectBranch'; branch: string; tree?:VFile[]; }
-  | {type: 'selectBranchCallback'; branch: string; files: VFile[]; tree?: VFile[];}
-  | {type: 'selectTree'; tree: '.' | '..' | VFile;}
-  | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[];}
-  | {type: 'setFiles'; files: VFile[];}
-  | {type: 'selectFile'; file: VFile | null; key: number;}
-  | {type: 'selectFileCallback'; n: number; file: VFile | null; }
-  | {type: 'createFile'; path: string; file: File; }; // ここはVFileではなくJavaScript標準のFile
+  | {
+      type: 'selectBranchCallback';
+      branch: string;
+      files: VFile[];
+      tree?: VFile[];
+      log: Log;
+    }
+  | {type: 'selectTree'; func:(state:Repository)=>void}
+  | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[]};
+
+/**
+ * クエリパラメータのfile属性にファイルパスをセットする
+ * @param file
+ */
+function setQueryParam(attr:string,value: string|null) {
+  const url = new URL(window.location.toString());
+  if (value) {
+    url.searchParams.set(attr, value);
+  } else {
+    url.searchParams.delete(attr);
+  }
+  history.pushState({}, '', url);
+}
+
+/**
+ * useReducer用のディスパッチャ定義
+ * コンポーネント内でディスパッチャを定義すると更新の度に新しい関数オブジェクトが作られて多重呼び出しになるので注意
+ * @param state  現在の状態
+ * @param action アクションオブジェクト
+ * @returns 新しい状態
+ */
+const reducer = (state: Repository, action: Actions): Repository => {
+  switch (action.type) {
+    case 'selectRepositoryCallback':
+      setQueryParam('branch',action.branch);
+      setQueryParam('file',null);
+      return {
+        ...state,
+        owner: action.owner,
+        repo: action.repo,
+        branches: action.branches,
+        defaultBranch: action.defaultBranch,
+        branch: action.branch,
+        files: action.files,
+      };
+    case 'selectBranchCallback':
+      // TODO: ブランチ毎のカレントディレクトリを保持する
+      // クエリパラメータにブランチをセットする
+      setQueryParam('branch',action.branch);
+      setQueryParam('file',null);
+      action.log.info(
+        t('ブランチを変更しました', {branch: action.branch}),
+        1000,
+      );
+      return {
+        ...state,
+        branch: action.branch,
+        currentTree: action.tree ?? [],
+        files: action.files,
+      };
+    case 'selectTree':
+      action.func(state);
+      return state;
+    case 'selectTreeCallback':
+      return {...state, currentTree: action.tree, files: action.files};
+  }
+};
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -74,7 +135,7 @@ export function RepositoryContextProvider({
   owner,
   repo,
   branch,
-  file
+  file,
 }: {
   children: JSX.Element;
   owner: string;
@@ -85,267 +146,11 @@ export function RepositoryContextProvider({
   console.log('[repositoryContext]', owner, repo);
   const log = useLogContext();
   const app = useAppContext();
-  const [currentFile, setFile] = useState<VFile | null>(null);
-
-  const config = async () => {
-    // const config = useVivlioStyleConfig({
-    //     user: app.user,
-    //     owner: repository.owner!,
-    //     repo: repository.repo!,
-    //     branch: repository.branch!,
-    //   });
-    const config = {};
-    return config;
-  };
+  const [currentFile, setCurrentFile] = useState<VFile | null>(null);
 
   /**
-   * ブランチの選択
-   * @param branch
+   * リポジトリを選択する
    */
-  const selectBranch = useCallback((branch: string) => {
-    console.log('selectBranch', branch);
-    if (!owner || !repo || !branch) {
-      return;
-    }
-    if (dispatch) {
-      dispatch({type: 'selectBranch', branch});
-    }
-  },[owner, repo]);
-  /**
-   * フォルダを開く
-   * @param tree
-   */
-  const selectTree = (tree: '.' | '..' | VFile) => {
-    console.log('selectTree', tree);
-    if (dispatch) {
-      dispatch({type: 'selectTree', tree});
-    }
-  };
-  /**
-   * 編集対象のファイルを選択する
-   * @param path
-   */
-  const selectFile = useCallback((file: VFile | null, key: number) => {
-    console.log('selectFile', key, file);
-    if (dispatch) {
-      dispatch({type: 'selectFile', file, key});
-    }
-
-    // 対象ファイルが切り替えられたらWebAPIを通してファイルの情報を要求する
-  }, []);
-
-  // const getFileContent = async () => {};
-
-  const state = {
-    id: 0,
-    node_id: '',
-    private: false,
-    owner: null,
-    repo: null,
-    full_name: '',
-    branches: [],
-    files: [],
-    branch: null,
-    currentTree: [],
-    currentFile: null,
-    currentConfig: null,
-    selectBranch,
-    selectTree,
-    selectFile,
-    fs: null,
-    // getFileContent,
-    defaultBranch: '',
-    createFile: (path: string, file: File) => {
-      dispatch({type: 'createFile', path, file});
-    },
-  } as Repository;
-
-  // コールバックのディスパッチが多重に処理されるのを防ぐカウンタ
-  // コールバックを呼び出す側と処理する側で数値が一致していなければ多重処理になっているためキャンセルする
-  let n = 0;
-
-  const reducer = useCallback(
-    (state: Repository, action: Actions): Repository => {
-      switch (action.type) {
-        case 'selectRepositoryCallback':
-          if(action.file) {
-            setFile(action.file);
-          }
-          return {
-            ...state,
-            owner: action.owner,
-            repo: action.repo,
-            branches: action.branches,
-            defaultBranch: action.defaultBranch,
-            branch: action.branch,
-            files: action.files,
-          };
-        case 'selectBranch':
-          if( !(app.user && state.owner && state.repo && action.branch) || state.branch === action.branch ) { return state; }
-          const props = {
-            user: app.user!,
-            owner: state.owner!,
-            repo: state.repo!,
-            branch: action.branch,
-          };
-          const dirname = action.tree ? action.tree.map(t=>t.name).join('/') : ''; 
-          WebApiFs.open(props).then((fs) => {
-            fs.readdir(dirname)
-              .then((files) => {
-                if (dispatch) {
-                  dispatch({
-                    type: 'selectBranchCallback',
-                    branch: action.branch,
-                    files,
-                    tree: action.tree
-                  });
-                }
-              })
-              .catch((err) => {
-                console.error(err);
-              });
-          });
-          return state;
-        case 'selectBranchCallback':
-          // TODO: ブランチ毎のカレントディレクトリを保持する
-          setFile(null);
-          const url = new URL(window.location.toString());
-          url.searchParams.set('branch', action.branch);
-          url.searchParams.delete('file');
-          history.pushState({}, '', url);
-          return {
-            ...state,
-            branch: action.branch,
-            currentTree: action.tree??[],
-            files: action.files,
-            currentFile: null,
-          };
-        case 'selectTree':
-          // console.log('selectTreeAction');
-          const tree = [...state.currentTree];
-          if (action.tree == '.') {
-            // 何もせず後段でファイルリストを読み込みなおす
-          } else if (action.tree == '..') {
-            if (tree.length == 0) {
-              return state;
-            }
-            tree.pop();
-          } else {
-            tree.push(action.tree as unknown as VFile);
-          }
-          const treeProps = {
-            user: app.user!,
-            owner: state.owner!,
-            repo: state.repo!,
-            branch: state.branch!,
-          };
-          const path = tree.map((t) => t.name).join('/');
-          // console.log('selectTree props',treeProps, path);
-          WebApiFs.open(treeProps)
-            .then((fs) => {
-              fs.readdir(path)
-                .then((files) => {
-                  console.log('success', path);
-                  dispatch({type: 'selectTreeCallback', tree, files});
-                })
-                .catch((err) => {
-                  throw err;
-                });
-            })
-            .catch((err) => {
-              throw err;
-            });
-          return state;
-        case 'selectTreeCallback':
-          console.log('selectTreeCallback', action);
-          return {...state, currentTree: action.tree, files: action.files};
-        case 'setFiles':
-          console.log('setFiles', action.files);
-          return {...state, files: action.files};
-        case 'selectFile':
-          console.log('selectFileAction', action);
-          setFile(action.file);
-          return state;
-        case 'selectFileCallback':
-          //   console.log('selectFileCallback', action.n, n, action.file);
-          //   if (action.n != n) {
-          //     console.log('dispatch cancel');
-          //     return state;
-          //   } else {
-          //     console.log('...');
-          //   } /* 多重処理をキャンセル */
-          //   n++;
-          //   if (action.file) {
-          //     // ファイル情報が取得できたら対象ファイルを変更してstateをcleanにする
-          //     // if (action.file.session) {
-          //     //   // setSession(file.session);
-          //     // }
-          //     // previewSource.changeFile(path, file.text);
-          //     console.log('log.info');
-          //     log.info(
-          //       'ファイルを選択しました :' +
-          //         state.currentFile?.path +
-          //         ' > ' +
-          //         action.file.path,
-          //     );
-          //     return {...state, currentFile: action.file};
-          //   } else {
-          //     // ファイル情報が取得できなかった
-          //     console.error('file not found');
-          //     return state;
-          //   }
-          return state;
-        case 'createFile':
-          // console.log('createFile action', action.path, action.file);
-          var encodedData = Buffer.from("\n", 'utf8').toString('base64');
-          // console.log('encodedData', encodedData);
-          app.gqlclient?.mutate({mutation:gql`
-            mutation createFile($owner: String!, $repo: String!, $branch: String!, $path: String!, $encodedData: String!, $message: String!) {
-              commitContent(params:{
-                owner: $owner,
-                repo: $repo,
-                branch: $branch,
-                newPath: $path,
-                newContent: $encodedData,
-                message: $message
-              }) {
-                state,
-                message
-              }
-            }
-          `,
-            variables: { owner, repo, branch:state.branch, path:action.path, encodedData, message:"create file"}
-          }).then((result:any)=>{
-            if(result.data.commitContent.state) {
-              log.success(`ファイルを作成しました : ${action.path}`, 1000);
-              // ファイルリストを更新する
-              // TODO: mutationの結果として取得することでリクエスト回数を減らす
-              dispatch({type: 'selectBranch', branch: state.branch!, tree: state.currentTree});  
-            }else{
-              log.error(
-                `ファイル(${action.path})が作成できませんでした : ${result.data.commitContent.message}`,
-                1000,
-              );  
-            }
-          }).catch((error)=>{
-            log.error(
-              `ファイル(${action.path})が作成できませんでした : ${error.message}`,
-              1000,
-            );
-          });
-          return state;
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const [repository, dispatch] = useReducer(reducer, state);
-
-  /**
-   *
-   */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const selectRepository = useCallback(
     (owner: string, repo: string, branch?: string, filePath?: string) => {
       if (!app.user || app.isPending) {
@@ -361,22 +166,25 @@ export function RepositoryContextProvider({
         }
         const branches = repository.branches;
         const defaultBranch = repository.defaultBranch;
+        branch = branch ?? defaultBranch;
         const props = {
           user: app.user!,
           owner,
           repo,
-          branch: branch ?? defaultBranch,
+          branch,
         };
         console.log('selectRepository', props);
         const fs: WebApiFs = await WebApiFs.open(props);
-        const dirname = filePath ? upath.dirname(filePath):'';
+        const dirname = filePath ? upath.dirname(filePath) : '';
         const files = await fs.readdir(dirname);
         let file;
-        if(filePath) {
+        if (filePath) {
           const name = upath.basename(filePath);
-          file = new VFile({fs,dirname,type:'file',name});
+          file = new VFile({fs, dirname, type: 'file', name});
         }
-
+        if (file) {
+          setCurrentFile(file);
+        }
         if (dispatch) {
           dispatch({
             type: 'selectRepositoryCallback',
@@ -384,17 +192,203 @@ export function RepositoryContextProvider({
             repo,
             branches,
             defaultBranch,
-            branch: branch ?? defaultBranch,
+            branch,
             files,
-            file
+            file,
           });
         }
-
       })();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [app.isPending, app.user],
   );
+
+  /**
+   * ブランチの選択
+   * @param branch
+   */
+  const selectBranch = useCallback(
+    (newBranch: string) => {
+      console.log('selectBranch', newBranch);
+      if (!owner || !repo || !newBranch || branch === newBranch) {
+        return;
+      }
+      (async () => {
+        const props = {
+          user: app.user!,
+          owner: owner!,
+          repo: repo!,
+          branch: newBranch,
+        };
+        // ブランチ変更の際にはルートディレクトリをカレントディレクトリにする
+        const dirname = '';
+        try {
+          const fs = await WebApiFs.open(props);
+          const files = await fs.readdir(dirname);
+          if (dispatch) {
+            setCurrentFile(null);
+
+            dispatch({
+              type: 'selectBranchCallback',
+              branch: newBranch,
+              files,
+              log,
+            });
+          }
+        } catch (err: any) {
+          console.error(err);
+        }
+      })();
+    },
+    [owner, repo],
+  );
+
+  /**
+   * 編集対象のファイルを選択する
+   * @param path
+   */
+  const selectFile = useCallback((file: VFile | null) => {
+    console.log('useRepositoryContext selectFile', file);
+    setCurrentFile(file);
+  }, []);
+
+  /**
+   * ファイルを新しく作成する
+   */
+  const createFile = useCallback((path: string, file: File) => {
+    (async () => {
+      // console.log('createFile action', action.path, action.file);
+      var encodedData = Buffer.from('\n', 'utf8').toString('base64');
+      // console.log('encodedData', encodedData);
+      try {
+        const result = await app.gqlclient?.mutate({
+          mutation: gql`
+            mutation createFile(
+              $owner: String!
+              $repo: String!
+              $branch: String!
+              $path: String!
+              $encodedData: String!
+              $message: String!
+            ) {
+              commitContent(
+                params: {
+                  owner: $owner
+                  repo: $repo
+                  branch: $branch
+                  newPath: $path
+                  newContent: $encodedData
+                  message: $message
+                }
+              ) {
+                state
+                message
+              }
+            }
+          `,
+          variables: {
+            owner,
+            repo,
+            branch: branch,
+            path: path,
+            encodedData,
+            message: 'create file',
+          },
+        });
+        if (!result) {
+          return;
+        }
+        if (result.data.commitContent.state) {
+          log.success(t('ファイルを作成しました', {filepath: path}), 1000);
+          // ファイルリストを更新する
+          // TODO: mutationの結果として取得することでリクエスト回数を減らす
+          if (branch) {
+            selectBranch(branch);
+          }
+        } else {
+          log.error(
+            t('ファイルが作成できませんでした', {
+              filepath: path,
+              error: result.data.commitContent.message,
+            }),
+            1000,
+          );
+        }
+      } catch (err: any) {
+        log.error(
+          t('ファイルが作成できませんでした', {
+            filepath: path,
+            error: err.message,
+          }),
+          1000,
+        );
+      }
+    })();
+  }, []);
+
+  /**
+   * フォルダを開く
+   * @param tree
+   */
+  const selectTree = useCallback((tree: '.' | '..' | VFile) => {
+    // stateが必要な処理と非同期処理が不可分な場合に
+    // useReducerで無理矢理に非同期処理を実行する
+    dispatch({type:"selectTree",func:(state:Repository)=>{
+      (async () => {
+        console.log('selectTree', tree);
+        // console.log('selectTreeAction');
+        const trees = [...state.currentTree];
+        if (tree == '.') {
+          // 何もせず後段でファイルリストを読み込みなおす
+        } else if (tree == '..') {
+          if (trees.length > 0) {
+            // ルートフォルダ以外ならひとつ上る
+            trees.pop();
+          }
+        } else {
+          trees.push(tree as unknown as VFile);
+        }
+        const treeProps = {
+          user: app.user!,
+          owner: state.owner!,
+          repo: state.repo!,
+          branch: state.branch!,
+        };
+        const path = trees.map((t) => t.name).join('/');
+        try {
+          const fs = await WebApiFs.open(treeProps);
+          const files = await fs.readdir(path);
+          dispatch({type: 'selectTreeCallback', tree: trees, files});
+        } catch (err: any) {
+          throw err;
+        }
+      })();  
+    }});
+  }, []);
+
+  const initialState = {
+    id: 0,
+    node_id: '',
+    private: false,
+    owner: null,
+    repo: null,
+    full_name: '',
+    branches: [],
+    files: [],
+    branch: null,
+    currentTree: [],
+    // currentFile: null,
+    currentConfig: null,
+    fs: null,
+    defaultBranch: '',
+    // メソッド
+    selectBranch,
+    selectTree,
+    selectFile,
+    createFile,
+  } as Repository;
+
+  const [repository, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     if (!app.user || app.isPending) {
@@ -403,28 +397,16 @@ export function RepositoryContextProvider({
     selectRepository(owner, repo, branch, file);
   }, [app.isPending, app.user, branch, file, owner, repo, selectRepository]);
 
-
-  /**
-   * ファイルの内容を読み込み完了し、編集可能な状態になった
-   */
-  const onReady = useCallback(
-    (currentFile: VFile | null) => {
-      console.log('onReady', currentFile);
-      dispatch({type: 'selectFileCallback', file: currentFile, n});
-    },
-    [n],
-  );
-
   /*
     1. currentFileが変更される
     2. CurrentFileContextProvider内でファイルコンテントの読み込みなどを行なう
-    3. イベントハンドラで変更がRepositoContextProviderに通知される
+    3. onReadyイベントハンドラで変更がRepositoContextProviderに通知される
     4. repository.currentFileが変更される
     5. 購読者に変更通知
   */
   return (
     <RepositoryContext.Provider value={repository}>
-      <CurrentFileContextProvider onReady={onReady} file={currentFile}>
+      <CurrentFileContextProvider file={currentFile}>
         {children}
       </CurrentFileContextProvider>
     </RepositoryContext.Provider>
