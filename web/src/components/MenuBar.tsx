@@ -62,10 +62,17 @@ export function MenuBar({
   const [customTheme, setCustomTheme] = useState<Theme | null>(null);
   useEffect(() => {
     // ブランチが変更されたらカスタムテーマを読み直し
+    // ブランチ毎に保存したテーマを保持する
     // TODO: config.jsが編集されたらカスタムテーマを読み直し
     CustomTheme.create(app, repository).then((theme) => {
-      setCustomTheme(theme);
-      currentTheme.changeTheme(theme);
+      if(theme) {
+        setCustomTheme(theme);
+        currentTheme.changeTheme(theme);  
+      }else{
+        currentTheme.changeTheme(plainTheme);
+      }
+    }).catch(()=>{      
+      currentTheme.changeTheme(plainTheme);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, repository.branch]);

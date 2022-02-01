@@ -72,7 +72,6 @@ export function ProjectExplorer() {
   const onClick = async (file: VFile) => {
     setCreateForm(null);
 
-    console.log('proj.onclick', file);
     if (file.type === 'file') {
       // 画像ファイルだったらライトボックスで表示する
       if (isImageFile(file.name)) {

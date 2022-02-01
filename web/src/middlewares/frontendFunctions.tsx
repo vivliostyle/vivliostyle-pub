@@ -50,6 +50,7 @@ export function getExt(path?: string) {
 /**
  * エディタでのファイル状態
  * none ファイルが選択されてない
+ * busy ファイルが選択されて編集可能になるまでや、保存中
  * init 初めて開いた状態
  * clean リポジトリと一致している状態
  * modified 内容が変更された状態
@@ -57,6 +58,7 @@ export function getExt(path?: string) {
  */
 export enum FileState {
   none = 'none',
+  busy = 'busy',
   init = 'init',
   clean = 'clean',
   modified = 'modified',

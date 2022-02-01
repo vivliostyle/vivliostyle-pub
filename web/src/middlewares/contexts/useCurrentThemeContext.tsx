@@ -4,12 +4,13 @@ import {isURL} from '../frontendFunctions';
 import upath from 'upath';
 import {VPUBFS_ROOT} from '../previewFunctions';
 import {useAppContext} from './useAppContext';
-import {useLogContext} from './useLogContext';
+import {Log, useLogContext} from './useLogContext';
 import {t} from 'i18next';
 
 type CurrentTheme = {
   theme: Theme | null;
   stylePath: string | null; // viewer.jsのstyle= に渡すパス
+  // メソッド
   changeTheme: (theme: Theme | null) => void;
 };
 
@@ -25,11 +26,17 @@ export function useCurrentThemeContext() {
 /**
  * useReducer用のAction定義
  */
-type Actions = {
-  type: 'changeThemeCallback';
-  theme: Theme | null;
-  stylePath: string;
-};
+type Actions =
+  | {
+      type: 'changeTheme';
+      func: (state: CurrentTheme) => void;
+    }
+  | {
+      type: 'changeThemeCallback';
+      theme: Theme | null;
+      stylePath: string;
+      log:Log;
+    };
 
 type CurrentThemeProps = {
   children: JSX.Element;
@@ -44,6 +51,9 @@ type CurrentThemeProps = {
  */
 const reducer = (state: CurrentTheme, action: Actions): CurrentTheme => {
   switch (action.type) {
+    case 'changeTheme':
+      action.func(state);
+      return state;
     case 'changeThemeCallback': // テーマの準備が完了 TODOQ: 複数回呼ばれているので修正する
       console.log('changeThemeCallback', action);
       let stylePath: string | null = null;
@@ -52,6 +62,13 @@ const reducer = (state: CurrentTheme, action: Actions): CurrentTheme => {
           ? action.stylePath
           : upath.resolve(VPUBFS_ROOT, action.stylePath);
       }
+      action.log.success(
+        t('テーマを変更しました', {
+          themeName: action.theme?.name,
+          themePath: stylePath,
+        }),
+        1000,
+      );
       return {...state, theme: action.theme!, stylePath};
   }
 };
@@ -62,8 +79,6 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
   const app = useAppContext();
   const log = useLogContext();
 
-  let n = 0;
-
   /**
    * 対象となるテーマを切り替える
    * TODO: CSS単体ファイルだけではなく、テーマオブジェクトを扱えるようにする。
@@ -71,54 +86,53 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
    */
   const changeTheme = useCallback(
     (theme: Theme | null) => {
-      console.log('changeTheme', theme);
-      if (theme) {
-        // TODO: テーマオブジェクトのメソッド呼び出し
-        theme
-          .process(app.vpubFs!)
-          //        processThemeString(app, theme)
-          .then((themePath) => {
-            // 準備が終わったら状態を変化させる
-            if (dispatch) {
-              dispatch({
-                type: 'changeThemeCallback',
-                theme: theme,
-                stylePath: themePath,
-              });
-              log.success(
-                t('テーマを変更しました', {
-                  themeName: theme.name,
-                  themePath: themePath,
-                }),
-                1000,
-              );
-            }
-          })
-          .catch((err) => {
-            if (err.message.startsWith('403:')) {
-              console.error(err);
-              log.error(
-                t('テーマが大きすぎます',{error: err.message.split(':')[1]}),
-                3000,
-              );
+      dispatch({
+        type: 'changeTheme',
+        func: (state: CurrentTheme) => {
+          console.log('changeTheme', theme);
+          (async () => {
+            if (theme) {
+              // TODO: テーマオブジェクトのメソッド呼び出し
+              try {
+                const themePath = await theme.process(app.vpubFs!);
+                //        processThemeString(app, theme)
+                // 準備が終わったら状態を変化させる
+                dispatch({
+                  type: 'changeThemeCallback',
+                  theme: theme,
+                  stylePath: themePath,
+                  log
+                });
+              } catch (err: any) {
+                if (err.message.startsWith('403:')) {
+                  console.error(err);
+                  log.error(
+                    t('テーマが大きすぎます', {
+                      error: err.message.split(':')[1],
+                    }),
+                    3000,
+                  );
+                } else {
+                  console.log(err);
+                  log.error(
+                    t('テーマの準備に失敗しました', {
+                      themeStyle: theme.style,
+                      error: err.message,
+                    }),
+                    3000,
+                  );
+                }
+              }
             } else {
-              console.log(err);
-              log.error(
-                t('テーマの準備に失敗しました', {
-                  themeStyle: theme.style,
-                  error: err.message,
-                }),
-                3000,
-              );
+              // TODO: テーマのリセット
+              // log.warning('テーマが指定されていません', 1000);
             }
-          });
-      } else {
-        // TODO: テーマのリセット
-        // log.warning('テーマが指定されていません', 1000);
-      }
+          })();
+        },
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app],
+    [app,log],
   );
   /**
    * 初期値

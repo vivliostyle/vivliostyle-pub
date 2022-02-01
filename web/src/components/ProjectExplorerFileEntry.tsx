@@ -192,7 +192,7 @@ export default function FileEntry({
   const onDeleteFile = (filename: string, hash: string | undefined) => {
     (async () => {
       const filePath = upath.join(currentDir, filename);
-      if (!confirm(t('ファイル(${filePath})を削除しますか?',{filepath:filePath}))) {
+      if (!confirm(t('ファイルを削除しますか?',{filepath:filePath}))) {
         return;
       }
       const result = (await app.gqlclient?.mutate({

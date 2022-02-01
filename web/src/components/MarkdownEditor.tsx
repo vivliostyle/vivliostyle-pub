@@ -1,6 +1,8 @@
 import React, {useMemo} from 'react';
 import Editor from '@monaco-editor/react';
-import {FileState} from '@middlewares/frontendFunctions';
+import {
+  FileState,
+} from '@middlewares/frontendFunctions';
 import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 import * as UI from '@components/ui';
 
@@ -13,7 +15,7 @@ export const MarkdownEditor = ({
   // CurrentFileコンテクストが変化してもリロードしない
   const currentFile = useCurrentFileContext();
 
-  console.log('[Editor]' /* currentFile */);
+  console.log('[Editor]', /* currentFile */);
 
   /**
    * シンタックスハイライティング用のファイル種別
@@ -40,13 +42,13 @@ export const MarkdownEditor = ({
    */
   const onChange = (value: string | undefined, event: any) => {
     currentFile.modify(value ?? '');
-    onModified(value ?? '');
+    onModified(value??'');
   };
 
-  const display = currentFile.state == FileState.none ? 'block' : 'none';
+  const display = currentFile.state == FileState.none || currentFile.state == FileState.busy ? 'block' : 'none';
 
   return (
-    <UI.Box w="100%" h="100%" position="relative" overflow="hidden">
+    <UI.Box w="100%" h="100%" position="relative" overflow='hidden'>
       <Editor
         height="100%"
         language={language}

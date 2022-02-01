@@ -46,14 +46,15 @@ const provider = new GithubAuthProvider();
 export type AppContext = {
   user: User | null;
   isPending: boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
-  signIn: () => void;
-  signOut: () => void;
   onlineThemes: Theme[];
   vpubFs?: AppCacheFs; // Application Cacheへのアクセス
   repositories?: Repository[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
   query?: GraphQlQueryMethod; // サーバのGraphQL APIへのクエリメソッド
   gqlclient?: ApolloClient<NormalizedCacheObject>;
   reload: () => void;
+  signIn: () => void;
+  signOut: () => void;
+  clearCache: () => void;
 };
 
 /**
@@ -80,6 +81,7 @@ type Actions =
     }
   | {type: 'notSignedIn'}
   | {type: 'signOutCallback'}
+  | {type: 'clearCache'}
 
 /**
  * 公式テーマのリストを返す
@@ -171,6 +173,11 @@ const reducer = (state: AppContext, action: Actions): AppContext => {
         query: undefined,
         repositories: undefined,
       };
+    case 'clearCache':
+      // ApplicationCacheを削除
+      console.log('app clearCache');
+      state.vpubFs?.unlinkCache().then(() => {});
+      return state;
   }
 };
 
@@ -280,6 +287,9 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     reload: () => {
       init(app.user);
     },
+    clearCache: () =>{
+      dispatch({type:'clearCache'});
+    }
   });
 
   const [app, dispatch] = useReducer(reducer, state);

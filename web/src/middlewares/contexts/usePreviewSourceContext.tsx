@@ -82,7 +82,7 @@ const transpile = async (
   vPubPath: string | null;
   text: string | null;
 } | null> => {
-  console.log('transpile', currentFile);
+  console.log('[PreviewSourceContext] transpile', currentFile);
   try {
     if (!currentFile.file) {
       return null;
@@ -122,7 +122,7 @@ const transpile = async (
 const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
   switch (action.type) {
     case 'changeFileCallback': // ドキュメントの準備が完了
-      console.log('changeFileCallback', action.vPubPath /*, action.text */);
+      console.log('[PreviewSourceContext] changeFileCallback', action.vPubPath /*, action.text */);
       return {
         ...state,
         path: action.file?.path ?? null,
@@ -198,7 +198,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    */
   const reload = useCallback((currentFile: CurrentFile | null) => {
     if (currentFile) {
-      console.log('reload by user action');
+      console.log('[PreviewSourceContext] reload by user action');
       transpile(currentFile, app, repository, log);
       dispatch({type: 'reload', currentFile});
     }
