@@ -115,11 +115,9 @@ const reducer = (
 export function CurrentFileContextProvider({
   children,
   file,
-  onReady,
 }: {
   children: JSX.Element;
   file: VFile | null;
-  onReady: (file: VFile | null) => void;
 }) {
   console.log('[CurrentFileContextProvider]' /*, file, onReady*/);
   const app = useAppContext();
@@ -214,6 +212,7 @@ export function CurrentFileContextProvider({
   };
 
   useEffect(() => {
+    if(!repository.owner || !repository.repo || !repository.branch) { return; }
     // 上位コンポーネントから渡されたfileが更新された
     (async () => {
       if (state == FileState.modified || state == FileState.saved) {
@@ -240,7 +239,6 @@ export function CurrentFileContextProvider({
       // }
       if (!file) {
         // ファイル未選択なら選択解除
-        onReady(null);
         setState(FileState.none);
         dispatch({
           type: 'setFileCallback',
@@ -260,10 +258,8 @@ export function CurrentFileContextProvider({
           t('編集できないファイル形式です', {filepath: file.path}),
           3000,
         );
-        onReady(file);
         return;
       }
-      // console.log('setFile props', props);
       try {
         const props = {
           user: app.user!,
@@ -271,9 +267,9 @@ export function CurrentFileContextProvider({
           repo: repository.repo!,
           branch: repository.branch!,
         };
+        console.log('setFile props', props);
         const fs = await WebApiFs.open(props);
         const content = await fs.readFile(file.path);
-        // console.log('dispatch setFileCallback', seq,action.file,content);
         if (content == undefined || content == null) {
           // 0バイトのファイルがあるため、!contentでは駄目
           log.error(
@@ -287,7 +283,6 @@ export function CurrentFileContextProvider({
         setQueryParam(file);
         log.info(t('ファイルを選択しました', {filepath: file.path}));
         setSession(session);
-        onReady(file);
         dispatch({
           type: 'setFileCallback',
           file: file,
@@ -302,10 +297,9 @@ export function CurrentFileContextProvider({
           3000,
         );
         console.error(err);
-        onReady(file);
       }
     })();
-  }, [file]);
+  }, [app, repository, file]);
 
   /**
    * 初期値
