@@ -1,5 +1,8 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
+import { Octokit } from '@octokit/rest';
+
+
 
 /**
  * Githubリポジトリ上のファイルを管理する
@@ -38,6 +41,8 @@ export const commitContent = async (
   let newContent = params.newContent; // Base64エンコードされたコンテンツ(更新内容、新規作成内容)
   const removeOldPath = params.removeOldPath ?? false; // trueならoldPathで指定されたファイルを最後に削除
 
+  // console.log('commitContent',owner,repo,branch,message,oldPath,newPath,newContent,removeOldPath);
+
   // 複製/移動/リネームのための既存ファイルのコンテントを取得するクエリ文字列
   let oldContentQuery = '';
   let oldPathWithBranch;
@@ -45,6 +50,7 @@ export const commitContent = async (
     oldContentQuery = `
       oldContent: object(expression: $oldPathWithBranch) {
         ... on Blob {
+          oid,
           isBinary,
           text
         }
@@ -102,7 +108,7 @@ export const commitContent = async (
       },
     },
   )) as any;
-  console.log('branch obj', JSON.stringify(branchObj));
+  // console.log('branch obj', JSON.stringify(branchObj));
 
   // 新規ファイルと同名のファイルが存在すればエラー
   if( newPath && branchObj.repository.existsFile !== null ) {
@@ -118,8 +124,19 @@ export const commitContent = async (
   const headOid = branchObj.repository.ref.target.oid;
   // 既存ファイルの内容
   if (!newContent && branchObj.repository.oldContent) {
-    newContent = branchObj.repository.oldContent.text;
-    if (!branchObj.repository.oldContent.isBinary) {
+    if (branchObj.repository.oldContent.isBinary) {
+      // バイナリデータ
+      const octokit = new Octokit({
+        auth: `token ${context.token}`,
+      });
+      const blob = await octokit.git.getBlob({
+        owner,
+        repo,
+        file_sha: branchObj.repository.oldContent.oid,
+      });
+      newContent = blob.data.content.replaceAll("\n","");
+    }else{
+      newContent = branchObj.repository.oldContent.text;
       // バイナリデータでない場合は再度Base64エンコードする
       newContent = Buffer.from(newContent, 'utf8').toString('base64');
     }
@@ -129,6 +146,7 @@ export const commitContent = async (
 
   // 新しく作成するファイルのリスト
   const additions = [];
+  // console.log(newPath, newContent);
   if (newPath && newContent !== null) { // newContent = ""のこともあるのでnullでないこと
     additions.push({
       path: newPath,
@@ -141,6 +159,24 @@ export const commitContent = async (
   if (removeOldPath && oldPath) {
     deletions.push({path: oldPath});
   }
+
+  if(additions.length == 0 && deletions.length == 0) {
+    return {state: false, message: 'no operation'};
+  }
+
+  const parameters = {
+    repositoryNameWithOwner: `${owner}/${repo}`,
+    branch,
+    message,
+    additions,
+    deletions,
+    headOid,
+    headers: {
+      authorization: `token ${context.token}`,
+    },
+  };
+
+  // console.log(parameters);
 
   const result = await graphql(
     `
@@ -171,19 +207,9 @@ export const commitContent = async (
         }
       }
     `,
-    {
-      repositoryNameWithOwner: `${owner}/${repo}`,
-      branch,
-      message,
-      additions,
-      deletions,
-      headOid,
-      headers: {
-        authorization: `token ${context.token}`,
-      },
-    },
+    parameters
   );
-  console.log('gql result', result);
+  // console.log('gql result', result);
 
   // TODO: 更新後のbranchハッシュを返す
   return {state: true, message: 'OK'};
