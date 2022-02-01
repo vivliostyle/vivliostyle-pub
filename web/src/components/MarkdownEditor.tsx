@@ -48,7 +48,7 @@ export const MarkdownEditor = ({
   const display = currentFile.state == FileState.none ? 'block' : 'none';
 
   return (
-    <UI.Box w="100%" h="100%" position="relative">
+    <UI.Box w="100%" h="100%" position="relative" overflow='hidden'>
       <Editor
         height="100%"
         language={language}
