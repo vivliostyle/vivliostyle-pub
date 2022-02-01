@@ -97,7 +97,9 @@ export default function FileEntry({
       const oldFilePath = upath.join(currentDir, oldFilename);
       const newFilePath = upath.join(currentDir, newFilename);
 
-      const result = (await app.gqlclient?.mutate({
+      console.log('[FileEntry] copy', oldFilePath, newFilePath);
+
+      const result = await app.gqlclient?.mutate({
         mutation: gql`
           mutation renameFile(
             $owner: String!
@@ -133,9 +135,9 @@ export default function FileEntry({
           removeOldPath,
           message
         },
-      })) as any;
+      }) as any;
 
-      console.log('copy result', result);
+      console.log('[FileEntry] copy result', result);
       return result;
   };
 
@@ -169,7 +171,7 @@ export default function FileEntry({
     if (oldFilename === newFilename) {
       return;
     }
-    const result = await copyFile(oldFilename, newFilename, false, "duplicate result");
+    const result = await copyFile(oldFilename, newFilename, false, "duplicate a file");
     if (result.data.commitContent.state) {
       log.success(
         t(`ファイルを複製しました`,{oldfilepath:oldFilename,newfilepath:newFilename}),
