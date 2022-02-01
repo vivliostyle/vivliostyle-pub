@@ -29,7 +29,7 @@ export class AppCacheFs implements Fs {
      * @returns 
      */
     public async unlink(path:string):Promise<boolean> {
-      return this.cache.delete(path);
+      return await this.cache.delete(path);
     }
 
     /**
@@ -38,7 +38,15 @@ export class AppCacheFs implements Fs {
      * @returns 
      */
     public async unlinkCache():Promise<boolean> {
-        return caches.delete(this.cacheName);
+      try{
+        await caches.delete(this.cacheName);
+        this.cache = await caches.open(this.cacheName);
+        return true;
+      }catch(err:any){
+        console.error(err);
+        return false;
+      }
+
     }
 
     /**
