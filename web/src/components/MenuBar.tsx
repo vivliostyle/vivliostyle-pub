@@ -75,7 +75,7 @@ export function MenuBar({
       currentTheme.changeTheme(plainTheme);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app, repository.branch]);
+  }, [app, repository.state.branch]);
 
   const onDidSaved = useCallback(() => {
     console.log('onDidSaved');
@@ -103,7 +103,7 @@ export function MenuBar({
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
       <UI.Flex align="center">
-        {repository.owner} / {repository.repo} /
+        {repository.state.owner} / {repository.state.repo} /
         <UI.Box w="180px" px="4">
           <BranchSelecter />
         </UI.Box>
@@ -178,7 +178,7 @@ export function MenuBar({
                 key={plainTheme.name}
                 onClick={() => onThemeSelected(plainTheme)}
               >
-                {plainTheme.name === currentTheme.theme?.name ? '✔ ' : ' '}
+                {plainTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
                 {plainTheme.description}
               </UI.MenuItem>
               {!customTheme ? null : (
@@ -186,7 +186,7 @@ export function MenuBar({
                   key={customTheme.name}
                   onClick={() => onThemeSelected(customTheme)}
                 >
-                  {customTheme.name === currentTheme.theme?.name ? '✔ ' : ' '}
+                  {customTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
                   {customTheme.description}
                 </UI.MenuItem>
               )}
@@ -195,7 +195,7 @@ export function MenuBar({
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
                 >
-                  {theme.name === currentTheme.theme?.name ? '✔ ' : ' '}
+                  {theme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
                   {theme.description}
                 </UI.MenuItem>
               ))}

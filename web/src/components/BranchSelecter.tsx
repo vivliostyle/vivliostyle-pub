@@ -11,7 +11,7 @@ export const BranchSelecter = () => {
 
   const onChangeBranch = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log('[BranchSelector] onChangeBranch',currentFile.state);
-    if(currentFile.state == FileState.modified || currentFile.state == FileState.saved) {
+    if(currentFile.state.state == FileState.modified || currentFile.state.state == FileState.saved) {
       if(!confirm(t('ファイルが保存されていません。変更を破棄しますか?'))) {
         return;
       }
@@ -23,9 +23,9 @@ export const BranchSelecter = () => {
   return (
     <UI.Select
       onChange={onChangeBranch} 
-      value={repository.branch ?? ""}
+      value={repository.state.branch ?? ""}
     >
-        { repository.branches.map(name => <option value={name} key={name}>{name}</option>) }
+        { repository.state.branches.map(name => <option value={name} key={name}>{name}</option>) }
     </UI.Select>
   );
 };

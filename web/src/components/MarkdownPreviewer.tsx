@@ -32,8 +32,8 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
       let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
         previewSource.vpubPath
       }`;
-      const stylePath = currentTheme.theme?.getStylePath()
-        ? '/vpubfs/' + currentTheme.theme?.getStylePath()
+      const stylePath = currentTheme.state.theme?.getStylePath()
+        ? '/vpubfs/' + currentTheme.state.theme?.getStylePath()
         : null;
       if (stylePath) {
         url += `&style=${stylePath}`;
@@ -49,7 +49,7 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
       iframeWindow.location.reload();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewSource, currentTheme.theme]);
+  }, [previewSource, currentTheme.state.theme]);
 
   return <ViewerFrame iframeRef={iframeRef}></ViewerFrame>;
 };

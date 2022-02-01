@@ -1,6 +1,6 @@
 import { Fs, Theme } from "theme-manager";
 import { AppContext } from "../contexts/useAppContext";
-import { Repository } from "../contexts/useRepositoryContext";
+import { RepositoryContext } from "../contexts/useRepositoryContext";
 import { VivliostyleConfigSchema } from "../vivliostyle.config";
 import { WebApiFs } from "../fs/WebApiFS";
 import upath from "upath";
@@ -37,7 +37,7 @@ export class CustomTheme implements Theme {
     fs: Fs;
   
     app: AppContext;
-    repository: Repository;
+    repository: RepositoryContext;
   
     /**
      * コンストラクタ
@@ -49,7 +49,7 @@ export class CustomTheme implements Theme {
     private constructor(
       fs: Fs,
       app: AppContext,
-      repository: Repository,
+      repository: RepositoryContext,
       style: string,
     ) {
       this.app = app;
@@ -116,16 +116,16 @@ export class CustomTheme implements Theme {
      * @param repository 
      * @returns 
      */
-    public static async create(app: AppContext, repository: Repository) {
-      console.log('create custom theme', repository.branch);
-      if (!(app.user && repository.owner && repository.repo)) {
+    public static async create(app: AppContext, repository: RepositoryContext) {
+      console.log('create custom theme', repository.state.branch);
+      if (!(app.user && repository.state.owner && repository.state.repo)) {
         return null;
       }
       const props = {
         user: app.user!,
-        owner: repository.owner!,
-        repo: repository.repo!,
-        branch: repository.branch!,
+        owner: repository.state.owner!,
+        repo: repository.state.repo!,
+        branch: repository.state.branch!,
       };
       console.log('props', props);
       const fs = await WebApiFs.open(props);

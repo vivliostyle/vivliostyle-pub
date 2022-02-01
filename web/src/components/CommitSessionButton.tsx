@@ -31,7 +31,7 @@ export const CommitSessionButton = ({
   return (
     <UI.Button
       {...{ onClick }}
-      disabled={!(currentFile?.state == FileState.saved || currentFile?.state == FileState.modified)}
+      disabled={!(currentFile?.state.state == FileState.saved || currentFile?.state.state == FileState.modified)}
       isLoading={busy}
       loadingText="Saving document"
     >

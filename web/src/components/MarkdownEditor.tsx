@@ -22,13 +22,14 @@ export const MarkdownEditor = ({
    * 自動判別するのでなくても良いような気がする
    */
   const language = useMemo(() => {
-    if (currentFile.ext === 'md') {
+    const ext = currentFile.state.ext;
+    if (ext === 'md') {
       return 'markdown';
-    } else if (currentFile.ext === 'js') {
+    } else if (ext === 'js') {
       return 'javascript';
-    } else if (currentFile.ext === 'html') {
+    } else if (ext === 'html') {
       return 'html';
-    } else if (currentFile.ext === 'css') {
+    } else if (ext === 'css') {
       return 'css';
     } else {
       return 'plain';
@@ -45,20 +46,20 @@ export const MarkdownEditor = ({
     onModified(value??'');
   };
 
-  const display = currentFile.state == FileState.none || currentFile.state == FileState.busy ? 'block' : 'none';
+  const display = currentFile.state.state == FileState.none || currentFile.state.state == FileState.busy ? 'block' : 'none';
 
   return (
     <UI.Box w="100%" h="100%" position="relative" overflow='hidden'>
       <Editor
         height="100%"
         language={language}
-        path={currentFile.file?.name}
+        path={currentFile.state.file?.name}
         options={{
           minimap: {enabled: false},
           wordWrap: 'on',
         }}
         onChange={onChange}
-        value={currentFile.text}
+        value={currentFile.state.text}
       />
       <UI.Box
         display={display}
@@ -72,7 +73,7 @@ export const MarkdownEditor = ({
         backgroundColor="rgb(0,0,0,0.5)"
         lineHeight="100%"
       >
-        {currentFile.file == null ? null : (
+        {currentFile.state.file == null ? null : (
           <UI.Spinner
             size="xl"
             emptyColor="gray.200"

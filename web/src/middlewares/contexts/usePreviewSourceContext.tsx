@@ -6,7 +6,7 @@ import {
   useCallback,
 } from 'react';
 import {FileState, isEditableFile} from '../frontendFunctions';
-import {Repository, useRepositoryContext} from './useRepositoryContext';
+import {RepositoryContext, useRepositoryContext} from './useRepositoryContext';
 import {AppContext, useAppContext} from './useAppContext';
 import {CurrentFile, useCurrentFileContext} from './useCurrentFileContext';
 import {transpileMarkdown} from '../previewFunctions';
@@ -75,7 +75,7 @@ export function usePreviewSourceContext() {
 const transpile = async (
   currentFile: CurrentFile,
   app: AppContext,
-  repository: Repository,
+  repository: RepositoryContext,
   log: Log,
 ): Promise<{
   file: VFile | null;
@@ -84,7 +84,7 @@ const transpile = async (
 } | null> => {
   console.log('[PreviewSourceContext] transpile', currentFile);
   try {
-    if (!currentFile.file) {
+    if (!currentFile.state.file) {
       return null;
     }
     const {
@@ -99,11 +99,11 @@ const transpile = async (
     }
     // 準備が終わったら状態を変化させる
     // console.log('call dispatcher', dispatch);
-    return {file: currentFile.file, vPubPath: vPubPath, text: resultText};
+    return {file: currentFile.state.file, vPubPath: vPubPath, text: resultText};
   } catch (err: any) {
     log.error(
       t('プレビュー変換に失敗しました', {
-        filepath: currentFile.file!.path,
+        filepath: currentFile.state.file!.path,
         error: err.message,
       }),
       3000,
@@ -166,12 +166,12 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           // console.log('自動更新停止中');
           return;
         }
-        if (currentFile.file && currentFile.text) {
+        if (currentFile.state.file && currentFile.state.text) {
           // console.log('編集対象が変更された', currentFile);
           if (
-            currentFile.file.name &&
-            isEditableFile(currentFile.file.name) &&
-            (currentFile.ext == 'md' || currentFile.ext == 'html')
+            currentFile.state.file.name &&
+            isEditableFile(currentFile.state.file.name) &&
+            (currentFile.state.ext == 'md' || currentFile.state.ext == 'html')
           ) {
             // console.log('編集対象ファイルはプレビュー可能', currentFile);
             const result = await transpile(currentFile, app, repository, log);
@@ -185,7 +185,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
             // console.log('編集対象ファイルはプレビュー不可');
           }
         } else {
-          // console.log('編集対象が無効', currentFile.file, currentFile.text);
+          // console.log('編集対象が無効', currentFile.state.file, currentFile.state.text);
           dispatch({type: 'changeFileCallback', file:null, vPubPath:null, text:null});
         }
       })();
@@ -224,7 +224,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   useEffect(() => {
     // ファイルを切り替えたときだけプレビューを更新
     // テキストを編集した場合はuseDefferdEffectによる遅延処理を行なう
-    if (currentFile.state == FileState.init) {
+    if (currentFile.state.state == FileState.init) {
       updatePreview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -235,11 +235,11 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    */
   useDefferedEffect(
     () => {
-      if (currentFile.state == FileState.modified) {
+      if (currentFile.state.state == FileState.modified) {
         updatePreview();
       }
     },
-    [currentFile.text],
+    [currentFile.state.text],
     REFRESH_MS,
   );
 

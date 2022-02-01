@@ -74,7 +74,7 @@ export const FileUploadModal = ({
           return;
         }
         const encodedData = (await getBase64(file))?.toString().split(',')[1];
-        const currentDir = repository.currentTree.map((f) => f.name).join('/');
+        const currentDir = repository.state.currentTree.map((f) => f.name).join('/');
         const filePath = upath.join(currentDir, fileName);
         // console.log('upload image encodedData', encodedData);
         if(!encodedData) {
@@ -99,9 +99,9 @@ export const FileUploadModal = ({
           }
         `,
           variables: { 
-            owner: repository.owner, 
-            repo: repository.repo,
-            branch: repository.branch,
+            owner: repository.state.owner, 
+            repo: repository.state.repo,
+            branch: repository.state.branch,
             path: filePath, 
             encodedData,
             message:"create file"
@@ -110,7 +110,7 @@ export const FileUploadModal = ({
         // console.log('upload image result',result);
         if(result.data.commitContent.state) {
           log.success(t('ファイルを追加しました',{filename: file.name}), 1000);
-          repository.selectBranch(repository.branch!); // ファイル一覧の更新
+          repository.selectBranch(repository.state.branch!); // ファイル一覧の更新
         }else{
           log.error(t('ファイルを追加できませんでした', {filename: file.name}), 1000);
         }

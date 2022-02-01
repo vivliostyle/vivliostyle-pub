@@ -4,7 +4,7 @@ import {
   updateCacheFromPath,
 } from './frontendFunctions';
 import {AppContext} from './contexts/useAppContext';
-import {Repository} from './contexts/useRepositoryContext';
+import {RepositoryContext} from './contexts/useRepositoryContext';
 import upath from 'upath';
 import { CurrentFile } from './contexts/useCurrentFileContext';
 
@@ -37,16 +37,16 @@ const pickupHtmlResources = (text: string): string[] => {
  */
 export async function transpileMarkdown(
   app: AppContext,
-  repository: Repository,
+  repository: RepositoryContext,
   currentFile:CurrentFile
 ): Promise<{vPubPath: string; text: string; errors:Error[]}> {
-  if( ! currentFile.file ) { return {vPubPath:'',text:'',errors:[new Error("empty file")]}; } 
-  let srcPath = currentFile.file!.path;
-  if(!currentFile.text) {
-    await currentFile.file.getContent();
-    currentFile.text = currentFile.file.content;
+  if( ! currentFile.state.file ) { return {vPubPath:'',text:'',errors:[new Error("empty file")]}; } 
+  let srcPath = currentFile.state.file!.path;
+  if(!currentFile.state.text) {
+    await currentFile.state.file.getContent();
+    currentFile.state.text = currentFile.state.file.content;
   }
-  let text = currentFile.text;
+  let text = currentFile.state.text;
   // console.log('transpileMarkdown',srcPath,text);
   if (srcPath && text && srcPath.endsWith('.md')) {
     srcPath = srcPath.replace(/\.md$/, '.html');
@@ -61,9 +61,9 @@ export async function transpileMarkdown(
       try{
         console.log('imagePath in HTML',imagePath);
         await updateCacheFromPath(
-          repository.owner!,
-          repository.repo!,
-          repository.branch!,
+          repository.state.owner!,
+          repository.state.repo!,
+          repository.state.branch!,
           srcPath!,
           imagePath,
           app.user!,

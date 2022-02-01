@@ -40,6 +40,8 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   }
   const {owner, repo, text, path} = sessionSnapshot.data()!;
 
+  console.log(text);
+
   const pathWithBranch = `${branch}:${path}`;
   // ブランチのOIDを取得する
   // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。

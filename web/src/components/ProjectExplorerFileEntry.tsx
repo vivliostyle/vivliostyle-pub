@@ -125,9 +125,9 @@ export default function FileEntry({
           }
         `,
         variables: {
-          owner: repository.owner,
-          repo: repository.repo,
-          branch: repository.branch,
+          owner: repository.state.owner,
+          repo: repository.state.repo,
+          branch: repository.state.branch,
           oldPath: oldFilePath,
           newPath: newFilePath,
           removeOldPath,
@@ -220,9 +220,9 @@ export default function FileEntry({
           }
         `,
         variables: {
-          owner: repository.owner,
-          repo: repository.repo,
-          branch: repository.branch,
+          owner: repository.state.owner,
+          repo: repository.state.repo,
+          branch: repository.state.branch,
           path: filePath,
           message: 'delete file',
         },
@@ -249,9 +249,9 @@ export default function FileEntry({
 
     const props = {
       user: app.user!,
-      owner: repository.owner!,
-      repo: repository.repo!,
-      branch: repository.branch!,
+      owner: repository.state.owner!,
+      repo: repository.state.repo!,
+      branch: repository.state.branch!,
     };
     WebApiFs.open(props)
       .then((fs) => {
@@ -343,7 +343,7 @@ export default function FileEntry({
             mt={1}
             fontSize="sm"
             fontWeight={
-              file.name == currentFile?.file?.name ? 'bold' : 'normal'
+              file.name == currentFile?.state.file?.name ? 'bold' : 'normal'
             }
             display="inline-block"
             width="100%"

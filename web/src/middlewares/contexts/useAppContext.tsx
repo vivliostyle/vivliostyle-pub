@@ -1,9 +1,9 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useReducer,
-  useState,
+  useReducer
 } from 'react';
 import firebase from '@services/firebase';
 import {
@@ -28,7 +28,7 @@ import {
   OperationVariables,
   TypedDocumentNode,
 } from '@apollo/client';
-import {Repository} from './useRepositoryContext';
+import {RepositoryState} from './useRepositoryContext';
 import {Theme, ThemeManager} from 'theme-manager';
 import {NpmFs} from '../fs/NpmFS';
 
@@ -48,7 +48,7 @@ export type AppContext = {
   isPending: boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
   onlineThemes: Theme[];
   vpubFs?: AppCacheFs; // Application Cacheへのアクセス
-  repositories?: Repository[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
+  repositories?: RepositoryState[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
   query?: GraphQlQueryMethod; // サーバのGraphQL APIへのクエリメソッド
   gqlclient?: ApolloClient<NormalizedCacheObject>;
   reload: () => void;
@@ -77,11 +77,11 @@ type Actions =
       themes?: Theme[];
       query?: GraphQlQueryMethod;
       gqlclient?: ApolloClient<NormalizedCacheObject>;
-      repositories?: Repository[];
+      repositories?: RepositoryState[];
     }
   | {type: 'notSignedIn'}
   | {type: 'signOutCallback'}
-  | {type: 'clearCache'}
+  | {type: 'clearCache'};
 
 /**
  * 公式テーマのリストを返す
@@ -115,7 +115,7 @@ async function getRepositories(
   query: (
     query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
   ) => Promise<ApolloQueryResult<any>>,
-): Promise<Repository[]> {
+): Promise<RepositoryState[]> {
   try {
     // リポジトリリストの取得
     const result = await query(
@@ -134,7 +134,7 @@ async function getRepositories(
         }
       `,
     );
-    const repositories: Repository[] = result.data.repositories;
+    const repositories: RepositoryState[] = result.data.repositories;
     return repositories;
   } catch (error) {
     return [];
@@ -194,7 +194,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    * @param user
    * @returns
    */
-  const init = (user: User | null) => {
+  const init = useCallback((user: User | null) => {
     console.log('init', user);
     if (!user) {
       dispatch({type: 'notSignedIn'});
@@ -239,7 +239,8 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
         gqlclient: client,
       });
     })();
-  };
+  }, []);
+
   /**
    * 初期化
    */
@@ -252,25 +253,25 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
   /**
    * サインイン
    */
-  const signIn = () => {
+  const signIn = useCallback(() => {
     const auth = getAuth(firebase);
     signInWithRedirect(auth, provider);
-  };
+  }, []);
   /**
    * サインアウト
    */
-  const signOut = () => {
+  const signOut = useCallback(() => {
     (async () => {
       const auth = getAuth(firebase);
       await auth.signOut();
       dispatch({type: 'signOutCallback'});
     })();
-  };
+  }, []);
 
   /**
    * 初期値
    */
-  const [state] = useState<AppContext>({
+  const state = {
     // 状態
     user: null,
     isPending: true,
@@ -287,10 +288,10 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     reload: () => {
       init(app.user);
     },
-    clearCache: () =>{
-      dispatch({type:'clearCache'});
-    }
-  });
+    clearCache: () => {
+      dispatch({type: 'clearCache'});
+    },
+  };
 
   const [app, dispatch] = useReducer(reducer, state);
 

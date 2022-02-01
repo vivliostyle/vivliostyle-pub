@@ -65,9 +65,9 @@ export default function DirEntry({
         }
       `,
       variables: {
-        owner: repository.owner,
-        repo: repository.repo,
-        branch: repository.branch,
+        owner: repository.state.owner,
+        repo: repository.state.repo,
+        branch: repository.state.branch,
         oldPath: oldDirPath,
         newPath: newDirPath,
         removeOldPath,
@@ -136,9 +136,9 @@ export default function DirEntry({
           }
         `,
         variables: {
-          owner: repository.owner,
-          repo: repository.repo,
-          branch: repository.branch,
+          owner: repository.state.owner,
+          repo: repository.state.repo,
+          branch: repository.state.branch,
           path: filename,
           message: 'delete directory',
         },

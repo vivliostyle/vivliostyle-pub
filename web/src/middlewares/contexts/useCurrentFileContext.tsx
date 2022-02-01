@@ -9,12 +9,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
 } from 'react';
 import {FileState, getExt, isEditableFile} from '../frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {Log, useLogContext} from './useLogContext';
-import {Repository} from './useRepositoryContext';
+import {RepositoryContext} from './useRepositoryContext';
 import {WebApiFs} from '../fs/WebApiFS';
 import upath from 'upath';
 import {VFile} from 'theme-manager';
@@ -22,16 +23,20 @@ import {useCurrentThemeContext} from './useCurrentThemeContext';
 import {VPUBFS_ROOT} from '@middlewares/previewFunctions';
 import {t} from 'i18next';
 
-/**
- * エディタで編集しているファイル情報
- */
-export type CurrentFile = {
+type CurrentFileState = {
   file: VFile | null; // ファイル情報
   text: string; // 現在のテキスト
   ext: string; // 拡張子 何箇所かで使うのでここに保持しておく
   state: FileState; // 状態
   timer?: NodeJS.Timeout;
   session: DocumentReference<DocumentData> | null;
+};
+
+/**
+ * エディタで編集しているファイル情報
+ */
+export type CurrentFile = {
+  state: CurrentFileState,
   modify: (text: string) => void; // テキスト更新の更新メソッド
   commit: () => void; // ファイルのコミットメソッド
 };
@@ -52,7 +57,7 @@ type CurrentFileActions =
   | {type: 'modify'; text: string}
   | {
       type: 'setFile';
-      func: (state: CurrentFile) => boolean; // 状態を変更しないならtrue, busyにするならfalse
+      func: (state: CurrentFileState) => boolean; // 状態を変更しないならtrue, busyにするならfalse
     }
   | {
       type: 'setFileCancel';
@@ -66,7 +71,7 @@ type CurrentFileActions =
       state: FileState;
       log: Log;
     }
-  | {type: 'commit'; func: (state: CurrentFile) => void}
+  | {type: 'commit'; func: (state: CurrentFileState) => void}
   | {type: 'commitCallback'; file: VFile; log: Log};
 
 /**
@@ -77,9 +82,9 @@ type CurrentFileActions =
  * @returns 新しい状態
  */
 const reducer = (
-  state: CurrentFile,
+  state: CurrentFileState,
   action: CurrentFileActions,
-): CurrentFile => {
+): CurrentFileState => {
   switch (action.type) {
     // 内容の編集
     case 'modify':
@@ -149,7 +154,7 @@ export function CurrentFileContextProvider({
   file,
 }: {
   children: JSX.Element;
-  repository: Repository;
+  repository: RepositoryContext;
   file: VFile | null;
 }) {
   // console.log('[CurrentFileContextProvider]', repository, file);
@@ -176,23 +181,28 @@ export function CurrentFileContextProvider({
     // console.log('commit action currentTheme', currentTheme, state);
     dispatch({
       type: 'commit',
-      func: (state: CurrentFile) => {
-        if (state.file == null || repository.branch == null) {
+      func: (state: CurrentFileState) => {
+        if (state.file == null || repository.state.branch == null) {
           console.log('[CurrentFileContextProvider] commit cancel',state, repository);
           return;
         }
-        (async (repository:Repository) => {
+        (async (repository:RepositoryContext) => {
           // カスタムテーマが選択されている場合、CSSのパスを取得する
           let style;
-          if (currentTheme.theme?.name === 'vivliostyle-custom-theme') {
+          if (currentTheme.state.theme?.name === 'vivliostyle-custom-theme') {
             // TODO: 以下のパスの処理を整理する
             const docPath = state.file?.dirname! ?? '/';
-            const stylePath = currentTheme.stylePath
-              ? upath.relative(VPUBFS_ROOT, currentTheme.stylePath)
+            const stylePath = currentTheme.state.stylePath
+              ? upath.relative(VPUBFS_ROOT, currentTheme.state.stylePath)
               : undefined;
             style = stylePath ? upath.relative(docPath, stylePath) : undefined;
           }
           try {
+            // firestoreの内容を更新する
+            await updateDoc(state.session!, {
+              userUpdatedAt: serverTimestamp(),
+              text: state.text,
+            });
             // Web APIを呼び出すためのアクセストークンを取得する
             const idToken = await app.user!.getIdToken();
             let sessionId = state.session?.id;
@@ -202,7 +212,7 @@ export function CurrentFileContextProvider({
               method: 'PUT',
               body: JSON.stringify({
                 sessionId: sessionId,
-                branch: repository.branch,
+                branch: repository.state.branch,
                 style: style,
               }),
               headers: {
@@ -234,13 +244,13 @@ export function CurrentFileContextProvider({
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
     console.log('[CurrentFileContextProvider] changed file', repository, file);
-    if (!repository?.owner || !repository?.repo || !repository?.branch) {
+    if (!repository?.state.owner || !repository?.state.repo || !repository?.state.branch) {
       console.log('[CurrentFileContextProvider] cancel');
       return;
     }
     dispatch({
       type: 'setFile',
-      func: (state: CurrentFile): boolean => {
+      func: (state: CurrentFileState): boolean => {
         console.log('[CurrentFileContextProvider] change file2', file, state);
         if (file?.path === state.file?.path) {
           return true;
@@ -270,7 +280,6 @@ export function CurrentFileContextProvider({
           });
           return true;
         }
-        // console.log('setFile filePath', file.path);
         if (!isEditableFile(file.path)) {
           // エディタで編集不可能なファイル
           // 画像ファイルはProjectExplorerの段階でライトボックス表示しているのでここまでこない
@@ -281,13 +290,13 @@ export function CurrentFileContextProvider({
           dispatch({type: 'setFileCancel', state: state.state});
           return true;
         }
-        (async (repository:Repository) => {
+        (async (repository:RepositoryContext) => {
           try {
             const props = {
               user: app.user!,
-              owner: repository.owner!,
-              repo: repository.repo!,
-              branch: repository.branch!,
+              owner: repository.state.owner!,
+              repo: repository.state.repo!,
+              branch: repository.state.branch!,
             };
             console.log('[CurrentFileContextProvider] setFile props', props);
             const fs = await WebApiFs.open(props);
@@ -325,7 +334,7 @@ export function CurrentFileContextProvider({
         return false;
       },
     });
-  }, [repository, file]);
+  }, [repository, file, log, app.user]);
 
   /**
    * 初期値
@@ -334,15 +343,20 @@ export function CurrentFileContextProvider({
     // 状態
     state: FileState.none,
     session: null,
+  } as CurrentFileState;
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const value = useMemo(()=>({
+    state,
     // メソッド
     modify,
     commit,
-  } as CurrentFile;
-
-  const [context, dispatch] = useReducer(reducer, initialState);
+  })
+  ,[state, commit, modify]);
 
   return (
-    <CurrentFileContext.Provider value={context}>
+    <CurrentFileContext.Provider value={value}>
       {children}
     </CurrentFileContext.Provider>
   );

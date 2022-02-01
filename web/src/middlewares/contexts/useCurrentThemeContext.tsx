@@ -1,4 +1,4 @@
-import {createContext, useCallback, useContext, useReducer} from 'react';
+import {createContext, useCallback, useContext, useMemo, useReducer} from 'react';
 import {Theme} from 'theme-manager';
 import {isURL} from '../frontendFunctions';
 import upath from 'upath';
@@ -7,9 +7,13 @@ import {useAppContext} from './useAppContext';
 import {Log, useLogContext} from './useLogContext';
 import {t} from 'i18next';
 
-type CurrentTheme = {
+type CurrentThemeState = {
   theme: Theme | null;
   stylePath: string | null; // viewer.jsのstyle= に渡すパス
+};
+
+type CurrentTheme = {
+  state: CurrentThemeState;
   // メソッド
   changeTheme: (theme: Theme | null) => void;
 };
@@ -29,7 +33,7 @@ export function useCurrentThemeContext() {
 type Actions =
   | {
       type: 'changeTheme';
-      func: (state: CurrentTheme) => void;
+      func: (state: CurrentThemeState) => void;
     }
   | {
       type: 'changeThemeCallback';
@@ -49,7 +53,7 @@ type CurrentThemeProps = {
  * @param action アクションオブジェクト
  * @returns 新しい状態
  */
-const reducer = (state: CurrentTheme, action: Actions): CurrentTheme => {
+const reducer = (state: CurrentThemeState, action: Actions): CurrentThemeState => {
   switch (action.type) {
     case 'changeTheme':
       action.func(state);
@@ -88,7 +92,7 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
     (theme: Theme | null) => {
       dispatch({
         type: 'changeTheme',
-        func: (state: CurrentTheme) => {
+        func: (state: CurrentThemeState) => {
           console.log('changeTheme', theme);
           (async () => {
             if (theme) {
@@ -139,13 +143,18 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
    */
   const initialState = {
     theme: null,
-    changeTheme,
-  } as CurrentTheme;
+    stylePath: null
+  } as CurrentThemeState;
 
-  const [currentTheme, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const value = useMemo(()=>({
+    state,
+    changeTheme
+  }),[changeTheme, state]);
 
   return (
-    <CurrentThemeContext.Provider value={currentTheme}>
+    <CurrentThemeContext.Provider value={value}>
       {children}
     </CurrentThemeContext.Provider>
   );

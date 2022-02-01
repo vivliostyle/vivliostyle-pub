@@ -49,20 +49,20 @@ export function ProjectExplorer() {
 
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
-    // console.log('proj.files',repository.files);
-    return repository.files.filter((f) => f.name.includes(filenamesFilterText));
-  }, [repository.files, filenamesFilterText]);
+    // console.log('proj.files',repository.state.files);
+    return repository.state.files.filter((f) => f.name.includes(filenamesFilterText));
+  }, [repository.state.files, filenamesFilterText]);
 
   // 表示用のカレントディレクトリ
   const currentDir = useMemo(() => {
     console.log('change currentDir');
-    let path = repository.currentTree.map((f) => f.name).join('/');
+    let path = repository.state.currentTree.map((f) => f.name).join('/');
     // 長すぎるパスは省略
     if (path.length > 15) {
       path = '...' + path.slice(-15);
     }
     return path;
-  }, [repository.currentTree]);
+  }, [repository.state.currentTree]);
 
   /**
    * ファイルまたはディレクトリが選択された
@@ -81,9 +81,9 @@ export function ProjectExplorer() {
         // 代替手段としてDataURIを使用している
         // TODO: このページからはApplication Cacheにアクセスできるようにする
         let content = await getFileContentFromGithub(
-          repository.owner!,
-          repository.repo!,
-          repository.branch!,
+          repository.state.owner!,
+          repository.state.repo!,
+          repository.state.branch!,
           srcPath,
           app.user!,
         );
@@ -332,7 +332,7 @@ export function ProjectExplorer() {
           overflowY="scroll"
           backgroundColor="white"
         >
-          <UpToParentDirectoryButton currentTree={repository.currentTree} />
+          <UpToParentDirectoryButton currentTree={repository.state.currentTree} />
           {!createForm ? null : (
             <UI.Input
               onBlur={() => setCreateForm(null)}

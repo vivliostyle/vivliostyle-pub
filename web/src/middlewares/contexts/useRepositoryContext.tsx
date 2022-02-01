@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
 } from 'react';
 import {VFile} from 'theme-manager';
@@ -15,7 +16,7 @@ import {gql} from '@apollo/client';
 import upath from 'upath';
 import {t} from 'i18next';
 
-export type Repository = {
+export type RepositoryState = {
   id: number;
   node_id: string;
   private: boolean;
@@ -30,6 +31,10 @@ export type Repository = {
   files: VFile[];
   currentFile: VFile | null;
   fs: WebApiFs | null;
+}
+
+export type RepositoryContext = {
+  state:RepositoryState;
   // メソッド
   selectBranch: (branch: string) => void;
   selectTree: (tree: '.' | '..' | VFile) => void; // .は現在のディレクトリのリロード用
@@ -37,7 +42,7 @@ export type Repository = {
   createFile: (path: string, file: File) => void;
 };
 
-const RepositoryContext = createContext({} as Repository);
+const RepositoryContext = createContext({} as RepositoryContext);
 
 export function useRepositoryContext() {
   return useContext(RepositoryContext);
@@ -49,7 +54,7 @@ export function useRepositoryContext() {
 type Actions =
   | {
       type: 'selectRepository';
-      func: (state: Repository) => void;
+      func: (state: RepositoryState) => void;
     }
   | {
       type: 'selectRepositoryCallback';
@@ -61,7 +66,7 @@ type Actions =
       files: VFile[];
       file: VFile | null;
     }
-  | {type: 'selectBranch'; func: (state: Repository) => void}
+  | {type: 'selectBranch'; func: (state: RepositoryState) => void}
   | {
       type: 'selectBranchCallback';
       branch: string;
@@ -70,9 +75,9 @@ type Actions =
       file: VFile | null;
       log: Log;
     }
-  | {type: 'selectTree'; func: (state: Repository) => void}
+  | {type: 'selectTree'; func: (state: RepositoryState) => void}
   | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[]}
-  | {type: 'selectFile'; func: (state: Repository) => void}
+  | {type: 'selectFile'; func: (state: RepositoryState) => void}
   | {type: 'selectFileCallback'; file: VFile | null};
 
 /**
@@ -96,7 +101,7 @@ function setQueryParam(attr: string, value: string | null) {
  * @param action アクションオブジェクト
  * @returns 新しい状態
  */
-const reducer = (state: Repository, action: Actions): Repository => {
+const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
   switch (action.type) {
     // カレントリポジトリ変更アクション
     case 'selectRepository':
@@ -184,7 +189,7 @@ export function RepositoryContextProvider({
     (owner: string, repo: string, branch?: string, filePath?: string) => {
       dispatch({
         type: 'selectRepository',
-        func: (state: Repository) => {
+        func: (state: RepositoryState) => {
           if (!app.user || app.isPending) {
             console.log('[repositoryContext] selectRepository cancel');
             return null;
@@ -197,14 +202,14 @@ export function RepositoryContextProvider({
             filePath,
           );
           (async () => {
-            const repository = app.repositories?.find(
+            const repositoryState = app.repositories?.find(
               (rep) => rep.owner == owner && rep.repo == repo,
             );
-            if (!repository) {
+            if (!repositoryState) {
               return;
             }
-            const branches = repository.branches;
-            const defaultBranch = repository.defaultBranch;
+            const branches = repositoryState.branches;
+            const defaultBranch = repositoryState.defaultBranch as string;
             branch = branch ?? defaultBranch;
             const props = {
               user: app.user!,
@@ -252,7 +257,7 @@ export function RepositoryContextProvider({
       console.log('[repositoryContext] selectBranch', newBranch);
       dispatch({
         type: 'selectBranch',
-        func: (state: Repository) => {
+        func: (state: RepositoryState) => {
           if (
             !state.owner ||
             !state.repo ||
@@ -306,7 +311,7 @@ export function RepositoryContextProvider({
   const selectFile = useCallback((file: VFile | null) => {
     dispatch({
       type: 'selectFile',
-      func: (state: Repository) => {
+      func: (state: RepositoryState) => {
         console.log(
           '[repositoryContext] selectFile',
           state.currentFile,
@@ -403,7 +408,7 @@ export function RepositoryContextProvider({
     // useReducerで無理矢理に非同期処理を実行する
     dispatch({
       type: 'selectTree',
-      func: (state: Repository) => {
+      func: (state: RepositoryState) => {
         (async () => {
           console.log('[repositoryContext] selectTree', tree);
           // console.log('selectTreeAction');
@@ -452,14 +457,17 @@ export function RepositoryContextProvider({
     currentConfig: null,
     fs: null,
     defaultBranch: '',
-    // メソッド
+  } as RepositoryState;
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const value = useMemo(()=>({
+    state,
     selectBranch,
     selectTree,
     selectFile,
-    createFile,
-  } as Repository;
-
-  const [repository, dispatch] = useReducer(reducer, initialState);
+    createFile
+  }),[createFile, selectBranch, selectFile, selectTree, state]);
 
   useEffect(() => {
     console.log('[repositoryContext] init ', owner, repo, branch, file);
@@ -477,10 +485,10 @@ export function RepositoryContextProvider({
     5. 購読者に変更通知
   */
   return (
-    <RepositoryContext.Provider value={repository}>
+    <RepositoryContext.Provider value={value}>
       <CurrentFileContextProvider
-        repository={repository}
-        file={repository.currentFile}
+        repository={value}
+        file={value.state.currentFile}
       >
         {children}
       </CurrentFileContextProvider>
