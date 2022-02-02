@@ -1,6 +1,6 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
-import { Octokit } from '@octokit/rest';
+import {Octokit} from '@octokit/rest';
 
 const getFiles = async (
   token: string,
@@ -10,7 +10,10 @@ const getFiles = async (
   path: string,
   getContents: boolean,
 ) => {
-  let files: {path:string, isBinary?: boolean, text?:string, oid?:string}[] = [];
+  let files: {path: string; isBinary?: boolean; text?: string; oid?: string}[] =
+    [];
+
+  const pathWithBranch = `${branch}:${path}`;
 
   // ファイルの内容を取得する
   const contentQuery = getContents
@@ -45,7 +48,7 @@ const getFiles = async (
     {
       owner,
       repo,
-      pathWithBranch: `${branch}:${path}`,
+      pathWithBranch,
       headers: {
         authorization: `token ${token}`,
       },
@@ -56,7 +59,12 @@ const getFiles = async (
   for (const entry of entries) {
     if (entry.type == 'blob') {
       // console.log(entry.path);
-      files.push({path:entry.path, isBinary:entry.object.isBinary, text:entry.object.text, oid:entry.object.oid});
+      files.push({
+        path: entry.path,
+        isBinary: entry.object.isBinary,
+        text: entry.object.text,
+        oid: entry.object.oid,
+      });
     } else if (entry.type == 'tree') {
       // console.log(entry.path);
       const subFiles = await getFiles(
@@ -115,29 +123,30 @@ export const commitDirectory = async (
     repo,
     branch,
     oldPath,
-    newPath !== null // newPathが指定されていれば既存ファイルの内容を取得する
+    newPath !== null, // newPathが指定されていれば既存ファイルの内容を取得する
   );
   // console.log(files);
 
   // ブランチのOIDを取得する
   // TODO: OIDはフロント側で管理する 他者によってコミットが進んでいたらどうするか。
-  const branchObj = (await graphql(`
-    query getBranchOid(
-      $owner: String!,
-      $repo: String!, 
-      $qualifiedName: String!, 
-    ) {
-      repository(owner: $owner, name: $repo) {
-        ref(qualifiedName: $qualifiedName) {
-          target {
-            ... on Commit {
-              oid
+  const branchObj = (await graphql(
+    `
+      query getBranchOid(
+        $owner: String!
+        $repo: String!
+        $qualifiedName: String!
+      ) {
+        repository(owner: $owner, name: $repo) {
+          ref(qualifiedName: $qualifiedName) {
+            target {
+              ... on Commit {
+                oid
+              }
             }
           }
         }
       }
-    }
-  `,
+    `,
     {
       owner,
       repo,
@@ -149,36 +158,43 @@ export const commitDirectory = async (
   )) as any;
   // 最新のコミットのObjectID
   const headOid = branchObj.repository.ref.target.oid;
-  
-  let additions:any[] = [];
-  if(newPath !== null) {
+
+  let additions: any[] = [];
+  if (newPath !== null) {
     // REST APIでバイナリファイルを取得する
     const octokit = new Octokit({
       auth: `token ${context.token}`,
     });
 
-    const getBinaryFile = async (oid:string) => {
+    const getBinaryFile = async (oid: string) => {
       const blob = await octokit.git.getBlob({
         owner,
         repo,
         file_sha: oid,
       });
       // console.log(blob.url, blob.data.content);
-      return blob.data.content.replaceAll("\n",""); // 取得したコンテンツには改行文字が含まれているので除去する
-    }
+      return blob.data.content.replaceAll('\n', ''); // 取得したコンテンツには改行文字が含まれているので除去する
+    };
 
-    const promises = files.map(async (f)=>{
-      const path = f.path.replace(oldPath,newPath);
-      const contents = f.isBinary ? await getBinaryFile(f.oid!) : Buffer.from(f.text!,"utf-8").toString("base64");
+    const promises = files.map(async (f) => {
+      const path = f.path.replace(oldPath, newPath);
+      const contents = f.isBinary
+        ? await getBinaryFile(f.oid!)
+        : Buffer.from(f.text!, 'utf-8').toString('base64');
       return {path, contents};
-    })
+    });
     additions = await Promise.all(promises);
     // console.log('additions', additions);
   }
 
-  const deletions:{path:string}[] = removeOldPath ? files.map(f=> {return {path:f.path};}) : [] as {path:string}[];
+  const deletions: {path: string}[] = removeOldPath
+    ? files.map((f) => {
+        return {path: f.path};
+      })
+    : ([] as {path: string}[]);
 
-  const result = await graphql(`
+  const result = await graphql(
+    `
       mutation commitContents(
         $repositoryNameWithOwner: String!
         $branch: String!
