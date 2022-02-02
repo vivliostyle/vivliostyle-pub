@@ -28,3 +28,5 @@ declare module 'rehype-stringify' {
 }
 
 declare module 'mdast-util-to-hast/lib/all';
+
+declare module 'chakra-ui-contextmenu';

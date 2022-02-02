@@ -1,109 +1,66 @@
-import {useRef, useEffect, useMemo} from 'react';
-import {stringify} from '@vivliostyle/vfm';
-import path from 'path';
-import mime from 'mime-types'
+import {useRef, useEffect, useState, memo} from 'react';
 
-import {ContentOfRepositoryApiResponse} from '../pages/api/github/contentOfRepository'
-import firebase from '@services/firebase';
-
-const VPUBFS_CACHE_NAME = 'vpubfs';
-const VPUBFS_ROOT = '/vpubfs';
+import {usePreviewSourceContext} from '@middlewares/contexts/usePreviewSourceContext';
+import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeContext';
+import React from 'react';
 
 const VIVLIOSTYLE_VIEWER_HTML_URL =
   process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
 
-const getFileContentFromGithub = async(owner:string, repo:string, branch:string, path: string, user: firebase.User) => {
-  const content : ContentOfRepositoryApiResponse = await fetch(
-    `/api/github/contentOfRepository?${new URLSearchParams({owner, repo, branch, path})}`,
-    {
-      headers: {
-        'content-type': 'application/json',
-        'x-id-token': await user.getIdToken(),
-      },
-    },
-  ).then((r) => r.json());
-  if( Array.isArray(content) || !("content" in content) ) {
-    // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
-    throw new Error(`Content type is not file`);
-  }
-  return content
-}
+interface PreviewerProps {}
 
-async function updateCache(cachePath: string, content: any) {
-  const filePath = path.join(VPUBFS_ROOT, cachePath);
-  const cache = await caches.open(VPUBFS_CACHE_NAME);
-  const contentType = mime.lookup(filePath)
-  console.log(`updateCache : ${filePath}`)
-  const headers = new Headers();
-  headers.append('content-type', `${contentType.toString()}`);
-  await cache.delete(filePath)
-  await cache.put(
-    filePath,
-    new Response(content, { headers }),
-  );
-}
+export const Previewer: React.FC<PreviewerProps> = ({}) => {
+  const currentTheme = useCurrentThemeContext();
+  const previewSource = usePreviewSourceContext();
 
-const isURL = (value: string) => (/^http(?:s)?:\/\//g).test(value)
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
+  const [stylePath, setStylePath] = useState<string|null>(null);
 
-const updateCacheFromPath = async(owner: string, repo: string, branch:string, basePath: string, contentRelativePath: string, user: firebase.User) => {
-  if( isURL(contentRelativePath) ) return;
-  const contentPath = path.join(path.dirname(basePath), contentRelativePath)
-  const content = await getFileContentFromGithub(owner, repo, branch, contentPath, user)
-  await updateCache(contentPath, Buffer.from(content.content, 'base64'))
-}
-
-interface PreviewerProps {
-  body: string;
-  basename: string;
-  stylesheet: string|null;
-  owner: string;
-  repo: string;
-  branch: string;
-  user: firebase.User | null;
-}
-
-export const Previewer: React.FC<PreviewerProps> = ({
-  body,
-  basename,
-  stylesheet,
-  owner,
-  repo,
-  branch,
-  user,
-}) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  // Why Date.now()? -> disable viewer cache
-  const viewerURL = useMemo(() => {
-    let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${path.join(VPUBFS_ROOT, basename)}`
-    if(stylesheet) url += `&style=${isURL(stylesheet) ? stylesheet : path.join(VPUBFS_ROOT, stylesheet)}`
-    return url
-  },[basename, stylesheet]);
 
   useEffect(() => {
-    if(!user) return
-    (async() => {
-      if( stylesheet && !isURL(stylesheet) ){
-        const content = await getFileContentFromGithub(owner, repo, branch, stylesheet, user)
-        const stylesheetString = Buffer.from(content.content, 'base64').toString()
-        await updateCache(stylesheet, stylesheetString)
-        const imagesOfStyle = Array.from(stylesheetString.matchAll(/url\("?(.+?)"?\)/g), m => m[1])
-        await Promise.all(imagesOfStyle.map(imageOfStyle => updateCacheFromPath(owner, repo, branch, stylesheet, imageOfStyle, user)))
+    // console.log('[MarkdownPreviewer] update',currentTheme.state.theme?.name);
+    const iframeWindow = iframeRef.current?.contentWindow;
+    if (!iframeWindow) {
+      return;
+    }
+
+    if (previewSource.vpubPath == null) {
+      // 対象となるファイルが選択されていない
+      // 初期状態、ブランチ切り替えやリポジトリ切り替えでこの状態になる
+      iframeWindow.location.href = '/viewer/empty.html';
+    } else if (currentPath != previewSource.vpubPath || stylePath != currentTheme.state.stylePath) {
+      // 対象のファイルが変更された
+      let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
+        previewSource.vpubPath
+      }`;
+      const stylePath = currentTheme.state.theme?.getStylePath()
+        ? '/vpubfs/' + currentTheme.state.theme?.getStylePath()
+        : null;
+      if (stylePath) {
+        url += `&style=${stylePath}`;
+      } else {
+        console.log('[MarkdownPreviewer] no stylesheet');
       }
-      const htmlString = stringify(body);
-      await updateCache(basename, htmlString)
+      // console.log('[MarkdownPreviewer] preview href', url);
+      iframeWindow.location.href = url;
+      setCurrentPath(previewSource.vpubPath);
+      setStylePath(currentTheme.state.stylePath);
+    } else {
+      // console.log('[MarkdownPreviewer] preview reload',iframeWindow.location.href);
+      // 対象のファイルは変わらず、テキストだけ変更された
+      iframeWindow.location.reload();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSource, currentTheme]);
 
-      const imagePaths = [] as string[]
-      const parser = new DOMParser();
-      parser.parseFromString(htmlString, 'text/html').querySelectorAll('img').forEach(element => {
-        const src = element.getAttribute("src")
-        if( src && !isURL(src) ) imagePaths.push(src)
-      })
-
-      await Promise.all(imagePaths.map(imagePath => updateCacheFromPath(owner, repo, branch, basename, imagePath, user)))
-
-      iframeRef.current?.contentWindow?.location.reload()
-    })()
-  }, [body, basename, stylesheet, owner, repo, branch, user]);
-
-  return <iframe ref={iframeRef} src={viewerURL} width="100%" height="100%"></iframe>;
+  return <ViewerFrame iframeRef={iframeRef}></ViewerFrame>;
 };
+
+// iframeを作りなおすとページが先頭に戻ってしまうため、無駄なレンダリングを防ぐためにメモ化する
+type ViewerFrameProps = {iframeRef: any};
+const ViewerFrame = memo<ViewerFrameProps>(function useViewerFrame({
+  iframeRef,
+}) {
+  return <iframe ref={iframeRef} width="100%" height="100%"></iframe>;
+});

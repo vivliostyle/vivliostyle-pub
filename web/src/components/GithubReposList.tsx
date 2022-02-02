@@ -1,46 +1,41 @@
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 import Link from 'next/link';
-import useSWR from 'swr';
-import fetch from 'isomorphic-unfetch';
-import {GithubReposApiResponse} from '../pages/api/github/repos';
 import * as UI from './ui';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
+import { RepeatIcon } from '@chakra-ui/icons';
 
-const fetcher = (url: string, idToken: string) =>
-  fetch(url, {
-    headers: {
-      'x-id-token': idToken,
-    },
-  }).then((r) => r.json());
+export const GithubReposList: React.FC<{}> = ({}) => {
+  const app = useAppContext();
+  console.log('rep list', app.state.repositories);
 
-export const GithubReposList: React.FC<{user: firebase.User}> = ({user}) => {
-  const [idToken, setIdToken] = useState<string | null>(null);
-  useEffect(() => {
-    user
-      .getIdToken(true)
-      .then(setIdToken)
-      .catch(() => setIdToken(null));
-  }, [user]);
-  const {data, isValidating} = useSWR<GithubReposApiResponse>(
-    idToken ? ['/api/github/repos', idToken] : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    },
-  );
-  if (!data) {
-    return isValidating ? (
-      <UI.Text>Loading</UI.Text>
-    ) : (
-      <UI.Text>No repositories<br/>
-        <br/>
-        1. Push [Install GitHub Apps] for check and edit install status for GitHub Apps.<br/>
-        2. Push [Refresh GitHub Access Token] for refresh GitHub Access Token.<br/> 
-      </UI.Text>
-    );
+  const reload = ()=>{
+    console.log('reload repositories');
+    app.reload();
   }
-  return (
-    <UI.Flex direction="column">
-      {data.map((repo) => (
+
+  if (app.state.repositories == null) { // リポジトリリスト取得中
+    return <UI.Text>Loading</UI.Text>;
+  } else if (app.state.repositories.length == 0) { // ログイン済み リポジトリリストが0件
+    return (
+    <UI.Text>
+      <UI.Button>
+          <RepeatIcon onClick={reload} />
+      </UI.Button>
+      &nbsp; No repositories
+      <br />
+      <br />
+      1. Push [Install GitHub Apps] for check and edit install status for GitHub
+      Apps.
+      <br />
+      2. Push [Refresh GitHub Access Token] for refresh GitHub Access Token.
+      <br />
+    </UI.Text>);
+  } else {
+    return (<UI.Flex direction="column">
+      <UI.Button w="2em">
+        <RepeatIcon onClick={reload} />
+      </UI.Button><br />
+      {app.state.repositories.map((repo) => (
         <Link
           href="github/[owner]/[repo]"
           as={`/github/${repo.full_name}`}
@@ -54,6 +49,6 @@ export const GithubReposList: React.FC<{user: firebase.User}> = ({user}) => {
           </a>
         </Link>
       ))}
-    </UI.Flex>
-  );
+    </UI.Flex>);
+  }
 };

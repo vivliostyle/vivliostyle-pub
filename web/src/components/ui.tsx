@@ -29,7 +29,12 @@ export {
   InputGroup,
   InputLeftElement,
   Select,
+  Alert,
+  Stack,
+  AlertIcon,
+  Spacer
 } from '@chakra-ui/react';
+
 
 export const Container = (props: FlexProps) => (
   <Flex maxW={1080} m="0 auto" px={4} {...props} />

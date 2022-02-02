@@ -1,0 +1,14 @@
+{
+    "name": "Vivliostyle Pub",
+    "short_name": "Vivliostyle",
+    "icons": [
+        {
+            "src": "/favicons/android-chrome-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "display": "standalone"
+}
