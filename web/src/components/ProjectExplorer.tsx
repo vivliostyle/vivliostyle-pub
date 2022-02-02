@@ -270,8 +270,18 @@ export function ProjectExplorer() {
   });
 
 
-  const embedImage = useCallback((name?:string)=>{
-    console.log('embedImage',name,currentFile);
+  /**
+   * リンクタグの埋め込み
+   * @param name ディレクトリ名を含まないファイル名 TODO: VFileオブジェクトのほうが良いかも
+   */
+  const handleEmbedLink = useCallback((name?:string)=>{
+    currentFile.insert(`[${upath.trimExt(name!)}](${upath.join(currentDir,name)})`);
+  },[currentDir, currentFile]);
+  /**
+   * 画像タグの埋め込み
+   * @param name ディレクトリ名を含まない画像ファイル名 TODO: VFileオブジェクトのほうが良いかも
+   */
+  const handleEmbedImage = useCallback((name?:string)=>{
     currentFile.insert(`![Fig. ${name}](${upath.join(currentDir,name)})`);
   },[currentDir, currentFile]);
 
@@ -308,7 +318,7 @@ export function ProjectExplorer() {
             <Center>
               <UI.Button onClick={()=>{
                   setLightBoxContent(null);
-                  embedImage(lightBoxContent?.name);
+                  handleEmbedImage(lightBoxContent?.name);
                 }
               }>{t('画像を埋め込み')}</UI.Button>
             </Center>
@@ -373,6 +383,8 @@ export function ProjectExplorer() {
                 file={file}
                 onClick={onClick}
                 onReload={reload}
+                onEmbedImage={handleEmbedImage}
+                onEmbedLink={handleEmbedLink}
               />
             ) : (
               <DirEntry
