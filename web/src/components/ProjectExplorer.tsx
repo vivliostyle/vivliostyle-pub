@@ -18,6 +18,7 @@ import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {FileUploadModal} from './FileUploadModal';
 import {t} from 'i18next';
 import {User} from 'firebase/auth';
+import { useCurrentFileContext } from '@middlewares/contexts/useCurrentFileContext';
 
 /**
  * プロジェクトエクスプローラーコンポーネント
@@ -27,6 +28,7 @@ export function ProjectExplorer() {
   console.log('[Project Explorer]');
   const app = useAppContext();
   const repository = useRepositoryContext();
+  const currentFile = useCurrentFileContext();
   const log = useLogContext();
 
   const {
@@ -50,7 +52,9 @@ export function ProjectExplorer() {
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
     // console.log('proj.files',repository.state.files);
-    return repository.state.files.filter((f) => f.name.includes(filenamesFilterText));
+    return repository.state.files.filter((f) =>
+      f.name.includes(filenamesFilterText),
+    );
   }, [repository.state.files, filenamesFilterText]);
 
   // 表示用のカレントディレクトリ
@@ -265,6 +269,12 @@ export function ProjectExplorer() {
     );
   });
 
+
+  const embedImage = useCallback((name?:string)=>{
+    console.log('embedImage',name,currentFile);
+    currentFile.insert(`![Fig. ${name}](${upath.join(currentDir,name)})`);
+  },[currentDir, currentFile]);
+
   /**
    * 画像表示用 ライトボックスコンポーネント
    * @param param0
@@ -283,7 +293,7 @@ export function ProjectExplorer() {
           setLightBoxContent(null);
         }}
         isCentered
-        size={'6xl'}
+        size={'xl'}
       >
         <UI.ModalOverlay />
         <UI.ModalContent>
@@ -294,6 +304,15 @@ export function ProjectExplorer() {
               <UI.Image src={lightBoxContent?.data} objectFit={'scale-down'} />
             </Center>
           </UI.ModalBody>
+          <UI.ModalFooter backgroundColor={'gray'}>
+            <Center>
+              <UI.Button onClick={()=>{
+                  setLightBoxContent(null);
+                  embedImage(lightBoxContent?.name);
+                }
+              }>{t('画像を埋め込み')}</UI.Button>
+            </Center>
+          </UI.ModalFooter>
         </UI.ModalContent>
       </UI.Modal>
     );
@@ -332,7 +351,9 @@ export function ProjectExplorer() {
           overflowY="scroll"
           backgroundColor="white"
         >
-          <UpToParentDirectoryButton currentTree={repository.state.currentTree} />
+          <UpToParentDirectoryButton
+            currentTree={repository.state.currentTree}
+          />
           {!createForm ? null : (
             <UI.Input
               onBlur={() => setCreateForm(null)}

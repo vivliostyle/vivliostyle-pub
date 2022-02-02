@@ -1,5 +1,5 @@
-import React, {useMemo} from 'react';
-import Editor from '@monaco-editor/react';
+import React, {useEffect, useMemo, useRef} from 'react';
+import Editor, { useMonaco } from '@monaco-editor/react';
 import {
   FileState,
 } from '@middlewares/frontendFunctions';
@@ -11,6 +11,9 @@ export const MarkdownEditor = ({
 }: {
   onModified?: (value: string) => void;
 }) => {
+  const monaco = useMonaco();
+  const editorRef = useRef(null);
+
   // Repositoryコンテキストのカレントファイルが変化したらリロード
   // CurrentFileコンテクストが変化してもリロードしない
   const currentFile = useCurrentFileContext();
@@ -46,7 +49,29 @@ export const MarkdownEditor = ({
     onModified(value??'');
   };
 
+  function handleEditorDidMount(editor:any, monaco:any) {
+    console.log('onMount');
+    editorRef.current = editor; 
+  }
+
   const display = currentFile.state.state == FileState.none || currentFile.state.state == FileState.busy ? 'block' : 'none';
+
+  useEffect(()=>{
+    if(currentFile.state.insertBuf != null) {
+      const editor = editorRef.current as any;
+      const pos = editor.getPosition();
+      // Range(開始行,開始桁,終了行,終了桁)
+      const range = new monaco!.Range(pos.lineNumber,pos.column,pos.lineNumber,pos.column);
+      // console.log('monaco position', pos, range,currentFile.state.insertBuf);
+      // カーソル位置に文字列を挿入
+      editor!.executeEdits("",[{range , text: currentFile.state.insertBuf}]);
+      // カーソル位置を画像タグの後ろに移動する この処理を入れない場合は画像タグ全体が選択された状態になる
+      editor.setPosition({lineNumber:pos.lineNumber, column:pos.column + currentFile.state.insertBuf.length});
+      // エディタにフォーカスする
+      editor.focus();
+      currentFile.insert(null);
+    }
+  },[currentFile, currentFile.state.insertBuf, monaco]);
 
   return (
     <UI.Box w="100%" h="100%" position="relative" overflow='hidden'>
@@ -60,6 +85,7 @@ export const MarkdownEditor = ({
         }}
         onChange={onChange}
         value={currentFile.state.text}
+        onMount={handleEditorDidMount}
       />
       <UI.Box
         display={display}
@@ -71,7 +97,7 @@ export const MarkdownEditor = ({
         textAlign="center"
         verticalAlign="center"
         backgroundColor="rgb(0,0,0,0.5)"
-        lineHeight="100%"
+        lineHeight="100%"        
       >
         {currentFile.state.file == null ? null : (
           <UI.Spinner
