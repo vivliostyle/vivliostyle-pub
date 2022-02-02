@@ -309,7 +309,7 @@ export default function FileEntry({
                 setRenaming(true);
               }}
             >
-              Rename File
+              {t('ファイル名を変更')}
             </UI.MenuItem>
             <UI.MenuItem
               onClick={(e) => {
@@ -318,7 +318,7 @@ export default function FileEntry({
                 setDuplicating(true);
               }}
             >
-              Duplicate File
+              {t('ファイルを複製')}
             </UI.MenuItem>
             <UI.MenuItem
               onClick={(e) => {
@@ -327,14 +327,14 @@ export default function FileEntry({
                 onDeleteFile(file.name, file.hash);
               }}
             >
-              Delete File
+              {t('ファイルを削除')}
             </UI.MenuItem>
             <UI.MenuItem
               onClick={(e) => {
                 onDownloadFile(e);
               }}
             >
-              Download File
+              {t('ファイルをダウンロード')}
             </UI.MenuItem>
           </UI.MenuList>
         )}

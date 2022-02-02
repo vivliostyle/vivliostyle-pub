@@ -32,5 +32,9 @@
   "ファイルの複製に失敗しました": "Failed to duplicate the file ({{oldfilepath}}): {{error}}",
   "ファイルを削除しますか?":"Do you want to delete the file?({{filepath}})",
   "ファイルの取得に失敗しました。GitHubで確認してください。":"Failed to retrieve the file, please check GitHub: {{filepath}}",
-  "不明な画像ファイル形式です":"Unknown image file format: {{filepath}}"
+  "不明な画像ファイル形式です":"Unknown image file format: {{filepath}}",
+  "ファイル名を変更":"Rename file",
+  "ファイルを複製":"Duplicate file",
+  "ファイルを削除":"Delete file",
+  "ファイルをダウンロード":"Download file"
 }
