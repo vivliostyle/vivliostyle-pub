@@ -109,7 +109,9 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
     case 'selectRepositoryCallback':
       setQueryParam('branch', action.branch);
-      setQueryParam('file', null);
+      if(state.repo != action.repo || state.branch != action.branch ) {
+        setQueryParam('file', null);
+      }
       console.log('[repositoryContext] selectRepositoryCallback', action);
       return {
         ...state,
