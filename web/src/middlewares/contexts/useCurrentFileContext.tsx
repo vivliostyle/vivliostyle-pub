@@ -354,7 +354,7 @@ export function CurrentFileContextProvider({
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const insert = useCallback((str:string)=>{
+  const insert = useCallback((str:string|null)=>{
     console.log('insert', str);
     dispatch({type:'insert',str});
   },[]);
