@@ -13,7 +13,6 @@ import {transpileMarkdown} from '../previewFunctions';
 import {Log, useLogContext} from './useLogContext';
 import {VFile} from 'theme-manager';
 import {t} from 'i18next';
-import {useCurrentThemeContext} from './useCurrentThemeContext';
 
 /**
  * 遅延処理
@@ -152,7 +151,6 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   const app = useAppContext();
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
-  const currentTheme = useCurrentThemeContext();
 
   console.log('[PreviewSourceContext]' /*currentFile, repository*/);
 
@@ -190,7 +188,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
         }
       })();
     },
-    [currentFile, isAutoReload, transpile, currentTheme],
+    [isAutoReload, currentFile, app, repository, log],
   );
 
   /**

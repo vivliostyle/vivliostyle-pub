@@ -96,8 +96,8 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
           console.log('changeTheme', theme);
           (async () => {
             if (theme) {
-              // TODO: テーマオブジェクトのメソッド呼び出し
               try {
+                // console.log('[CurrentThemeContext] call process',theme);
                 const themePath = await theme.process(app.state.vpubFs!);
                 //        processThemeString(app, theme)
                 // 準備が終わったら状態を変化させる

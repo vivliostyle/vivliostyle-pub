@@ -14,10 +14,12 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
   const previewSource = usePreviewSourceContext();
 
   const [currentPath, setCurrentPath] = useState<string | null>(null);
+  const [stylePath, setStylePath] = useState<string|null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    // console.log('[MarkdownPreviewer] update',currentTheme.state.theme?.name);
     const iframeWindow = iframeRef.current?.contentWindow;
     if (!iframeWindow) {
       return;
@@ -27,7 +29,7 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
       // 対象となるファイルが選択されていない
       // 初期状態、ブランチ切り替えやリポジトリ切り替えでこの状態になる
       iframeWindow.location.href = '/viewer/empty.html';
-    } else if (currentPath != previewSource.vpubPath) {
+    } else if (currentPath != previewSource.vpubPath || stylePath != currentTheme.state.stylePath) {
       // 対象のファイルが変更された
       let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
         previewSource.vpubPath
@@ -38,18 +40,19 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
       if (stylePath) {
         url += `&style=${stylePath}`;
       } else {
-        console.log('no stylesheet');
+        console.log('[MarkdownPreviewer] no stylesheet');
       }
-      console.log('preview href', url);
+      // console.log('[MarkdownPreviewer] preview href', url);
       iframeWindow.location.href = url;
       setCurrentPath(previewSource.vpubPath);
+      setStylePath(currentTheme.state.stylePath);
     } else {
-      console.log('preview reload');
+      // console.log('[MarkdownPreviewer] preview reload',iframeWindow.location.href);
       // 対象のファイルは変わらず、テキストだけ変更された
       iframeWindow.location.reload();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewSource, currentTheme.state.theme]);
+  }, [previewSource, currentTheme]);
 
   return <ViewerFrame iframeRef={iframeRef}></ViewerFrame>;
 };
