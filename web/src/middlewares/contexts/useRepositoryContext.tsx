@@ -31,10 +31,10 @@ export type RepositoryState = {
   files: VFile[];
   currentFile: VFile | null;
   fs: WebApiFs | null;
-}
+};
 
 export type RepositoryContext = {
-  state:RepositoryState;
+  state: RepositoryState;
   // メソッド
   selectBranch: (branch: string) => void;
   selectTree: (tree: '.' | '..' | VFile) => void; // .は現在のディレクトリのリロード用
@@ -78,7 +78,8 @@ type Actions =
   | {type: 'selectTree'; func: (state: RepositoryState) => void}
   | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[]}
   | {type: 'selectFile'; func: (state: RepositoryState) => void}
-  | {type: 'selectFileCallback'; file: VFile | null};
+  | {type: 'selectFileCallback'; file: VFile | null}
+  | {type: 'createFile'; func: (state: RepositoryState) => void};
 
 /**
  * クエリパラメータのfile属性にファイルパスをセットする
@@ -109,7 +110,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
     case 'selectRepositoryCallback':
       setQueryParam('branch', action.branch);
-      if(state.repo != action.repo || state.branch != action.branch ) {
+      if (state.repo != action.repo || state.branch != action.branch) {
         setQueryParam('file', null);
       }
       console.log('[repositoryContext] selectRepositoryCallback', action);
@@ -159,6 +160,9 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       setQueryParam('file', action.file?.path ?? null);
       console.log('[repositoryContext] selectFileCallback', action.file);
       return {...state, currentFile: action.file};
+    case 'createFile':
+      action.func(state);
+      return state;
   }
 };
 
@@ -219,7 +223,10 @@ export function RepositoryContextProvider({
               repo,
               branch,
             };
-            console.log('[repositoryContext] selectRepository WebApiFs props', props);
+            console.log(
+              '[repositoryContext] selectRepository WebApiFs props',
+              props,
+            );
             const fs: WebApiFs = await WebApiFs.open(props);
             const dirname = filePath ? upath.dirname(filePath) : '';
             const files = await fs.readdir(dirname);
@@ -330,76 +337,81 @@ export function RepositoryContextProvider({
   /**
    * ファイルを新しく作成する
    */
-  const createFile = useCallback((path: string, file: File) => {
-    (async () => {
-      // console.log('createFile action', action.path, action.file);
-      var encodedData = Buffer.from('\n', 'utf8').toString('base64');
-      // console.log('encodedData', encodedData);
-      try {
-        const result = await app.state.gqlclient?.mutate({
-          mutation: gql`
-            mutation createFile(
-              $owner: String!
-              $repo: String!
-              $branch: String!
-              $path: String!
-              $encodedData: String!
-              $message: String!
-            ) {
-              commitContent(
-                params: {
-                  owner: $owner
-                  repo: $repo
-                  branch: $branch
-                  newPath: $path
-                  newContent: $encodedData
-                  message: $message
+  const createFile = useCallback(
+    (path: string, file: File) => {
+      dispatch({type:'createFile',func:(state:RepositoryState)=>{
+        (async () => {
+          // console.log('createFile action', action.path, action.file);
+          var encodedData = Buffer.from('\n', 'utf8').toString('base64');
+          // console.log('encodedData', encodedData);
+          try {
+            const result = await app.state.gqlclient?.mutate({
+              mutation: gql`
+                mutation createFile(
+                  $owner: String!
+                  $repo: String!
+                  $branch: String!
+                  $path: String!
+                  $encodedData: String!
+                  $message: String!
+                ) {
+                  commitContent(
+                    params: {
+                      owner: $owner
+                      repo: $repo
+                      branch: $branch
+                      newPath: $path
+                      newContent: $encodedData
+                      message: $message
+                    }
+                  ) {
+                    state
+                    message
+                  }
                 }
-              ) {
-                state
-                message
-              }
+              `,
+              variables: {
+                owner:state.owner,
+                repo:state.repo,
+                branch: state.branch,
+                path: path,
+                encodedData,
+                message: 'create file',
+              },
+            });
+            if (!result) {
+              return;
             }
-          `,
-          variables: {
-            owner,
-            repo,
-            branch: branch,
-            path: path,
-            encodedData,
-            message: 'create file',
-          },
-        });
-        if (!result) {
-          return;
-        }
-        if (result.data.commitContent.state) {
-          log.success(t('ファイルを作成しました', {filepath: path}), 1000);
-          // ファイルリストを更新する
-          // TODO: mutationの結果として取得することでリクエスト回数を減らす
-          if (branch) {
-            selectBranch(branch);
+            if (result.data.commitContent.state) {
+              log.success(t('ファイルを作成しました', {filepath: path}), 1000);
+              // ファイルリストを更新する
+              // TODO: mutationの結果として取得することでリクエスト回数を減らす
+              if (state.branch) {
+                selectBranch(state.branch);
+              }
+            } else {
+              log.error(
+                t('ファイルが作成できませんでした', {
+                  filepath: path,
+                  error: result.data.commitContent.message,
+                }),
+                1000,
+              );
+            }
+          } catch (err: any) {
+            log.error(
+              t('ファイルが作成できませんでした', {
+                filepath: path,
+                error: err.message,
+              }),
+              1000,
+            );
           }
-        } else {
-          log.error(
-            t('ファイルが作成できませんでした', {
-              filepath: path,
-              error: result.data.commitContent.message,
-            }),
-            1000,
-          );
-        }
-      } catch (err: any) {
-        log.error(
-          t('ファイルが作成できませんでした', {
-            filepath: path,
-            error: err.message,
-          }),
-          1000,
-        );
-      }
-    })();
-  }, [app, branch, log, owner, repo, selectBranch]);
+        })();  
+      }});
+    },
+    [app, branch, log, owner, repo, selectBranch],
+  );
 
   /**
    * フォルダを開く
@@ -463,13 +475,16 @@ export function RepositoryContextProvider({
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const value = useMemo(()=>({
-    state,
-    selectBranch,
-    selectTree,
-    selectFile,
-    createFile
-  }),[createFile, selectBranch, selectFile, selectTree, state]);
+  const value = useMemo(
+    () => ({
+      state,
+      selectBranch,
+      selectTree,
+      selectFile,
+      createFile,
+    }),
+    [createFile, selectBranch, selectFile, selectTree, state],
+  );
 
   useEffect(() => {
     console.log('[repositoryContext] init ', owner, repo, branch, file);
@@ -477,7 +492,15 @@ export function RepositoryContextProvider({
       return;
     }
     selectRepository(owner, repo, branch, file);
-  }, [app.state.isPending, app.state.user, branch, file, owner, repo, selectRepository]);
+  }, [
+    app.state.isPending,
+    app.state.user,
+    branch,
+    file,
+    owner,
+    repo,
+    selectRepository,
+  ]);
 
   /*
     1. currentFileが変更される
