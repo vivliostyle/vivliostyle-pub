@@ -21,7 +21,7 @@
   "ブランチを変更しました": "branch changed: {{branch}}",
   "ビルドを開始しました": "Your build has been started",
   "以下のリンクをクリックして表示してください": "Click on the following link to view",
-  "ファイルを作成しました": "created a file : {{path}}",
+  "ファイルを作成しました": "created a file : {{filepath}}",
   "ファイルが作成できませんでした": "The file could not be created.({{filepath}}):{{error}}",
   "以下のファイルの処理に失敗しました": "Failed to process the following a file:{{error}}",
   "ファイルを削除しました": "File deleted:{{filepath}}",
