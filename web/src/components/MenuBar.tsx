@@ -107,7 +107,7 @@ export function MenuBar({
         <UI.Box w="180px" px="4">
           <BranchSelecter />
         </UI.Box>
-        {app.user /*&& session?.id*/ && (
+        {app.state.user /*&& session?.id*/ && (
           <div>
             <CommitSessionButton {...{onDidSaved}} />
           </div>
@@ -190,7 +190,7 @@ export function MenuBar({
                   {customTheme.description}
                 </UI.MenuItem>
               )}
-              {app.onlineThemes.map((theme) => (
+              {app.state.onlineThemes.map((theme) => (
                 <UI.MenuItem
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
@@ -206,7 +206,7 @@ export function MenuBar({
                 Add Image
               </UI.MenuItem>
               <FileUploadModal
-                user={app.user}
+                user={app.state.user}
                 isOpen={isOpenFileUploadModal}
                 onOpen={onOpenFileUploadModal}
                 onClose={onCloseFileUploadModal}

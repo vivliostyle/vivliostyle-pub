@@ -3,7 +3,8 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useReducer
+  useMemo,
+  useReducer,
 } from 'react';
 import firebase from '@services/firebase';
 import {
@@ -23,7 +24,6 @@ import {
   DocumentNode,
   gql,
   InMemoryCache,
-  NetworkStatus,
   NormalizedCacheObject,
   OperationVariables,
   TypedDocumentNode,
@@ -40,17 +40,20 @@ type GraphQlQueryMethod = (
 
 const provider = new GithubAuthProvider();
 
-/**
- * AppContextで管理する状態オブジェクトの型定義
- */
-export type AppContext = {
+type AppContextState = {
   user: User | null;
   isPending: boolean; // ユーザ情報の取得待ちフラグ true:取得待ち false:結果を取得済み
   onlineThemes: Theme[];
   vpubFs?: AppCacheFs; // Application Cacheへのアクセス
   repositories?: RepositoryState[] | null; // ユーザがアクセス可能(vivliostyle-pub Appが許可されている)なリポジトリのリスト
-  query?: GraphQlQueryMethod; // サーバのGraphQL APIへのクエリメソッド
   gqlclient?: ApolloClient<NormalizedCacheObject>;
+};
+
+/**
+ * AppContextで管理する状態オブジェクトの型定義
+ */
+export type AppContext = {
+  state: AppContextState;
   reload: () => void;
   signIn: () => void;
   signOut: () => void;
@@ -80,8 +83,10 @@ type Actions =
       repositories?: RepositoryState[];
     }
   | {type: 'notSignedIn'}
+  | {type: 'signOut'; func: (state: AppContextState) => void}
   | {type: 'signOutCallback'}
-  | {type: 'clearCache'};
+  | {type: 'clearCache'}
+  | {type: 'reload'; func: (state: AppContextState) => void};
 
 /**
  * 公式テーマのリストを返す
@@ -148,7 +153,7 @@ async function getRepositories(
  * @param action アクションオブジェクト
  * @returns 新しい状態
  */
-const reducer = (state: AppContext, action: Actions): AppContext => {
+const reducer = (state: AppContextState, action: Actions): AppContextState => {
   switch (action.type) {
     case 'initCallback':
       return {
@@ -157,26 +162,29 @@ const reducer = (state: AppContext, action: Actions): AppContext => {
         isPending: false,
         vpubFs: action.fs,
         onlineThemes: action.themes ?? [],
-        query: action.query,
         gqlclient: action.gqlclient,
         repositories: action.repositories,
       };
     case 'notSignedIn':
       // サインインしていない
       return {...state, isPending: false};
+    case 'signOut':
+      action.func(state);
+      return state;
     case 'signOutCallback':
       // ApplicationCacheを削除
-      state.vpubFs?.unlinkCache().then(() => {});
       return {
         ...state,
         user: null,
-        query: undefined,
         repositories: undefined,
       };
     case 'clearCache':
       // ApplicationCacheを削除
       console.log('app clearCache');
       state.vpubFs?.unlinkCache().then(() => {});
+      return state;
+    case 'reload':
+      action.func(state);
       return state;
   }
 };
@@ -195,7 +203,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    * @returns
    */
   const init = useCallback((user: User | null) => {
-    console.log('init', user);
+    console.log('app init', user);
     if (!user) {
       dispatch({type: 'notSignedIn'});
       return;
@@ -235,7 +243,6 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
         fs,
         themes,
         repositories,
-        query,
         gqlclient: client,
       });
     })();
@@ -248,7 +255,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     const auth = getAuth(firebase);
     const unsubscriber = onAuthStateChanged(auth, (user) => init(user));
     return () => unsubscriber();
-  }, []);
+  }, [init]);
 
   /**
    * サインイン
@@ -261,50 +268,68 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    * サインアウト
    */
   const signOut = useCallback(() => {
-    (async () => {
-      const auth = getAuth(firebase);
-      await auth.signOut();
-      dispatch({type: 'signOutCallback'});
-    })();
+    dispatch({
+      type: 'signOut',
+      func: (state: AppContextState) => {
+        (async () => {
+          const auth = getAuth(firebase);
+          await auth.signOut();
+          await state.vpubFs?.unlinkCache();
+          dispatch({type: 'signOutCallback'});
+        })();
+      },
+    });
   }, []);
+
+  /**
+   *  リポジトリリストのリロード
+   */
+  const reload = useCallback(() => {
+    console.log('app.reload');
+    dispatch({type: 'reload',func:(state:AppContextState)=>{
+      init(state.user);
+    }});
+  }, [init]);
+
+  /**
+   * アプリケーションキャッシュの削除
+   */
+  const clearCache = () => {
+    dispatch({type: 'clearCache'});
+  };
 
   /**
    * 初期値
    */
-  const state = {
-    // 状態
+  const initialState = {
     user: null,
     isPending: true,
     onlineThemes: [],
     repositories: null,
-    // メソッド
-    signIn: signIn,
-    signOut: signOut,
-    query: async (
-      query: DocumentNode | TypedDocumentNode<any, OperationVariables>,
-    ): Promise<ApolloQueryResult<any>> => {
-      return {data: null, loading: false, networkStatus: NetworkStatus.ready};
-    },
-    reload: () => {
-      init(app.user);
-    },
-    clearCache: () => {
-      dispatch({type: 'clearCache'});
-    },
   };
 
-  const [app, dispatch] = useReducer(reducer, state);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  if (app.isPending) {
+  const value = useMemo(
+    () => ({
+      state,
+      reload,
+      signIn,
+      signOut,
+      clearCache,
+    }),
+    [reload, signIn, signOut, state],
+  );
+
+  if (state.isPending) {
     return (
       <UI.Container mt={6}>
         <UI.Text>Loading Vivliostyle Editor...</UI.Text>
       </UI.Container>
     );
   } else {
-    console.log('[AppContext] render');
     return (
-      <AppContext.Provider value={app}>
+      <AppContext.Provider value={value}>
         <UI.Box>
           <Header />
           {children}

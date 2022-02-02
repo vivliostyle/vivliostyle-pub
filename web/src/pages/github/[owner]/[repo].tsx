@@ -2,7 +2,6 @@ import React, {useEffect, useCallback, useState, useMemo, useRef} from 'react';
 import {ReflexContainer, ReflexSplitter, ReflexElement} from 'react-reflex';
 
 import {useRouter} from 'next/router';
-import {RenderProps} from '@chakra-ui/react';
 
 import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 
@@ -16,13 +15,12 @@ import {PreviewSourceContextProvider} from '@middlewares/contexts/usePreviewSour
 
 import {ProjectExplorer} from '@components/ProjectExplorer';
 import {MenuBar} from '@components/MenuBar';
-import {FileState} from '@middlewares/frontendFunctions';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
 import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentThemeContext';
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import {doc, onSnapshot, Unsubscribe} from 'firebase/firestore';
+import {doc, onSnapshot} from 'firebase/firestore';
 import {db} from '@services/firebase';
 import { t } from 'i18next';
 
@@ -91,13 +89,13 @@ const GitHubOwnerRepo = () => {
 
   // check login
   useEffect(() => {
-    if (!app.user) {
+    if (!app.state.user) {
       router.replace('/');
     }
-  }, [app.user, app.isPending, router]);
+  }, [app.state.user, app.state.isPending, router]);
 
   const {owner, repo} = useMemo(() => {
-    if (app.user) {
+    if (app.state.user) {
       const owner = Array.isArray(router.query.owner)
         ? router.query.owner[0]
         : router.query.owner ?? null;
@@ -107,8 +105,8 @@ const GitHubOwnerRepo = () => {
       return {owner, repo: repo};
     }
     return {};
-  }, [app.user, router.query]);
-  console.log('[GitHubOwnerRepo]', app.isPending, owner, repo);
+  }, [app.state.user, router.query]);
+  console.log('[GitHubOwnerRepo]', app.state.isPending, owner, repo);
 
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);

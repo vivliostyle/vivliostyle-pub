@@ -98,7 +98,7 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
             if (theme) {
               // TODO: テーマオブジェクトのメソッド呼び出し
               try {
-                const themePath = await theme.process(app.vpubFs!);
+                const themePath = await theme.process(app.state.vpubFs!);
                 //        processThemeString(app, theme)
                 // 準備が終わったら状態を変化させる
                 dispatch({

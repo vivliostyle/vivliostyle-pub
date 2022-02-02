@@ -204,7 +204,7 @@ export function CurrentFileContextProvider({
               text: state.text,
             });
             // Web APIを呼び出すためのアクセストークンを取得する
-            const idToken = await app.user!.getIdToken();
+            const idToken = await app.state.user!.getIdToken();
             let sessionId = state.session?.id;
             // コミットAPIの呼び出し
             console.log('[CurrentFileContextProvider] commit to repository', repository);
@@ -239,7 +239,7 @@ export function CurrentFileContextProvider({
         })(repository);
       },
     });
-  }, [app.user, currentTheme, log, repository]);
+  }, [app.state.user, currentTheme, log, repository]);
 
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
@@ -293,7 +293,7 @@ export function CurrentFileContextProvider({
         (async (repository:RepositoryContext) => {
           try {
             const props = {
-              user: app.user!,
+              user: app.state.user!,
               owner: repository.state.owner!,
               repo: repository.state.repo!,
               branch: repository.state.branch!,
@@ -334,7 +334,7 @@ export function CurrentFileContextProvider({
         return false;
       },
     });
-  }, [repository, file, log, app.user]);
+  }, [repository, file, log, app.state.user]);
 
   /**
    * 初期値

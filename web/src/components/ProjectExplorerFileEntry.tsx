@@ -99,7 +99,7 @@ export default function FileEntry({
 
       console.log('[FileEntry] copy', oldFilePath, newFilePath);
 
-      const result = await app.gqlclient?.mutate({
+      const result = await app.state.gqlclient?.mutate({
         mutation: gql`
           mutation renameFile(
             $owner: String!
@@ -197,7 +197,7 @@ export default function FileEntry({
       if (!confirm(t('ファイルを削除しますか?',{filepath:filePath}))) {
         return;
       }
-      const result = (await app.gqlclient?.mutate({
+      const result = (await app.state.gqlclient?.mutate({
         mutation: gql`
           mutation deleteFile(
             $owner: String!
@@ -250,7 +250,7 @@ export default function FileEntry({
     const path = upath.join(currentDir, file.name);
 
     const props = {
-      user: app.user!,
+      user: app.state.user!,
       owner: repository.state.owner!,
       repo: repository.state.repo!,
       branch: repository.state.branch!,

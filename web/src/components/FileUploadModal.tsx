@@ -97,7 +97,7 @@ export const FileUploadModal = ({
         }
 
         // TODO: リポジトリコンテクストにメソッド化したほうがowner,repo,branchの指定が不要になるので良いか
-        const result = (await app.gqlclient?.mutate({
+        const result = (await app.state.gqlclient?.mutate({
           mutation: gql`
             mutation createFile(
               $owner: String!

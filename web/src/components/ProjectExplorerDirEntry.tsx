@@ -37,7 +37,7 @@ export default function DirEntry({
   ) => {
     const oldDirPath = upath.join(currentDir, file.name);
     const newDirPath = upath.join(currentDir, newPath);
-    const result = (await app.gqlclient?.mutate({
+    const result = (await app.state.gqlclient?.mutate({
       mutation: gql`
         mutation copyDirectory(
           $owner: String!
@@ -111,7 +111,7 @@ export default function DirEntry({
       if (!confirm(`ディレクトリ(${filePath})を削除しますか?`)) {
         return;
       }
-      const result = (await app.gqlclient?.mutate({
+      const result = (await app.state.gqlclient?.mutate({
         mutation: gql`
           mutation deleteDirectory(
             $owner: String!

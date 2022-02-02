@@ -85,7 +85,7 @@ export function ProjectExplorer() {
           repository.state.repo!,
           repository.state.branch!,
           srcPath,
-          app.user!,
+          app.state.user!,
         );
         if (!content) {
           log.error(
@@ -321,7 +321,7 @@ export function ProjectExplorer() {
         <UI.Box h="24px">
           <NewFileButton />
           <NewFolderButton />
-          <UploadButton user={app.user} />
+          <UploadButton user={app.state.user} />
         </UI.Box>
         <hr />
       </UI.Flex>

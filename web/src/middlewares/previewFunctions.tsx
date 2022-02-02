@@ -66,7 +66,7 @@ export async function transpileMarkdown(
           repository.state.branch!,
           srcPath!,
           imagePath,
-          app.user!,
+          app.state.user!,
         )
         return null; // エラーが無ければfilterで除去するためにnullを返す
       }catch(error:any){
@@ -88,7 +88,7 @@ export async function transpileMarkdown(
     // }
     // console.log('imagePaths', imagePaths);
   }
-  await app.vpubFs!.writeFile(srcPath, text);
+  await app.state.vpubFs!.writeFile(srcPath, text);
   console.log(`updateCache : ${srcPath}`);
   const vPubPath = upath.join(VPUBFS_ROOT, srcPath ?? '');
   return {vPubPath, text, errors};

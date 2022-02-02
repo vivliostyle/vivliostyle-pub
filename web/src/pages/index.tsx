@@ -6,10 +6,10 @@ import { useAppContext } from '@middlewares/contexts/useAppContext';
 
 const Index = () => {
   const app = useAppContext();
-  console.log('[Index]',app.user);
+  console.log('[Index]',app.state.user);
   return (
     <UI.Box>
-      {app.user ? (
+      {app.state.user ? (
         <>
           <UI.Container mt={6}>
             <GithubAppsButtonGroup />

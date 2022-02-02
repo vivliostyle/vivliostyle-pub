@@ -56,7 +56,7 @@ export class CustomTheme implements Theme {
       this.repository = repository;
       this.fs = fs;
       this.style = style;
-      console.log('new CustomTheme', app.user, repository);
+      console.log('new CustomTheme', app.state.user, repository);
     }
   
     /**
@@ -118,11 +118,11 @@ export class CustomTheme implements Theme {
      */
     public static async create(app: AppContext, repository: RepositoryContext) {
       console.log('create custom theme', repository.state.branch);
-      if (!(app.user && repository.state.owner && repository.state.repo)) {
+      if (!(app.state.user && repository.state.owner && repository.state.repo)) {
         return null;
       }
       const props = {
-        user: app.user!,
+        user: app.state.user!,
         owner: repository.state.owner!,
         repo: repository.state.repo!,
         branch: repository.state.branch!,

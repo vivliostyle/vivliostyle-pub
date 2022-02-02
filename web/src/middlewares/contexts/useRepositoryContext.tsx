@@ -190,7 +190,7 @@ export function RepositoryContextProvider({
       dispatch({
         type: 'selectRepository',
         func: (state: RepositoryState) => {
-          if (!app.user || app.isPending) {
+          if (!app.state.user || app.state.isPending) {
             console.log('[repositoryContext] selectRepository cancel');
             return null;
           }
@@ -202,7 +202,7 @@ export function RepositoryContextProvider({
             filePath,
           );
           (async () => {
-            const repositoryState = app.repositories?.find(
+            const repositoryState = app.state.repositories?.find(
               (rep) => rep.owner == owner && rep.repo == repo,
             );
             if (!repositoryState) {
@@ -212,7 +212,7 @@ export function RepositoryContextProvider({
             const defaultBranch = repositoryState.defaultBranch as string;
             branch = branch ?? defaultBranch;
             const props = {
-              user: app.user!,
+              user: app.state.user!,
               owner,
               repo,
               branch,
@@ -245,7 +245,7 @@ export function RepositoryContextProvider({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app.isPending, app.user],
+    [app.state.isPending, app.state.user],
   );
 
   /**
@@ -275,7 +275,7 @@ export function RepositoryContextProvider({
           }
           (async () => {
             const props = {
-              user: app.user!,
+              user: app.state.user!,
               owner: state.owner!,
               repo: state.repo!,
               branch: newBranch,
@@ -334,7 +334,7 @@ export function RepositoryContextProvider({
       var encodedData = Buffer.from('\n', 'utf8').toString('base64');
       // console.log('encodedData', encodedData);
       try {
-        const result = await app.gqlclient?.mutate({
+        const result = await app.state.gqlclient?.mutate({
           mutation: gql`
             mutation createFile(
               $owner: String!
@@ -424,7 +424,7 @@ export function RepositoryContextProvider({
             trees.push(tree as unknown as VFile);
           }
           const treeProps = {
-            user: app.user!,
+            user: app.state.user!,
             owner: state.owner!,
             repo: state.repo!,
             branch: state.branch!,
@@ -471,11 +471,11 @@ export function RepositoryContextProvider({
 
   useEffect(() => {
     console.log('[repositoryContext] init ', owner, repo, branch, file);
-    if (!app.user || app.isPending) {
+    if (!app.state.user || app.state.isPending) {
       return;
     }
     selectRepository(owner, repo, branch, file);
-  }, [app.isPending, app.user, branch, file, owner, repo, selectRepository]);
+  }, [app.state.isPending, app.state.user, branch, file, owner, repo, selectRepository]);
 
   /*
     1. currentFileが変更される

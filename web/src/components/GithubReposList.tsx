@@ -6,16 +6,16 @@ import { RepeatIcon } from '@chakra-ui/icons';
 
 export const GithubReposList: React.FC<{}> = ({}) => {
   const app = useAppContext();
-  console.log('rep list', app.repositories);
+  console.log('rep list', app.state.repositories);
 
   const reload = ()=>{
     console.log('reload repositories');
     app.reload();
   }
 
-  if (app.repositories == null) { // リポジトリリスト取得中
+  if (app.state.repositories == null) { // リポジトリリスト取得中
     return <UI.Text>Loading</UI.Text>;
-  } else if (app.repositories.length == 0) { // ログイン済み リポジトリリストが0件
+  } else if (app.state.repositories.length == 0) { // ログイン済み リポジトリリストが0件
     return (
     <UI.Text>
       <UI.Button>
@@ -35,7 +35,7 @@ export const GithubReposList: React.FC<{}> = ({}) => {
       <UI.Button w="2em">
         <RepeatIcon onClick={reload} />
       </UI.Button><br />
-      {app.repositories.map((repo) => (
+      {app.state.repositories.map((repo) => (
         <Link
           href="github/[owner]/[repo]"
           as={`/github/${repo.full_name}`}

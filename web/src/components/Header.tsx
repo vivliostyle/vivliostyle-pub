@@ -6,16 +6,16 @@ import { useTranslation } from 'react-i18next';
 
 const HeaderUserInfo: React.FC = () => {
   const app = useAppContext();
-  console.log('user',app.user);
+  console.log('user',app.state.user);
   const {t, i18n} = useTranslation();
 
   return (
     <>
-      {app.user ? (
+      {app.state.user ? (
         <>
         <UI.Text mr={2} fontSize={"small"}><UI.Link href='https://docs.google.com/forms/d/e/1FAIpQLSeh_7rm4RbwKRSHsEXexC4-PBZGK4JJFyQrW_Ee5JGUJHoB5w/viewform?usp=sf_link' isExternal={true}>{t('利用者アンケート')}</UI.Link></UI.Text>
         <UI.Text mr={2}  fontSize={"small"}><UI.Link href='https://docs.google.com/forms/d/e/1FAIpQLSfdbtDe9SsFyHJD5wFg4cHc91qf7GsSLydH2wsK4xnwffQwjQ/viewform?usp=sf_link' isExternal={true}>{t('不具合のフィードバック')}</UI.Link></UI.Text>
-        <UI.Text mr={2}>logged in as {app.user.displayName}</UI.Text>
+        <UI.Text mr={2}>logged in as {app.state.user.displayName}</UI.Text>
         <UI.Button
           variant="outline"
           colorScheme="blackAlpha"
