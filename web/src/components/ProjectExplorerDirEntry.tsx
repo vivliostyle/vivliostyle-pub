@@ -11,6 +11,7 @@ import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
 import {VscFolder} from 'react-icons/vsc';
 import {useState} from 'react';
+import {t} from 'i18next';
 
 export default function DirEntry({
   file,
@@ -30,6 +31,12 @@ export default function DirEntry({
   const [isRenaming, setRenaming] = useState<boolean>(false);
   const [isDuplicating, setDuplicating] = useState<boolean>(false);
 
+  /**
+   * ディレクトリ 複製/リネーム
+   * @param newPath
+   * @param removeOldPath
+   * @param message
+   */
   const copyDirectory = async (
     newPath: string,
     removeOldPath: boolean,
@@ -82,10 +89,22 @@ export default function DirEntry({
     const filePath = e.target.value;
     const result = await copyDirectory(filePath, true, 'rename directory');
     if (result.data.commitDirectory.state) {
-      log.success(`ディレクトリ(${filePath})をリネームしました`, 3000);
+      log.success(
+        t('フォルダをリネームしました', {
+          oldfilepath: file.path,
+          newfilepath: filePath,
+        }),
+        3000,
+      );
       onReload();
     } else {
-      log.error(`ディレクトリ(${filePath})のリネームに失敗しました`, 3000);
+      log.error(
+        t('フォルダのリネームに失敗しました', {
+          oldfilepath: filePath,
+          error: result.data.commitDirectory.message,
+        }),
+        3000,
+      );
     }
   };
 
@@ -93,10 +112,22 @@ export default function DirEntry({
     const filePath = e.target.value;
     const result = await copyDirectory(filePath, false, 'duplicate directory');
     if (result.data.commitDirectory.state) {
-      log.success(`ディレクトリ(${filePath})を複製しました`, 3000);
+      log.success(
+        t(`フォルダを複製しました`, {
+          oldfilepath: file.path,
+          newfilepath: filePath,
+        }),
+        3000,
+      );
       onReload();
     } else {
-      log.error(`ディレクトリ(${filePath})の複製に失敗しました`, 3000);
+      log.error(
+        t('フォルダの複製に失敗しました', {
+          oldfilepath: file.path,
+          error: result.data.commitDirectory.message,
+        }),
+        3000,
+      );
     }
   };
 
@@ -108,7 +139,7 @@ export default function DirEntry({
   const onDeleteDirectory = (filename: string, hash: string | undefined) => {
     (async () => {
       const filePath = upath.join(currentDir, filename);
-      if (!confirm(`ディレクトリ(${filePath})を削除しますか?`)) {
+      if (!confirm(t('フォルダを削除しますか?', {filepath: filePath}))) {
         return;
       }
       const result = (await app.state.gqlclient?.mutate({
@@ -145,10 +176,16 @@ export default function DirEntry({
       })) as any;
       console.log('delete result', result);
       if (result.data.commitDirectory.state) {
-        log.success(`ディレクトリ(${filePath})を削除しました`, 3000);
+        log.success(t('フォルダを削除しました', {filepath: filePath}), 3000);
         onReload();
       } else {
-        log.error(`ディレクトリ(${filePath})の削除に失敗しました`, 3000);
+        log.error(
+          t('フォルダの削除に失敗しました', {
+            filepath: filePath,
+            error: 'API error',
+          }),
+          3000,
+        );
       }
     })();
   };
@@ -171,7 +208,7 @@ export default function DirEntry({
                 setRenaming(true);
               }}
             >
-              Rename Directory
+              {t('フォルダ名を変更')}
             </UI.MenuItem>
             <UI.MenuItem
               onClick={(e) => {
@@ -180,7 +217,7 @@ export default function DirEntry({
                 setDuplicating(true);
               }}
             >
-              Duplicate Directory
+              {t('フォルダを複製')}
             </UI.MenuItem>
             <UI.MenuItem
               onClick={(e) => {
@@ -189,7 +226,7 @@ export default function DirEntry({
                 onDeleteDirectory(file.name, file.hash);
               }}
             >
-              Delete Directory
+              {t('フォルダを削除')}
             </UI.MenuItem>
           </UI.MenuList>
         )}

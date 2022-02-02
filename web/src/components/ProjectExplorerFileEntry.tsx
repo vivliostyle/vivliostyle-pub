@@ -19,24 +19,26 @@ import {
   VscSettingsGear,
   VscSymbolNamespace,
 } from 'react-icons/vsc';
-import { WebApiFs } from '@middlewares/fs/WebApiFS';
+import {WebApiFs} from '@middlewares/fs/WebApiFS';
 import mime from 'mime-types';
-import { t } from 'i18next';
+import {t} from 'i18next';
 
 /**
  * 与えられた文字列がBase64ならBufferを、そうでなければ文字列を返す
  * TODO: メソッド名を替える
  * @param str ファイルコンテンツの文字列
- * @returns 
+ * @returns
  */
-function isBase64(str:string):Buffer|string {
-  if (str ==='' || str.trim() ===''){ return str; }
+function isBase64(str: string): Buffer | string {
+  if (str === '' || str.trim() === '') {
+    return str;
+  }
   try {
-      const buffer = Buffer.from(str,'base64');
-      const str2 = Buffer.from(buffer).toString('base64');
-      return str2  == str.trim().replaceAll("\n","") ? buffer : str;
+    const buffer = Buffer.from(str, 'base64');
+    const str2 = Buffer.from(buffer).toString('base64');
+    return str2 == str.trim().replaceAll('\n', '') ? buffer : str;
   } catch (err) {
-      return str;
+    return str;
   }
 }
 
@@ -88,57 +90,57 @@ export default function FileEntry({
    * @param removeOldPath
    * @param message
    */
-   const copyFile = async (
+  const copyFile = async (
     oldFilename: string,
     newFilename: string,
     removeOldPath: boolean,
     message: string,
   ) => {
-      const oldFilePath = upath.join(currentDir, oldFilename);
-      const newFilePath = upath.join(currentDir, newFilename);
+    const oldFilePath = upath.join(currentDir, oldFilename);
+    const newFilePath = upath.join(currentDir, newFilename);
 
-      console.log('[FileEntry] copy', oldFilePath, newFilePath);
+    console.log('[FileEntry] copy', oldFilePath, newFilePath);
 
-      const result = await app.state.gqlclient?.mutate({
-        mutation: gql`
-          mutation renameFile(
-            $owner: String!
-            $repo: String!
-            $branch: String!
-            $oldPath: String!
-            $newPath: String!
-            $removeOldPath: Boolean!
-            $message: String!
-          ) {
-            commitContent(
-              params: {
-                owner: $owner
-                repo: $repo
-                branch: $branch
-                oldPath: $oldPath
-                newPath: $newPath
-                removeOldPath: $removeOldPath
-                message: $message
-              }
-            ) {
-              state
-              message
+    const result = (await app.state.gqlclient?.mutate({
+      mutation: gql`
+        mutation renameFile(
+          $owner: String!
+          $repo: String!
+          $branch: String!
+          $oldPath: String!
+          $newPath: String!
+          $removeOldPath: Boolean!
+          $message: String!
+        ) {
+          commitContent(
+            params: {
+              owner: $owner
+              repo: $repo
+              branch: $branch
+              oldPath: $oldPath
+              newPath: $newPath
+              removeOldPath: $removeOldPath
+              message: $message
             }
+          ) {
+            state
+            message
           }
-        `,
-        variables: {
-          owner: repository.state.owner,
-          repo: repository.state.repo,
-          branch: repository.state.branch,
-          oldPath: oldFilePath,
-          newPath: newFilePath,
-          removeOldPath,
-          message
-        },
-      }) as any;
+        }
+      `,
+      variables: {
+        owner: repository.state.owner,
+        repo: repository.state.repo,
+        branch: repository.state.branch,
+        oldPath: oldFilePath,
+        newPath: newFilePath,
+        removeOldPath,
+        message,
+      },
+    })) as any;
 
-      console.log('[FileEntry] copy result', result);
-      return result;
+    console.log('[FileEntry] copy result', result);
+    return result;
   };
 
   const renameFile = async (e: any) => {
@@ -149,16 +151,27 @@ export default function FileEntry({
     if (oldFilename === newFilename) {
       return;
     }
-    const result = await copyFile(oldFilename, newFilename, true ,'rename file');
+    const result = await copyFile(
+      oldFilename,
+      newFilename,
+      true,
+      'rename file',
+    );
     if (result.data.commitContent.state) {
       log.success(
-        t("ファイルをリネームしました",{oldfilepath:oldFilename,newfilepath:newFilename}),
+        t('ファイルをリネームしました', {
+          oldfilepath: oldFilename,
+          newfilepath: newFilename,
+        }),
         3000,
       );
       onReload();
     } else {
       log.error(
-        t("ファイルのリネームに失敗しました",{oldfilepath:oldFilename,error:result.data.commitContent.message}),
+        t('ファイルのリネームに失敗しました', {
+          oldfilepath: oldFilename,
+          error: result.data.commitContent.message,
+        }),
         3000,
       );
     }
@@ -171,16 +184,27 @@ export default function FileEntry({
     if (oldFilename === newFilename) {
       return;
     }
-    const result = await copyFile(oldFilename, newFilename, false, "duplicate a file");
+    const result = await copyFile(
+      oldFilename,
+      newFilename,
+      false,
+      'duplicate a file',
+    );
     if (result.data.commitContent.state) {
       log.success(
-        t(`ファイルを複製しました`,{oldfilepath:oldFilename,newfilepath:newFilename}),
+        t(`ファイルを複製しました`, {
+          oldfilepath: oldFilename,
+          newfilepath: newFilename,
+        }),
         3000,
       );
       onReload();
     } else {
       log.error(
-        t('ファイルの複製に失敗しました',{oldfilepath:oldFilename,error:result.data.commitContent.message}),
+        t('ファイルの複製に失敗しました', {
+          oldfilepath: oldFilename,
+          error: result.data.commitContent.message,
+        }),
         3000,
       );
     }
@@ -194,7 +218,7 @@ export default function FileEntry({
   const onDeleteFile = (filename: string, hash: string | undefined) => {
     (async () => {
       const filePath = upath.join(currentDir, filename);
-      if (!confirm(t('ファイルを削除しますか?',{filepath:filePath}))) {
+      if (!confirm(t('ファイルを削除しますか?', {filepath: filePath}))) {
         return;
       }
       const result = (await app.state.gqlclient?.mutate({
@@ -231,19 +255,25 @@ export default function FileEntry({
       })) as any;
       console.log('delete result', result);
       if (result.data.commitContent.state) {
-        log.success(t("ファイルを削除しました",{filepath:filePath}), 3000);
+        log.success(t('ファイルを削除しました', {filepath: filePath}), 3000);
         onReload();
       } else {
-        log.error(t("ファイルの削除に失敗しました",{filepath:filePath,error:"API error"}), 3000);
+        log.error(
+          t('ファイルの削除に失敗しました', {
+            filepath: filePath,
+            error: 'API error',
+          }),
+          3000,
+        );
       }
     })();
   };
 
   /**
    * ファイルダウンロード コンテクストメニュー
-   * @param e 
+   * @param e
    */
-  const onDownloadFile = async (e:any) => {
+  const onDownloadFile = async (e: any) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -257,21 +287,24 @@ export default function FileEntry({
     };
     WebApiFs.open(props)
       .then((fs) => {
-        fs.readFile(path)
-        .then((content) => {
+        fs.readFile(path).then((content) => {
           // console.log('dispatch setFileCallback', seq,action.file,content);
-          if (content == undefined || content == null) { // 0バイトのファイルがあるため、!contentでは駄目
+          if (content == undefined || content == null) {
+            // 0バイトのファイルがあるため、!contentでは駄目
             log.error(
-              t('ファイルを取得できませんでした',{filepath:path,error:"content error"}),
+              t('ファイルを取得できませんでした', {
+                filepath: path,
+                error: 'content error',
+              }),
               3000,
             );
             return false;
           }
           const type = mime.lookup(file.name) || 'application/octet-stream';
-          const decodedData:string|Buffer = isBase64(content as string);
+          const decodedData: string | Buffer = isBase64(content as string);
           const blob = new Blob([decodedData], {type});
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
+          const a = document.createElement('a');
           document.body.appendChild(a);
           a.download = file.name;
           a.href = url;
@@ -282,11 +315,14 @@ export default function FileEntry({
       })
       .catch((err) => {
         log.error(
-          t('ファイルを取得できませんでした',{filepath:path,error:err.messsage}),
+          t('ファイルを取得できませんでした', {
+            filepath: path,
+            error: err.messsage,
+          }),
           3000,
         );
       });
-  }
+  };
 
   return (
     <UI.Container
@@ -375,7 +411,7 @@ export default function FileEntry({
               />
             ) : (
               <>
-                  <UI.Icon as={icon} /> {file.name}
+                <UI.Icon as={icon} /> {file.name}
                 {isDuplicating ? (
                   <UI.Input
                     autoFocus={true}
