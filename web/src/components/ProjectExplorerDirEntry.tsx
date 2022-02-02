@@ -170,7 +170,7 @@ export default function DirEntry({
           owner: repository.state.owner,
           repo: repository.state.repo,
           branch: repository.state.branch,
-          path: filename,
+          path: filePath,
           message: 'delete directory',
         },
       })) as any;
