@@ -10,6 +10,9 @@ import { CurrentFile } from './contexts/useCurrentFileContext';
 
 export const VPUBFS_ROOT = '/vpubfs';
 
+const VIVLIOSTYLE_VIEWER_HTML_URL =
+  process.env.VIVLIOSTYLE_VIEWER_HTML_URL || '/viewer/index.html';
+
 
 /**
  * HTMLからアプリケーションキャッシュの対象になるファイルのリストアップ
@@ -37,11 +40,13 @@ const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string
       // console.log('replace local link',href,href?.match(/^https?:/));
       if(href!=null && !href?.match(/^https?:/)){
         const newElm = document.createElement("a");
-        let path = upath.resolve(upath.dirname(documentPath),href);
-        if(path.startsWith('/')) { path = path.substring(1)}
-        newElm.href = `/github/${owner}/${repo}?branch=${branch}&file=${path}`;
+        let path = upath.join(VPUBFS_ROOT,upath.resolve(upath.dirname(documentPath),href)).replace(/\.md/i,'.html');
+        // if(path.startsWith('/')) { path = path.substring(1)}
+        newElm.href = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
+          path
+        }`;  
         newElm.innerHTML = element.innerHTML;
-        newElm.target = '_parent';
+        // newElm.target = '_parent';
         // console.log('replaced local link',element);
         element.replaceWith(newElm);  
       }
