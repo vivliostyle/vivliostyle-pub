@@ -16,20 +16,38 @@ export const VPUBFS_ROOT = '/vpubfs';
  * @param text
  * @returns
  */
-const pickupHtmlResources = (text: string): string[] => {
+const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string,documentPath:string): {imagePaths:string[],html:string} => {
   const imagePaths = [] as string[];
   const parser = new DOMParser();
   // アプリケーションキャッシュの対象になる画像ファイルの取得
-  parser
-    .parseFromString(text, 'text/html')
-    .querySelectorAll('img')
+  const parsedDocument = parser
+    .parseFromString(text, 'text/html');
+
+  parsedDocument.querySelectorAll('img')
     .forEach((element) => {
       const src = element.getAttribute('src');
       if (src && !isURL(src)) imagePaths.push(src);
     });
   // TODO: link要素によるCSSファイルも扱う
 
-  return imagePaths;
+  // 同じプロジェクト内へのリンクを書き換える
+  parsedDocument.querySelectorAll('a')
+    .forEach((element)=>{
+      const href = element.getAttribute('href');
+      // console.log('replace local link',href,href?.match(/^https?:/));
+      if(href!=null && !href?.match(/^https?:/)){
+        const newElm = document.createElement("a");
+        let path = upath.resolve(upath.dirname(documentPath),href);
+        if(path.startsWith('/')) { path = path.substring(1)}
+        newElm.href = `/github/${owner}/${repo}?branch=${branch}&file=${path}`;
+        newElm.innerHTML = element.innerHTML;
+        newElm.target = '_parent';
+        // console.log('replaced local link',element);
+        element.replaceWith(newElm);  
+      }
+    });
+
+  return {imagePaths,html:parsedDocument.documentElement.innerHTML};
 };
 
 /**
@@ -55,7 +73,8 @@ export async function transpileMarkdown(
   console.log('transpiled', srcPath, '\n' /*, text*/);
   let errors:Error[] = [];
   if (srcPath.endsWith('.html')) {
-    const imagePaths = pickupHtmlResources(text);
+    const {imagePaths,html} = pickupHtmlResources(text,repository.state.owner!,repository.state.name,repository.state.branch!,currentFile.state.file.path);
+    text = html;
     console.log('transpile imagePaths',imagePaths);
     const promises = imagePaths.map(async (imagePath) => {
       try{
