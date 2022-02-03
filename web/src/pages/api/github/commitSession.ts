@@ -40,7 +40,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   }
   const {owner, repo, text, path} = sessionSnapshot.data()!;
 
-  console.log(text);
+  // console.log(text);
 
   const pathWithBranch = `${branch}:${path}`;
   // ブランチのOIDを取得する
@@ -81,7 +81,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
   )) as any;
   // 最新のコミットのObjectID
   const headOid = branchObj.repository.ref.target.oid;
-  console.log('branch obj', JSON.stringify(branchObj));
+  // console.log('branch obj', JSON.stringify(branchObj));
 
   const additions = [];
   additions.push({
@@ -141,7 +141,7 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
         },
       },
     );
-    console.log('commitSession result', result);
+    // console.log('commitSession result', result);
 
     res.status(201).send(null);
   } catch (e: any) {
