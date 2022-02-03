@@ -1,10 +1,8 @@
 import {Octokit} from '@octokit/rest';
-import {Endpoints} from '@octokit/types';
+import {graphql} from '@octokit/graphql';
 
 import {queryContext} from './gqlAuthDirective';
-
-type GithubReposApiResponse =
-  Endpoints['GET /user/installations/{installation_id}/repositories']['response']['data']['repositories'];
+import {createAppAuth} from '@octokit/auth-app';
 
 /**
  * リポジトリのリストを返す
@@ -25,57 +23,68 @@ export const getRepositories = async (
     // TODO: エラー処理
     return [];
   }
-  const props = info.fieldNodes[0].selectionSet.selections.map(
-    (f: any) => f.name.value,
-  );
-  // console.log('getRepositories', parent, args, context, props);
+  // GitHub AppのInstallation IDを取得する
   const octokit = new Octokit({
     auth: `token ${context.token}`,
   });
-  // TODO: GitHubのGraphQL APIを使って書き直す
   const installations =
     await octokit.apps.listInstallationsForAuthenticatedUser();
-  const repos = await Promise.all(
+  const parameters = {
+    headers: {
+      authorization: `token ${context.token}`,
+    },
+  };
+
+  const query = `
+    query {
+      viewer {
+        repositories(first: 100, ownerAffiliations: [OWNER]) {
+          totalCount
+          nodes {
+            ... on Repository {
+              id
+              name
+              owner {
+                __typename
+                login
+              }
+              defaultBranchRef {
+                id
+                name
+              }
+              isPrivate
+              refs(first: 100, refPrefix: "refs/heads/") {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const results = await Promise.all(
+    // 他のユーザのリポジトリに権限を与えられている場合、複数のGitHub AppのInstallationが取得できる
     installations.data.installations.map(async ({id}) => {
-      const repos =
-        await octokit.apps.listInstallationReposForAuthenticatedUser({
-          installation_id: id,
-        });
-      return repos.data.repositories as unknown as GithubReposApiResponse;
+      // InstallationIDを使用した認証機構
+      const auth = createAppAuth({
+        appId: process.env.GH_APP_ID,
+        privateKey: process.env.GH_APP_PRIVATEKEY,
+        installationId: id,
+      });
+      // 認証を使ってGarphQLクライアントを作成
+      const graphqlWithAuth = graphql.defaults({
+        request: {
+          hook: auth.hook,
+        },
+      });
+      // APIを実行
+      const result = (await graphqlWithAuth(query, parameters)) as any;
+      return result.viewer.repositories.nodes;
     }),
   );
-  const repositoriesPromisses = repos
-    .reduce((acc, v) => [...acc, ...v], [])
-    .map(async (r) => {
-      // branchesが取得リストに含まれていれば
-      const branchesData = props.includes('branches')
-        ? (
-            await octokit.repos.listBranches({
-              owner: r.owner!.login,
-              repo: r.name!,
-            })
-          ).data
-        : undefined;
-      const branches = branchesData?.map((b) => b.name);
-      // defaultBranchが取得リストに含まれていれば
-      const defaultBranch = props.includes('defaultBranch')
-        ? await (
-            await octokit.repos.get({owner: r.owner!.login, repo: r.name!})
-          ).data.default_branch
-        : undefined;
-
-      return {
-        owner: r.owner!.login,
-        repo: r.name,
-        full_name: r.full_name,
-        id: r.id,
-        node_id: r.node_id,
-        private: r.private,
-        branches,
-        defaultBranch,
-      };
-    });
-  const repositories = await Promise.all(repositoriesPromisses);
-  // console.log(repositories);
+  // console.log(results.flat());
+  const repositories = results.flat();
   return repositories;
 };

@@ -9,6 +9,7 @@ import {PageConfig} from 'next';
 import {ApolloServer, gql} from 'apollo-server-micro';
 import Cors from 'micro-cors';
 import {makeExecutableSchema} from '@graphql-tools/schema';
+import {mergeTypeDefs} from '@graphql-tools/merge';
 import {isNumber} from 'lodash';
 import {getRepositories} from '@services/gqlRepository';
 import {
@@ -17,7 +18,8 @@ import {
 } from '@services/gqlAuthDirective';
 import {send} from 'micro';
 import {commitContent} from '@services/gqlCommitContent';
-import { commitDirectory } from '@services/gqlCommitDirectory';
+import {commitDirectory} from '@services/gqlCommitDirectory';
+import GihHubSchema from '../../services/GitHubSchema';
 
 const cors = Cors();
 
@@ -28,7 +30,7 @@ export const config: PageConfig = {
   },
 };
 
-const typeDefs = gql`
+const _typeDefs = gql`
   enum Role {
     ADMIN # 管理者
     USER # ログインユーザ
@@ -40,7 +42,6 @@ const typeDefs = gql`
     requires: Role = USER # @authとだけ記述したときの初期値はUSER
   ) on OBJECT | FIELD_DEFINITION
 
-
   type Result {
     state: Boolean
     message: String
@@ -48,16 +49,6 @@ const typeDefs = gql`
 
   type User @auth {
     name: String
-  }
-  type Repository @auth {
-    owner: String!
-    repo: String!
-    branches: [String]!
-    defaultBranch: String!
-    full_name: String!
-    id: Int!
-    node_id: String!
-    private: Boolean!
   }
   type Branch @auth {
     name: String
@@ -111,7 +102,14 @@ const typeDefs = gql`
   }
 `;
 
+const typeDefs = mergeTypeDefs([GihHubSchema, _typeDefs]);
+
 const resolvers = {
+  RepositoryOwner: {
+    __resolveType(owner:any, context:any, info:any) {
+      return owner.__typename
+    }
+  },
   Query: {
     // parent  前のリゾルバ呼び出しの結果
     // args    リゾルバのフィールドの引数

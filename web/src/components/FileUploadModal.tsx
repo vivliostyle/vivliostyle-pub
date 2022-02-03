@@ -37,7 +37,7 @@ export const FileUploadModal = ({
   title: string;
   accept: string;
 }) => {
-  const {t, i18n} = useTranslation();
+  const {t} = useTranslation();
 
   const app = useAppContext();
   const repository = useRepositoryContext();
@@ -124,7 +124,7 @@ export const FileUploadModal = ({
           `,
           variables: {
             owner: repository.state.owner,
-            repo: repository.state.repo,
+            repo: repository.state.name,
             branch: repository.state.branch,
             path: filePath,
             encodedData,

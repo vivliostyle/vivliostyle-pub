@@ -86,7 +86,7 @@ export function ProjectExplorer() {
         // TODO: このページからはApplication Cacheにアクセスできるようにする
         let content = await getFileContentFromGithub(
           repository.state.owner!,
-          repository.state.repo!,
+          repository.state.name!,
           repository.state.branch!,
           srcPath,
           app.state.user!,

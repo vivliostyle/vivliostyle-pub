@@ -62,7 +62,7 @@ export async function transpileMarkdown(
         console.log('imagePath in HTML',imagePath);
         await updateCacheFromPath(
           repository.state.owner!,
-          repository.state.repo!,
+          repository.state.name!,
           repository.state.branch!,
           srcPath!,
           imagePath,

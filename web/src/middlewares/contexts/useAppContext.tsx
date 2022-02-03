@@ -128,20 +128,48 @@ async function getRepositories(
         query {
           repositories {
             id
-            node_id
-            private
-            full_name
-            owner
-            repo
-            branches
-            defaultBranch
+            name
+            owner {
+              __typename
+              login
+            }
+            defaultBranchRef {
+              id
+              name
+            }
+            isPrivate
+            refs(first:100, refPrefix:"refs/heads") {
+              nodes {
+                name
+              }
+            }
           }
         }
       `,
     );
-    const repositories: RepositoryState[] = result.data.repositories;
+    const repositories: RepositoryState[] = await result.data.repositories.map(
+      (r: any) => {
+        console.log('r', r);
+        return {
+          id: r.id,
+          private: r.isPrivate,
+          owner: r.owner.login,
+          name: r.name,
+          // branch: null,
+          // currentConfig: null,
+          // currentTree:null,
+          branches: r.refs.nodes.flat().map((node:any)=>node.name),
+          defaultBranch: r.defaultBranchRef ? r.defaultBranchRef.name : '', // ブランチが存在しない空のリポジトリもありうるため
+          // files:[],
+          // currentFile: null,
+          // fs:null
+        };
+      },
+    );
+    console.log('repositories',repositories);
     return repositories;
   } catch (error) {
+    console.error(error);
     return [];
   }
 }
@@ -286,9 +314,12 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    */
   const reload = useCallback(() => {
     console.log('app.reload');
-    dispatch({type: 'reload',func:(state:AppContextState)=>{
-      init(state.user);
-    }});
+    dispatch({
+      type: 'reload',
+      func: (state: AppContextState) => {
+        init(state.user);
+      },
+    });
   }, [init]);
 
   /**

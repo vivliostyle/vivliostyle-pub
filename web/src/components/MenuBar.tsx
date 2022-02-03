@@ -103,7 +103,7 @@ export function MenuBar({
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
       <UI.Flex align="center">
-        {repository.state.owner} / {repository.state.repo} /
+        {repository.state.owner} / {repository.state.name} /
         <UI.Box w="180px" px="4">
           <BranchSelecter />
         </UI.Box>

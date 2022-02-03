@@ -18,15 +18,13 @@ import {t} from 'i18next';
 
 export type RepositoryState = {
   id: number;
-  node_id: string;
   private: boolean;
   owner: string | null;
-  repo: string | null;
   branch: string | null;
   currentConfig: CoreProps | null;
   currentTree: VFile[]; // カレントディレクトリを配列として保持 Rootは含まない 例 /Sub/Sub2 => [SubのVFile,Sub2のVFile]
   branches: string[];
-  full_name: string;
+  name: string;
   defaultBranch: string;
   files: VFile[];
   currentFile: VFile | null;
@@ -59,7 +57,7 @@ type Actions =
   | {
       type: 'selectRepositoryCallback';
       owner: string;
-      repo: string;
+      name: string;
       branches: string[];
       defaultBranch: string;
       branch: string;
@@ -110,14 +108,14 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
     case 'selectRepositoryCallback':
       setQueryParam('branch', action.branch);
-      if (state.repo != action.repo || state.branch != action.branch) {
+      if (state.name != action.name || state.branch != action.branch) {
         setQueryParam('file', null);
       }
       console.log('[repositoryContext] selectRepositoryCallback', action);
       return {
         ...state,
         owner: action.owner,
-        repo: action.repo,
+        name: action.name,
         branches: action.branches,
         defaultBranch: action.defaultBranch,
         branch: action.branch,
@@ -209,7 +207,7 @@ export function RepositoryContextProvider({
           );
           (async () => {
             const repositoryState = app.state.repositories?.find(
-              (rep) => rep.owner == owner && rep.repo == repo,
+              (rep) => rep.owner == owner && rep.name == repo,
             );
             if (!repositoryState) {
               return;
@@ -241,7 +239,7 @@ export function RepositoryContextProvider({
               dispatch({
                 type: 'selectRepositoryCallback',
                 owner,
-                repo,
+                name: repo,
                 branches,
                 defaultBranch,
                 branch,
@@ -269,14 +267,14 @@ export function RepositoryContextProvider({
         func: (state: RepositoryState) => {
           if (
             !state.owner ||
-            !state.repo ||
+            !state.name ||
             !newBranch ||
             state.branch === newBranch
           ) {
             console.log(
               '[repositoryContext] selectBranch cancel',
               state.owner,
-              state.repo,
+              state.name,
               state.branch,
               newBranch,
             );
@@ -286,7 +284,7 @@ export function RepositoryContextProvider({
             const props = {
               user: app.state.user!,
               owner: state.owner!,
-              repo: state.repo!,
+              repo: state.name!,
               branch: newBranch,
             };
             // ブランチ変更の際にはルートディレクトリをカレントディレクトリにする
@@ -372,7 +370,7 @@ export function RepositoryContextProvider({
               `,
               variables: {
                 owner:state.owner,
-                repo:state.repo,
+                repo:state.name,
                 branch: state.branch,
                 path: path,
                 encodedData,
@@ -440,7 +438,7 @@ export function RepositoryContextProvider({
           const treeProps = {
             user: app.state.user!,
             owner: state.owner!,
-            repo: state.repo!,
+            repo: state.name!,
             branch: state.branch!,
           };
           const path = trees.map((t) => t.name).join('/');
@@ -458,11 +456,10 @@ export function RepositoryContextProvider({
 
   const initialState = {
     id: 0,
-    node_id: '',
     private: false,
     owner: null,
     repo: null,
-    full_name: '',
+    name: '',
     branches: [],
     files: [],
     branch: null,

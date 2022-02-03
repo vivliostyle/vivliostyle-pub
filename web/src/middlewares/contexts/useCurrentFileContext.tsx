@@ -250,7 +250,7 @@ export function CurrentFileContextProvider({
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
     console.log('[CurrentFileContextProvider] changed file', repository, file);
-    if (!repository?.state.owner || !repository?.state.repo || !repository?.state.branch) {
+    if (!repository?.state.owner || !repository?.state.name || !repository?.state.branch) {
       console.log('[CurrentFileContextProvider] cancel');
       return;
     }
@@ -301,7 +301,7 @@ export function CurrentFileContextProvider({
             const props = {
               user: app.state.user!,
               owner: repository.state.owner!,
-              repo: repository.state.repo!,
+              repo: repository.state.name!,
               branch: repository.state.branch!,
             };
             console.log('[CurrentFileContextProvider] setFile props', props);

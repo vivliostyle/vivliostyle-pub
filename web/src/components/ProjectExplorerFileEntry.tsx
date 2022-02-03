@@ -135,7 +135,7 @@ export default function FileEntry({
       `,
       variables: {
         owner: repository.state.owner,
-        repo: repository.state.repo,
+        repo: repository.state.name,
         branch: repository.state.branch,
         oldPath: oldFilePath,
         newPath: newFilePath,
@@ -252,7 +252,7 @@ export default function FileEntry({
         `,
         variables: {
           owner: repository.state.owner,
-          repo: repository.state.repo,
+          repo: repository.state.name,
           branch: repository.state.branch,
           path: filePath,
           message: 'delete file',
@@ -287,7 +287,7 @@ export default function FileEntry({
     const props = {
       user: app.state.user!,
       owner: repository.state.owner!,
-      repo: repository.state.repo!,
+      repo: repository.state.name!,
       branch: repository.state.branch!,
     };
     WebApiFs.open(props)
