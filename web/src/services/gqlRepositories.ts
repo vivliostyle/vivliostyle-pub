@@ -3,6 +3,7 @@ import {graphql} from '@octokit/graphql';
 
 import {queryContext} from './gqlAuthDirective';
 import {createAppAuth} from '@octokit/auth-app';
+import { githubAppPrivateKey } from '@utils/keys';
 
 /**
  * リポジトリのリストを返す
@@ -69,8 +70,8 @@ export const getRepositories = async (
     installations.data.installations.map(async ({id}) => {
       // InstallationIDを使用した認証機構
       const auth = createAppAuth({
-        appId: process.env.GH_APP_ID,
-        privateKey: process.env.GH_APP_PRIVATEKEY,
+        appId: +process.env.GH_APP_ID,
+        privateKey: githubAppPrivateKey,
         installationId: id,
       });
       // 認証を使ってGarphQLクライアントを作成
