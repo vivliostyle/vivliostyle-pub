@@ -227,7 +227,8 @@ export function RepositoryContextProvider({
             );
             const fs: WebApiFs = await WebApiFs.open(props);
             const dirname = filePath ? upath.dirname(filePath) : '';
-            const files = await fs.readdir(dirname);
+            const dir = dirname !== '.' ? dirname:''; // upath.dirname('sample.md') => '.' になるため
+            const files = await fs.readdir(dir);
             let file;
             if (filePath && filePath != state.currentFile?.path) {
               const name = upath.basename(filePath);
