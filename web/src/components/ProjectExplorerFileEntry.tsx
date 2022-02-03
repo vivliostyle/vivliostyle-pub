@@ -412,6 +412,9 @@ export default function FileEntry({
             display="inline-block"
             width="100%"
             _hover={{textDecoration: 'underline'}}
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
           >
             {isRenaming ? (
               <UI.Input
