@@ -1,9 +1,9 @@
+import {ApolloClient, gql, InMemoryCache} from '@apollo/client';
 import {User} from '@firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {doc, DocumentReference, getFirestore} from 'firebase/firestore';
 import {ContentOfRepositoryApiResponse} from 'pages/api/github/contentOfRepository';
 import {GithubRequestSessionApiResponse} from 'pages/api/github/requestSession';
-import {CommitsOfRepositoryApiResponse} from 'pages/api/github/tree';
 import {Fs, VFile} from 'theme-manager';
 
 /**
@@ -15,7 +15,7 @@ export class WebApiFs implements Fs {
   repo: string;
   branch: string;
   tree_sha: string;
-  root:string = "";
+  root: string = '';
   /**
    * キャッシュを開いてFsインターフェースを実装したオブジェクトを返す
    * @param cacheName キャッシュ名
@@ -147,7 +147,7 @@ export class WebApiFs implements Fs {
     data: any,
     options?: any,
   ): Promise<void> {
-    throw new Error("WebApiFS::writeFile : not implemented");
+    throw new Error('WebApiFS::writeFile : not implemented');
   }
 
   /**
@@ -160,57 +160,70 @@ export class WebApiFs implements Fs {
     path: string, // TODO: pathからtree_shaを取得する
     options?: string | Object,
   ): Promise<VFile[]> {
-    console.log('readdir',path);
     if (options) {
       throw new Error('WebApiFs::readdir options not implemented');
     } // オプション未実装
-    const token = await this.user.getIdToken();
-    const resp = await fetch(
-      `/api/github/tree?${new URLSearchParams({
-        owner: this.owner,
-        repo: this.repo,
-        branch: this.branch,
-        path: path, // サブディレクトリのときに指定する
-      })}`,
-      {
-        method: 'GET',
-        headers: {
-          'x-id-token': token,
-        },
+
+    const idToken = await this.user.getIdToken();
+    const client = new ApolloClient({
+      uri: '/api/graphql',
+      cache: new InMemoryCache(),
+      headers: {
+        'x-id-token': idToken,
       },
-    );
-    path = path ?? '/';
-    if(resp.status == 409) {
-      // リポジトリにファイルが存在しない
-      return [];
+    });
+    const result = await client.query({
+      query: gql`
+      query getEntries($owner: String!,$name: String!,$expr: String!) {
+        repository(owner: $owner, name: $name) {
+          object(expression: $expr) {
+            __typename
+            ... on Tree {
+              entries {
+                type
+                name
+                extension
+                isGenerated
+                mode
+                oid
+                path
+              }
+            }
+          }
+        }
+      }
+    `,
+    variables:{
+      owner:this.owner,
+      name:this.repo,
+      expr: `${this.branch}:${path}`
     }
-    const data = (await resp.json()) as CommitsOfRepositoryApiResponse;
-    // console.log('data', data.tree);
-    const files = data.tree.map((tree) => {
-      // console.log(tree);
+    });
+    console.log('readdir',this.owner,this.repo,this.branch,path,result.data.repository.object);
+    const files = result.data.repository.object.entries.map((entry:any) => {
       // 取得したGitのファイル情報をVFile形式に変換する
       // この時点ではファイルの内容は取得していない
       return new VFile({
         fs: this,
         dirname: path,
         type:
-          tree.type === 'blob'
+          entry.type === 'blob'
             ? 'file'
-            : tree.type === 'tree'
+            : entry.type === 'tree'
             ? 'dir'
             : 'others',
-        name: tree.path!,
-        hash: tree.sha,
+        name: entry.name,
+        hash: entry.oid,
       });
-    });
+    });    
     return files;
   }
 
   /**
    * ファイル、ディレクトリの削除
-   * @param path 
+   * @param path
    */
-  public async unlink(path:string):Promise<boolean> {
-    throw new Error("WebApiFS::unlink not implemented");
+  public async unlink(path: string): Promise<boolean> {
+    throw new Error('WebApiFS::unlink not implemented');
   }
 }

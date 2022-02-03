@@ -5,19 +5,28 @@ import {queryContext} from './gqlAuthDirective';
 import {createAppAuth} from '@octokit/auth-app';
 
 /**
- * リポジトリのリストを返す
+ * 任意のパスの情報を返す
  * @param parent
  * @param args
  * @param context token,rolesが含まれたオブジェクト
  * @param info
  * @returns
  */
-export const getRepositories = async (
+export const getRepository = async (
   parent: any,
   args: any,
   context: queryContext,
   info: any,
 ) => {
+  // console.log(
+  //   'getRepository',
+  //   'parent',
+  //   parent,
+  //   'args',
+  //   args,
+  //   'context',
+  //   context /*,"info",info*/,
+  // );
   if (!context.token) {
     // Userのトークンが無ければ空のリストを返す
     // TODO: エラー処理
@@ -29,62 +38,76 @@ export const getRepositories = async (
   });
   const installations =
     await octokit.apps.listInstallationsForAuthenticatedUser();
+    const installation = installations.data.installations.find(
+      (ins) => ins.account?.login === args.owner,
+    );
+    if(! installation) {
+      // TODO: エラー処理
+      return null;
+    }
+    const installationId = installation?.id;
+    // InstallationIDを使用した認証機構
+    const auth = createAppAuth({
+      appId: process.env.GH_APP_ID,
+      privateKey: process.env.GH_APP_PRIVATEKEY,
+      installationId: installationId,
+    });
+    // 認証を使ってGarphQLクライアントを作成
+    const graphqlWithAuth = graphql.defaults({
+      request: {
+        hook: auth.hook,
+      },
+    });
+
+  return {graphqlWithAuth,owner:args.owner,name:args.name};
+  
+};
+
+export const getRepositoryObject = async (
+  parent: any,
+  args: any,
+  context: queryContext,
+  info: any,
+)=>{
+  
+  // console.log("getRepositoryObject", parent, args, context);
+
   const parameters = {
-    headers: {
-      authorization: `token ${context.token}`,
-    },
+    owner: parent.owner,
+    name: parent.name,
+    expr: args.expression,
   };
 
   const query = `
-    query {
-      viewer {
-        repositories(first: 100, ownerAffiliations: [OWNER]) {
-          totalCount
-          nodes {
-            ... on Repository {
-              id
-              name
-              owner {
-                __typename
-                login
-              }
-              defaultBranchRef {
-                id
-                name
-              }
-              isPrivate
-              refs(first: 100, refPrefix: "refs/heads/") {
-                nodes {
-                  name
-                }
-              }
-            }
+  query getEntries($owner: String!, $name: String!, $expr: String!) {
+    repository(owner: $owner, name: $name) {
+      __typename
+      object(expression: $expr) {
+        __typename
+        ... on Tree {
+          entries {
+            type
+            name
+            extension
+            isGenerated
+            mode
+            oid
+            path
           }
         }
       }
     }
-  `;
-  const results = await Promise.all(
-    // 他のユーザのリポジトリに権限を与えられている場合、複数のGitHub AppのInstallationが取得できる
-    installations.data.installations.map(async ({id}) => {
-      // InstallationIDを使用した認証機構
-      const auth = createAppAuth({
-        appId: process.env.GH_APP_ID,
-        privateKey: process.env.GH_APP_PRIVATEKEY,
-        installationId: id,
-      });
-      // 認証を使ってGarphQLクライアントを作成
-      const graphqlWithAuth = graphql.defaults({
-        request: {
-          hook: auth.hook,
-        },
-      });
-      // APIを実行
-      const result = (await graphqlWithAuth(query, parameters)) as any;
-      return result.viewer.repositories.nodes;
-    }),
-  );
-  // console.log(results.flat());
-  const repositories = results.flat();
-  return repositories;
-};
+  }
+`;
+
+
+  // APIを実行
+  try {
+    const result = (await parent.graphqlWithAuth(query, parameters)) as any;
+    // console.log('query result',result);
+    return result.repository.object;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }  
+}

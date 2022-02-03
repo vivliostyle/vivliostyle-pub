@@ -11,7 +11,8 @@ import Cors from 'micro-cors';
 import {makeExecutableSchema} from '@graphql-tools/schema';
 import {mergeTypeDefs} from '@graphql-tools/merge';
 import {isNumber} from 'lodash';
-import {getRepositories} from '@services/gqlRepository';
+import {getRepositories} from '@services/gqlRepositories';
+import {getRepository, getRepositoryObject} from '@services/gqlRepository';
 import {
   authDirectiveTransformer,
   queryContext,
@@ -79,10 +80,15 @@ const _typeDefs = gql`
     # ログイン中のユーザがアクセス可能なリポジトリのリストを取得
     repositories: [Repository]!
     # リポジトリ名 owner/repoを指定して特定のリポジトリの情報を取得
-    repository(name: String!): Repository
+    repository(owner: String!, name: String!): Repository
   }
 
   type Mutation @auth {
+    # 指定ブランチにコミットを作成
+    createCommitOnBranch(
+      params: CreateCommitOnBranchInput
+    ): CreateCommitOnBranchPayload!
+
     # ファイル管理 パラメータによって異なる動作をする
     commitContent(params: CommitParams!): Result!
     # commitContentの利用例
@@ -106,44 +112,27 @@ const typeDefs = mergeTypeDefs([GihHubSchema, _typeDefs]);
 
 const resolvers = {
   RepositoryOwner: {
-    __resolveType(owner:any, context:any, info:any) {
-      return owner.__typename
-    }
+    __resolveType(owner: any, context: any, info: any) {
+      return owner.__typename;
+    },
   },
   Query: {
-    // parent  前のリゾルバ呼び出しの結果
+    // parent  親のリゾルバ呼び出しの結果
     // args    リゾルバのフィールドの引数
     // context 各リゾルバが読み書きできるカスタムオブジェクト
-    // async users(parent: {}, args: {}, context: queryContext) {
-    //   // console.log('parent', parent);
-    //   // console.log('args', args);
-    //   // console.log('context', context);
-    //   return [{name: 'name1'}, {name: 'name2'}];
-    // },
-    async repositories(
-      parent: any,
-      args: any,
-      context: queryContext,
-      info: any,
-    ) {
-      try {
-        const repositories = await getRepositories(parent, args, context, info);
-        // console.log('sv repositories',repositories);
-        return repositories;
-      } catch (err) {
-        // TODO: エラー処理
-        console.error(err);
-        return [];
-      }
-    },
+    repositories:getRepositories,
+    repository:getRepository
   },
   Mutation: {
     commitContent,
-    commitDirectory
+    commitDirectory,
 
     //createBranch,
     //renameBranch,
     //deleteBranch
+  },
+  Repository: {
+    object: getRepositoryObject
   },
 };
 
