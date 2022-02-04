@@ -65,25 +65,6 @@ export enum FileState {
 }
 
 /**
- * リポジトリ上のファイルパス
- */
-type RepositoryPath = {
-  user: User | null;
-  owner: string | undefined;
-  repo: string | undefined;
-  branch: string | undefined;
-  path: string;
-};
-
-
-
-export async function updateFile() {}
-
-export async function commitFile() {}
-
-export async function deleteFile() {}
-
-/**
  * GitHubからファイルを取得
  * @param owner
  * @param repo
@@ -109,19 +90,6 @@ export async function getFileContentFromGithub(
   }
   return content;
 }
-
-/**
- *
- * @param url
- * @param idToken
- * @returns
- */
-const fetcher = (url: string, idToken: string) =>
-  fetch(url, {
-    headers: {
-      'x-id-token': idToken,
-    },
-  }).then((r) => r.json());
 
 /**
  * GitHubからコンテンツを取得してApplication Cacheに保存する
