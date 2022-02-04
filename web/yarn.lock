@@ -2286,10 +2286,10 @@
     "@types/scheduler" "*"
     csstype "^3.0.2"
 
-"@types/react@^17.0.38":
-  version "17.0.38"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.38.tgz#f24249fefd89357d5fa71f739a686b8d7c7202bd"
-  integrity sha512-SI92X1IA+FMnP3qM5m4QReluXzhcmovhZnLNm3pyeQlooi02qI7sLiepEYqT678uNiyc25XfCqxREFpy3W7YhQ==
+"@types/react@^17.0.39":
+  version "17.0.39"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.39.tgz#d0f4cde092502a6db00a1cded6e6bf2abb7633ce"
+  integrity sha512-UVavlfAxDd/AgAacMa60Azl7ygyQNRwC/DsHZmKgNvPmRR5p70AJ5Q9EAmL2NWOJmeV+vVUI4IAP7GZrN8h8Ug==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -2383,10 +2383,10 @@
     "@typescript-eslint/types" "5.8.0"
     eslint-visitor-keys "^3.0.0"
 
-"@vivliostyle/core@^2.13.0":
-  version "2.13.0"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.13.0.tgz#f2ffc59f8af3c262f81908bebf4a9f870643d1ed"
-  integrity sha512-7jD4KX6JwapgWSCiVJSMh/ChjVOuIsWL3HzCQMCmx9bfLF2BlY3Tow1oYZCxmiUz/SfFZRxkWUC1BtTKglkecA==
+"@vivliostyle/core@^2.14.0":
+  version "2.14.0"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.14.0.tgz#5bd95c2555e551c8bbe1fbcc02a7f479b5390dea"
+  integrity sha512-wjLlSt3JlPwFPvSiYvZ9Lysbv7cC7jQ3ovlIeIoqlm4oZ0Vf+yu2LhUkdkTMGgEhbSI0/CpLpYD5To8yjGwyzA==
   dependencies:
     fast-diff "^1.2.0"
 
@@ -2429,12 +2429,12 @@
     unist-util-visit "^2.0.3"
     unist-util-visit-parents "^3.1.1"
 
-"@vivliostyle/viewer@2.13.0":
-  version "2.13.0"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.13.0.tgz#804157d4d80ae6c601983db152e6fedc45c83126"
-  integrity sha512-WVMagcS7EiCsrz1DW0VfAn+e9fu83xLYrHCr6NJ0tCRRBdj//JgA0uMLZmf6l+zFF3fCY6KcjCviD+wxgTLoQQ==
+"@vivliostyle/viewer@2.14.0":
+  version "2.14.0"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.14.0.tgz#1aba6d5fde8f7148a0aea2a400e5e22aeeb34a16"
+  integrity sha512-ncXA8Su/VNnDOU3GVVJSzh07s2OJM2BDrXEMKm618SCsUzIbSP+OeqmFerDPC87hX7doxs5Y17HRHY/x4NKQ0A==
   dependencies:
-    "@vivliostyle/core" "^2.13.0"
+    "@vivliostyle/core" "^2.14.0"
     font-awesome "^4.7.0"
     knockout "^3.5.0"
 
@@ -5030,10 +5030,10 @@ minimist@^1.2.0, minimist@^1.2.5:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
   integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
 
-monaco-editor@^0.31.1:
-  version "0.31.1"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.31.1.tgz#67f597b3e45679d1f551237e12a3a42c4438b97b"
-  integrity sha512-FYPwxGZAeP6mRRyrr5XTGHD9gRXVjy7GUzF4IPChnyt3fS5WrNxIkS8DNujWf6EQy0Zlzpxw8oTVE+mWI2/D1Q==
+monaco-editor@^0.32.0:
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.32.0.tgz#653764356aca40a0bf3807d150b01e0f1a604b96"
+  integrity sha512-r3xvo6XMA/fg3SuVJb+NMxf+fXHO8GPIOLoPFRO2LIf7GbqfV9W7FdddqT9ze+bCtnLd+s4IScnOGCgDQDg4BQ==
 
 ms@2.0.0:
   version "2.0.0"
