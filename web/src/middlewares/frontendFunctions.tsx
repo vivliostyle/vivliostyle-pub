@@ -1,6 +1,5 @@
 import {User} from 'firebase/auth';
 import upath from 'upath';
-import {BranchesApiResponse} from 'pages/api/github/branches';
 import {AppCacheFs} from './fs/AppCacheFS';
 import {WebApiFs} from './fs/WebApiFS';
 
@@ -158,42 +157,4 @@ export const updateCacheFromPath = async (
   console.log(`updateCache : ${contentPath}`);
 };
 
-/**
- * リポジトリからブランチのリストを取得
- * @param user
- * @param owner
- * @param repo
- * @returns
- */
-export const fetchBranches = async (
-  user: User,
-  owner: string,
-  repo: string,
-): Promise<{
-  branches: string[];
-  defaultBranch: string;
-}> => {
-  if (!user || !owner || !repo) {
-    return {branches: [], defaultBranch: ''};
-  }
-  try {
-    const token = await user.getIdToken();
-    const resp = await fetch(
-      `/api/github/branches?${new URLSearchParams({owner, repo})}`,
-      {
-        method: 'GET',
-        headers: {
-          'x-id-token': token,
-        },
-      },
-    );
-    const data = (await resp.json()) as BranchesApiResponse;
-    const branches = data.branches.map((b) => b.name);
-    const defaultBranch = data.default;
-    return {branches, defaultBranch};
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-};
 
