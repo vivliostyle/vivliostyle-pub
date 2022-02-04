@@ -64,6 +64,14 @@ export const getRepository = async (
   
 };
 
+/**
+ * リポジトリ内のオブジェクト(Blob|Tree)のリストを返す
+ * @param parent 
+ * @param args 
+ * @param context 
+ * @param info 
+ * @returns 
+ */
 export const getRepositoryObject = async (
   parent: any,
   args: any,
@@ -100,7 +108,6 @@ export const getRepositoryObject = async (
     }
   }
 `;
-
 
   // APIを実行
   try {

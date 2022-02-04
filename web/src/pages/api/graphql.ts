@@ -38,7 +38,9 @@ const _typeDefs = gql`
     NONE # 未ログインユーザ
   }
 
-  # アクセス権を制御するディレクティブ
+  """
+  アクセス権を制御するディレクティブ
+  """
   directive @auth(
     requires: Role = USER # @authとだけ記述したときの初期値はUSER
   ) on OBJECT | FIELD_DEFINITION
@@ -50,14 +52,6 @@ const _typeDefs = gql`
 
   type User @auth {
     name: String
-  }
-  type Branch @auth {
-    name: String
-    files: [File]!
-  }
-  type File @auth {
-    name: String
-    type: String # 'file','dir'
   }
 
   input CommitParams {
@@ -75,36 +69,52 @@ const _typeDefs = gql`
   }
 
   type Query @auth {
-    # ユーザリストは管理者のみ取得可能
+    """
+    ユーザリストは管理者のみ取得可能(未実装)
+    """
     users: [User!]! @auth(requires: ADMIN)
-    # ログイン中のユーザがアクセス可能なリポジトリのリストを取得
+
+    """
+    ログイン中のユーザがアクセス可能なリポジトリのリストを取得
+    """
     repositories: [Repository]!
-    # リポジトリ名 owner/repoを指定して特定のリポジトリの情報を取得
+
+    """
+    リポジトリ名 owner/repoを指定して特定のリポジトリの情報を取得
+    """
     repository(owner: String!, name: String!): Repository
   }
 
   type Mutation @auth {
-    # 指定ブランチにコミットを作成
+    """
+    指定ブランチにコミットを作成(未実装)
+    """
     createCommitOnBranch(
       params: CreateCommitOnBranchInput
     ): CreateCommitOnBranchPayload!
 
-    # ファイル管理 パラメータによって異なる動作をする
-    commitContent(params: CommitParams!): Result!
+    """
+    ファイル管理 パラメータによって異なる動作をする
+    createCommitOnBranchに移行予定
     # commitContentの利用例
-    # create file:       commitContent({owner, repo, branch, newPath, newContent})              実装済
-    # update content:    commitContent({owner, repo, branch, oldPath, newContent})
-    # duplicate file:    commitContent({owner, repo, branch, oldPath, newPath})                 実装済
-    # move(rename) file: commitContent({owner, repo, branch, oldPath, newPath, removeOldPath})  実装済
-    # delete file:       commitContent({owner, repo, branch, oldPath, removeOldPath})           実装済
-
-    # ディレクトリ管理 CommitParamsのnewContentは指定されても無視する
-    commitDirectory(params: CommitParams!): Result!
+    create file:       commitContent({owner, repo, branch, newPath, newContent})
+    update content:    commitContent({owner, repo, branch, oldPath, newContent})
+    duplicate file:    commitContent({owner, repo, branch, oldPath, newPath})
+    move(rename) file: commitContent({owner, repo, branch, oldPath, newPath, removeOldPath})
+    delete file:       commitContent({owner, repo, branch, oldPath, removeOldPath})
+    """
+    commitContent(params: CommitParams!): Result!
+    
+    """
+    ディレクトリ管理 CommitParamsのnewContentは指定されても無視する
+    createCommitOnBranchに移行予定
     # commitDirectoryの利用例
-    # create directory:       commitContentを使って.gitkeepファイルを作成する                       実装済
-    # duplicate directory:    commitDirectory({owner, repo, branch, oldPath, newPath});
-    # move(rename) directory: commitDirectory({owner, repo, branch, oldPath, newPath, removeOldPath});
-    # delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});   実装済
+    create directory:       commitContentを使って.gitkeepファイルを作成する
+    duplicate directory:    commitDirectory({owner, repo, branch, oldPath, newPath});
+    move(rename) directory: commitDirectory({owner, repo, branch, oldPath, newPath, removeOldPath});
+    delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});
+    """
+    commitDirectory(params: CommitParams!): Result!
   }
 `;
 
