@@ -60,7 +60,7 @@ export const getRepository = async (
       },
     });
 
-  return {graphqlWithAuth,owner:args.owner,name:args.name};
+  return {graphqlWithAuth,owner:args.owner,name:args.name,insId:installationId};
   
 };
 
@@ -104,6 +104,18 @@ export const getRepositoryObject = async (
             path
           }
         }
+        ... on Blob {
+          abbreviatedOid
+          byteSize
+          commitResourcePath
+          commitUrl
+          id
+          isBinary
+          isTruncated
+          oid
+          # repository 再帰呼び出しになるので省略
+          text
+        }
       }
     }
   }
@@ -112,7 +124,22 @@ export const getRepositoryObject = async (
   // APIを実行
   try {
     const result = (await parent.graphqlWithAuth(query, parameters)) as any;
-    // console.log('query result',result);
+    if(result.repository.object.isBinary) {
+      // GitHubのGraphQL APIではisBinaryがtrueのときは
+      // textプロパティは空なので、REST APIを使ってバイナリデータを取得してtextプロパティにセットする
+      const octokit = new Octokit({
+        appId: process.env.GH_APP_ID,
+        privateKey: githubAppPrivateKey,
+        installationId: parent.insId,
+      });
+      const blob = await octokit.git.getBlob({
+        owner:parent.owner,
+        repo:parent.name,
+        file_sha: result.repository.object.oid,
+      });
+      const content = blob.data.content.replaceAll('\n', '');
+      result.repository.object.text = content;
+    }
     return result.repository.object;
   } catch (err) {
     console.error(err);

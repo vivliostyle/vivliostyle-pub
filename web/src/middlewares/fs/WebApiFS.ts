@@ -1,8 +1,12 @@
-import {ApolloClient, gql, InMemoryCache} from '@apollo/client';
+import {
+  ApolloClient,
+  gql,
+  InMemoryCache,
+  NormalizedCacheObject,
+} from '@apollo/client';
 import {User} from '@firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {doc, DocumentReference, getFirestore} from 'firebase/firestore';
-import {ContentOfRepositoryApiResponse} from 'pages/api/github/contentOfRepository';
 import {GithubRequestSessionApiResponse} from 'pages/api/github/requestSession';
 import {Fs, VFile} from 'theme-manager';
 
@@ -16,6 +20,8 @@ export class WebApiFs implements Fs {
   branch: string;
   tree_sha: string;
   root: string = '';
+  client: ApolloClient<NormalizedCacheObject>;
+  token: string;
   /**
    * キャッシュを開いてFsインターフェースを実装したオブジェクトを返す
    * @param cacheName キャッシュ名
@@ -37,7 +43,15 @@ export class WebApiFs implements Fs {
         `WebApiFs:invalid repository:${user}/${owner}/${repo}/${branch}`,
       );
     }
-    const fs: WebApiFs = new WebApiFs(user, owner, repo, branch);
+    const idToken = await user.getIdToken();
+    const client = new ApolloClient({
+      uri: '/api/graphql',
+      cache: new InMemoryCache(),
+      headers: {
+        'x-id-token': idToken,
+      },
+    });
+    const fs: WebApiFs = new WebApiFs(user, owner, repo, branch,idToken, client);
     return fs;
   }
 
@@ -48,12 +62,21 @@ export class WebApiFs implements Fs {
    * @param repo
    * @param branch
    */
-  private constructor(user: User, owner: string, repo: string, branch: string) {
+  private constructor(
+    user: User,
+    owner: string,
+    repo: string,
+    branch: string,
+    idToken: string,
+    client: ApolloClient<NormalizedCacheObject>,
+  ) {
     this.user = user;
     this.owner = owner;
     this.repo = repo;
     this.branch = branch;
     this.tree_sha = '';
+    this.token = idToken;
+    this.client = client;
   }
 
   /**
@@ -70,31 +93,34 @@ export class WebApiFs implements Fs {
     if (json) {
       throw new Error('WebApiFs::readFile json parameter not implemented');
     } // オプション未実装
-    const idToken = await this.user.getIdToken();
-    const response = await fetch(
-      `/api/github/contentOfRepository?${new URLSearchParams({
+
+    const result = await this.client.query({
+      query: gql`
+        query getContent($owner: String!, $name: String!, $expr: String!) {
+          repository(owner: $owner, name: $name) {
+            object(expression: $expr) {
+              __typename
+              ... on Blob {
+                id
+                oid
+                isBinary
+                text
+              }
+            }
+          }
+        }
+      `,
+      variables: {
         owner: this.owner,
-        repo: this.repo,
-        branch: this.branch,
-        path,
-      })}`,
-      {
-        headers: {
-          'content-type': 'application/json',
-          'x-id-token': idToken,
-        },
+        name: this.repo,
+        expr: `${this.branch}:${path}`,
       },
-    );
-    if (response.status === 403) {
-      throw new Error(`403:${path}`);
+    });
+    console.log('readFile result', result);
+    if (result.data.repository.object.isBinary) {
+      return Buffer.from(result.data.repository.object.text,'base64');
     }
-    const content =
-      (await response.json()) as unknown as ContentOfRepositoryApiResponse;
-    if (Array.isArray(content) || !('content' in content)) {
-      // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
-      throw new Error(`WebApiFs:Content type is not file`);
-    }
-    return content.content;
+    return result.data.repository.object.text;
   }
 
   /**
@@ -164,43 +190,35 @@ export class WebApiFs implements Fs {
       throw new Error('WebApiFs::readdir options not implemented');
     } // オプション未実装
 
-    const idToken = await this.user.getIdToken();
-    const client = new ApolloClient({
-      uri: '/api/graphql',
-      cache: new InMemoryCache(),
-      headers: {
-        'x-id-token': idToken,
-      },
-    });
-    const result = await client.query({
+    const result = await this.client.query({
       query: gql`
-      query getEntries($owner: String!,$name: String!,$expr: String!) {
-        repository(owner: $owner, name: $name) {
-          object(expression: $expr) {
-            __typename
-            ... on Tree {
-              entries {
-                type
-                name
-                extension
-                isGenerated
-                mode
-                oid
-                path
+        query getEntries($owner: String!, $name: String!, $expr: String!) {
+          repository(owner: $owner, name: $name) {
+            object(expression: $expr) {
+              __typename
+              ... on Tree {
+                entries {
+                  type
+                  name
+                  extension
+                  isGenerated
+                  mode
+                  oid
+                  path
+                }
               }
             }
           }
         }
-      }
-    `,
-    variables:{
-      owner:this.owner,
-      name:this.repo,
-      expr: `${this.branch}:${path}`
-    }
+      `,
+      variables: {
+        owner: this.owner,
+        name: this.repo,
+        expr: `${this.branch}:${path}`,
+      },
     });
-    console.log('readdir',this.owner,this.repo,this.branch,path,result.data.repository.object);
-    const files = result.data.repository.object.entries.map((entry:any) => {
+    console.log('readdir',result);
+    const files = result.data.repository.object.entries.map((entry: any) => {
       // 取得したGitのファイル情報をVFile形式に変換する
       // この時点ではファイルの内容は取得していない
       return new VFile({
@@ -215,7 +233,7 @@ export class WebApiFs implements Fs {
         name: entry.name,
         hash: entry.oid,
       });
-    });    
+    });
     return files;
   }
 

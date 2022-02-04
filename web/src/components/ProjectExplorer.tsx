@@ -9,7 +9,6 @@ import DirEntry from './ProjectExplorerDirEntry';
 import {VscArrowUp, VscNewFile, VscNewFolder} from 'react-icons/vsc';
 import {CgCornerLeftUp} from 'react-icons/cg';
 import {
-  getFileContentFromGithub,
   isImageFile,
 } from '@middlewares/frontendFunctions';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
@@ -84,13 +83,7 @@ export function ProjectExplorer() {
         // PreviewのiframeにしかServiceWorkerが設定されていないため Application Cacheにアクセスできないので
         // 代替手段としてDataURIを使用している
         // TODO: このページからはApplication Cacheにアクセスできるようにする
-        let content = await getFileContentFromGithub(
-          repository.state.owner!,
-          repository.state.name!,
-          repository.state.branch!,
-          srcPath,
-          app.state.user!,
-        );
+        let content = await file.fs.readFile(file.path);
         if (!content) {
           log.error(
             t('ファイルの取得に失敗しました。GitHubで確認してください。', {
@@ -100,22 +93,20 @@ export function ProjectExplorer() {
           );
           return;
         }
-        let type = '';
+        let data = '';
         const ext = upath.extname(file.name).toLowerCase();
         if (ext === '.jpg' || ext === '.jpeg') {
-          type = 'jpeg;base64,';
+          data = `data:image/jpeg;base64,${content.toString('base64')}`;
         } else if (ext === '.png') {
-          type = 'png;base64,';
+          data = `data:image/png;base64,${content.toString('base64')}`;
         } else if (ext === '.gif') {
-          type = 'gif;base64,';
+          data = `data:image/gif;base64,${content.toString('base64')}`;
         } else if (ext === '.svg') {
-          type = 'svg+xml,';
-          content = encodeURIComponent(content);
+          data = `data:image/svg+xml,${encodeURIComponent(content as unknown as string)}`;
         } else {
           log.error(t('不明な画像ファイル形式です', {fileptah: srcPath}), 3000);
           return;
         }
-        const data = content ? `data:image/${type}${content}` : '';
         setLightBoxContent({name: srcPath, data});
         return;
       }

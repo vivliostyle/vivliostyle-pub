@@ -121,7 +121,7 @@ export const updateCacheFromPath = async (
   );
   const fs = await AppCacheFs.open();
   // console.log("getFileContentFromPath",content);
-  await fs.writeFile(contentPath, Buffer.from(content, 'base64'));
+  await fs.writeFile(contentPath, content);
   console.log(`updateCache : ${contentPath}`);
 };
 
