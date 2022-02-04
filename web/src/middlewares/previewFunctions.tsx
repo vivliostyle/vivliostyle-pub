@@ -19,8 +19,8 @@ const VIVLIOSTYLE_VIEWER_HTML_URL =
  * @param text
  * @returns
  */
-const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string,documentPath:string): {imagePaths:string[],html:string} => {
-  const imagePaths = [] as string[];
+const pickupHtmlResources = (text: string,documentPath:string): {resourcePaths:string[],html:string} => {
+  const resourcePaths = [] as string[];
   const parser = new DOMParser();
   // アプリケーションキャッシュの対象になる画像ファイルの取得
   const parsedDocument = parser
@@ -29,7 +29,7 @@ const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string
   parsedDocument.querySelectorAll('img')
     .forEach((element) => {
       const src = element.getAttribute('src');
-      if (src && !isURL(src)) imagePaths.push(src);
+      if (src && !isURL(src)) resourcePaths.push(src);
     });
   // TODO: link要素によるCSSファイルも扱う
 
@@ -40,7 +40,9 @@ const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string
       // console.log('replace local link',href,href?.match(/^https?:/));
       if(href!=null && !href?.match(/^https?:/)){
         const newElm = document.createElement("a");
-        let path = upath.join(VPUBFS_ROOT,upath.resolve(upath.dirname(documentPath),href)).replace(/\.md/i,'.html');
+        const absPath = href.replace(/\.md/i,'.html');
+        resourcePaths.push(absPath); // パスをキャッシュストレージに保存するリストに追加する
+        let path = upath.join(VPUBFS_ROOT,upath.resolve(upath.dirname(documentPath),absPath));
         // if(path.startsWith('/')) { path = path.substring(1)}
         newElm.href = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
           path
@@ -51,8 +53,8 @@ const pickupHtmlResources = (text: string,owner:string,repo:string,branch:string
         element.replaceWith(newElm);  
       }
     });
-
-  return {imagePaths,html:parsedDocument.documentElement.innerHTML};
+  console.log('imagePaths',resourcePaths);
+  return {resourcePaths: resourcePaths,html:parsedDocument.documentElement.innerHTML};
 };
 
 /**
@@ -78,23 +80,23 @@ export async function transpileMarkdown(
   console.log('transpiled', srcPath, '\n' /*, text*/);
   let errors:Error[] = [];
   if (srcPath.endsWith('.html')) {
-    const {imagePaths,html} = pickupHtmlResources(text,repository.state.owner!,repository.state.name,repository.state.branch!,currentFile.state.file.path);
+    const {resourcePaths: resourcePaths,html} = pickupHtmlResources(text,currentFile.state.file.path);
     text = html;
-    console.log('transpile imagePaths',imagePaths);
-    const promises = imagePaths.map(async (imagePath) => {
+    console.log('transpile imagePaths',resourcePaths);
+    const promises = resourcePaths.map(async (resourcePath) => {
       try{
-        console.log('imagePath in HTML',imagePath);
+        console.log('imagePath in HTML',resourcePath);
         await updateCacheFromPath(
           repository.state.owner!,
           repository.state.name!,
           repository.state.branch!,
           srcPath!,
-          imagePath,
+          resourcePath,
           app.state.user!,
         )
         return null; // エラーが無ければfilterで除去するためにnullを返す
       }catch(error:any){
-        return new Error(`${imagePath}(${error.message})`);
+        return new Error(`${resourcePath}(${error.message})`);
       }
     });
 //    try {
