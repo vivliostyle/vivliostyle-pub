@@ -36,7 +36,7 @@ type CurrentFileState = {
  * エディタで編集しているファイル情報
  */
 export type CurrentFile = {
-  state: CurrentFileState,
+  state: CurrentFileState;
   modify: (text: string) => void; // テキスト更新の更新メソッド
   commit: () => void; // ファイルのコミットメソッド
 };
@@ -162,9 +162,9 @@ export function CurrentFileContextProvider({
   const log = useLogContext();
   const currentTheme = useCurrentThemeContext();
 
-  useEffect(()=>{
-    console.log('[CurrentFileContextProvider] repository update',repository);
-  },[repository]);
+  useEffect(() => {
+    console.log('[CurrentFileContextProvider] repository update', repository);
+  }, [repository]);
 
   /**
    * テキストが編集された
@@ -183,10 +183,14 @@ export function CurrentFileContextProvider({
       type: 'commit',
       func: (state: CurrentFileState) => {
         if (state.file == null || repository.state.branch == null) {
-          console.log('[CurrentFileContextProvider] commit cancel',state, repository);
+          console.log(
+            '[CurrentFileContextProvider] commit cancel',
+            state,
+            repository,
+          );
           return;
         }
-        (async (repository:RepositoryContext) => {
+        (async (repository: RepositoryContext) => {
           // カスタムテーマが選択されている場合、CSSのパスを取得する
           let style;
           if (currentTheme.state.theme?.name === 'vivliostyle-custom-theme') {
@@ -207,7 +211,10 @@ export function CurrentFileContextProvider({
             const idToken = await app.state.user!.getIdToken();
             let sessionId = state.session?.id;
             // コミットAPIの呼び出し
-            console.log('[CurrentFileContextProvider] commit to repository', repository);
+            console.log(
+              '[CurrentFileContextProvider] commit to repository',
+              repository,
+            );
             const response = await fetch('/api/github/commitSession', {
               method: 'PUT',
               body: JSON.stringify({
@@ -220,7 +227,10 @@ export function CurrentFileContextProvider({
                 'x-id-token': idToken,
               },
             });
-            console.log('[CurrentFileContextProvider] commit session response',response);
+            console.log(
+              '[CurrentFileContextProvider] commit session response',
+              response,
+            );
             if (response.status == 201) {
               dispatch({type: 'commitCallback', file: state.file!, log});
             } else {
@@ -244,7 +254,11 @@ export function CurrentFileContextProvider({
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
     console.log('[CurrentFileContextProvider] changed file', repository, file);
-    if (!repository?.state.owner || !repository?.state.repo || !repository?.state.branch) {
+    if (
+      !repository?.state.owner ||
+      !repository?.state.repo ||
+      !repository?.state.branch
+    ) {
       console.log('[CurrentFileContextProvider] cancel');
       return;
     }
@@ -287,10 +301,11 @@ export function CurrentFileContextProvider({
             t('編集できないファイル形式です', {filepath: file.path}),
             3000,
           );
+          repository.selectFile(null);
           dispatch({type: 'setFileCancel', state: state.state});
           return true;
         }
-        (async (repository:RepositoryContext) => {
+        (async (repository: RepositoryContext) => {
           try {
             const props = {
               user: app.state.user!,
@@ -307,6 +322,7 @@ export function CurrentFileContextProvider({
                 t('ファイルの取得が出来ませんでした', {filepath: file.path}),
                 3000,
               );
+              repository.selectFile(null);
               dispatch({type: 'setFileCancel', state: state.state});
               return;
             }
@@ -347,13 +363,15 @@ export function CurrentFileContextProvider({
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const value = useMemo(()=>({
-    state,
-    // メソッド
-    modify,
-    commit,
-  })
-  ,[state, commit, modify]);
+  const value = useMemo(
+    () => ({
+      state,
+      // メソッド
+      modify,
+      commit,
+    }),
+    [state, commit, modify],
+  );
 
   return (
     <CurrentFileContext.Provider value={value}>
@@ -365,7 +383,7 @@ export function CurrentFileContextProvider({
    * クエリパラメータのfile属性にファイルパスをセットする
    * @param file
    */
-  function setQueryParam(file: VFile) {
+  function setQueryParam(file: VFile | null) {
     const url = new URL(window.location.toString());
     if (file) {
       url.searchParams.set('file', file.path);
