@@ -61,6 +61,7 @@ type Actions =
       branches: string[];
       defaultBranch: string;
       branch: string;
+      tree: VFile[];
       files: VFile[];
       file: VFile | null;
     }
@@ -119,6 +120,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
         branches: action.branches,
         defaultBranch: action.defaultBranch,
         branch: action.branch,
+        currentTree:action.tree,
         files: action.files,
         currentFile: action.file,
       };
@@ -163,6 +165,29 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
   }
 };
+
+/**
+ * ディレクトリパス文字列をVFileの配列に変換する
+ * @param dir 
+ */
+async function dir2tree(fs:WebApiFs|null,dir:string):Promise<VFile[]> {
+  const trees:VFile[] = [];
+  if(fs !== null) {
+    const rootFiles = await fs.readdir('');
+    console.log('dir2tree root',rootFiles);
+    const dirlist = dir.split('/');
+    for(let d of dirlist) {
+      const tree = rootFiles.find((entry:VFile)=>entry.name === d);
+      if(tree) {
+        trees.push(tree);
+      }else{
+        break;
+      }
+    }  
+  }
+  console.log('dir2tree',fs,dir,trees);
+  return trees;
+}
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -228,6 +253,7 @@ export function RepositoryContextProvider({
             const fs: WebApiFs = await WebApiFs.open(props);
             const dirname = filePath ? upath.dirname(filePath) : '';
             const dir = dirname !== '.' ? dirname:''; // upath.dirname('sample.md') => '.' になるため
+            const tree = await dir2tree(fs,dir);
             const files = await fs.readdir(dir);
             let file;
             if (filePath && filePath != state.currentFile?.path) {
@@ -244,6 +270,7 @@ export function RepositoryContextProvider({
                 branches,
                 defaultBranch,
                 branch,
+                tree,
                 files,
                 file,
               });
