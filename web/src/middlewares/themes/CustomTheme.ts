@@ -90,7 +90,8 @@ export class CustomTheme implements Theme {
             // console.log("imageOfStyle content",buf);
             dstFs.writeFile(contentPath, buf); 
             return null;             
-          } catch (error:any) {
+          } catch (err:any) {
+            console.error(err);
             return new Error(`${contentPath}`);
           }
         }),
