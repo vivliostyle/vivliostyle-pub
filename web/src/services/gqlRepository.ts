@@ -5,14 +5,6 @@ import {queryContext} from './gqlAuthDirective';
 import {createAppAuth} from '@octokit/auth-app';
 import {githubAppPrivateKey} from '@utils/keys';
 import {ApolloError} from 'apollo-server-micro';
-import * as admin from 'firebase-admin';
-import {
-  addDoc,
-  collection,
-  doc,
-  getFirestore,
-  serverTimestamp,
-} from 'firebase/firestore';
 import firebaseAdmin from './firebaseAdmin';
 
 /**
@@ -184,7 +176,7 @@ export const getRepositoryObject = async (
         text: result.repository.object.text,
         owner: parent.owner,
         repo: parent.name,
-        path: args.expression,
+        path: args.expression.split(':')[1], // branch:pathを分解
       };
       // 権限については /firestore/firestore.rules を参照
       const sessionDoc = await db
