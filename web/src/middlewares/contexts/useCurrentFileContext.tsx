@@ -37,10 +37,10 @@ type CurrentFileState = {
  * エディタで編集しているファイル情報
  */
 export type CurrentFile = {
-  state: CurrentFileState,
+  state: CurrentFileState;
   modify: (text: string) => void; // テキスト更新の更新メソッド
   commit: () => void; // ファイルのコミットメソッド
-  insert: (str:string|null) => void;
+  insert: (str: string | null) => void;
 };
 
 /**
@@ -75,7 +75,7 @@ type CurrentFileActions =
     }
   | {type: 'commit'; func: (state: CurrentFileState) => void}
   | {type: 'commitCallback'; file: VFile; log: Log}
-  | {type: 'insert'; str:string|null};
+  | {type: 'insert'; str: string | null};
 
 /**
  * useReducer用のディスパッチャ定義
@@ -142,7 +142,7 @@ const reducer = (
       );
       return {...state, state: FileState.clean};
     case 'insert':
-      console.log('insert',action.str);
+      console.log('insert', action.str);
       return {...state, insertBuf: action.str};
   }
 };
@@ -168,9 +168,9 @@ export function CurrentFileContextProvider({
   const log = useLogContext();
   const currentTheme = useCurrentThemeContext();
 
-  useEffect(()=>{
-    console.log('[CurrentFileContextProvider] repository update',repository);
-  },[repository]);
+  useEffect(() => {
+    console.log('[CurrentFileContextProvider] repository update', repository);
+  }, [repository]);
 
   /**
    * テキストが編集された
@@ -189,10 +189,14 @@ export function CurrentFileContextProvider({
       type: 'commit',
       func: (state: CurrentFileState) => {
         if (state.file == null || repository.state.branch == null) {
-          console.log('[CurrentFileContextProvider] commit cancel',state, repository);
+          console.log(
+            '[CurrentFileContextProvider] commit cancel',
+            state,
+            repository,
+          );
           return;
         }
-        (async (repository:RepositoryContext) => {
+        (async (repository: RepositoryContext) => {
           // カスタムテーマが選択されている場合、CSSのパスを取得する
           let style;
           if (currentTheme.state.theme?.name === 'vivliostyle-custom-theme') {
@@ -213,7 +217,10 @@ export function CurrentFileContextProvider({
             const idToken = await app.state.user!.getIdToken();
             let sessionId = state.session?.id;
             // コミットAPIの呼び出し
-            console.log('[CurrentFileContextProvider] commit to repository', repository);
+            console.log(
+              '[CurrentFileContextProvider] commit to repository',
+              repository,
+            );
             const response = await fetch('/api/github/commitSession', {
               method: 'PUT',
               body: JSON.stringify({
@@ -226,7 +233,10 @@ export function CurrentFileContextProvider({
                 'x-id-token': idToken,
               },
             });
-            console.log('[CurrentFileContextProvider] commit session response',response);
+            console.log(
+              '[CurrentFileContextProvider] commit session response',
+              response,
+            );
             if (response.status == 201) {
               dispatch({type: 'commitCallback', file: state.file!, log});
             } else {
@@ -250,7 +260,11 @@ export function CurrentFileContextProvider({
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
     console.log('[CurrentFileContextProvider] changed file', repository, file);
-    if (!repository?.state.owner || !repository?.state.name || !repository?.state.branch) {
+    if (
+      !repository?.state.owner ||
+      !repository?.state.name ||
+      !repository?.state.branch
+    ) {
       console.log('[CurrentFileContextProvider] cancel');
       return;
     }
@@ -296,7 +310,7 @@ export function CurrentFileContextProvider({
           dispatch({type: 'setFileCancel', state: state.state});
           return true;
         }
-        (async (repository:RepositoryContext) => {
+        (async (repository: RepositoryContext) => {
           try {
             const props = {
               user: app.state.user!,
@@ -306,7 +320,11 @@ export function CurrentFileContextProvider({
             };
             console.log('[CurrentFileContextProvider] setFile props', props);
             const fs = await WebApiFs.open(props);
-            const content = await fs.readFile(file.path);
+            // ファイルの内容と同時にfirestoreのセッション情報も取得する
+            const {content, session} = (await fs.readFile(file.path, {
+              hasSession: true,
+            })) as {content: Buffer | string; session: DocumentReference};
+
             if (content == undefined || content == null) {
               // 0バイトのファイルがあるため、!contentでは駄目
               log.error(
@@ -316,7 +334,6 @@ export function CurrentFileContextProvider({
               dispatch({type: 'setFileCancel', state: state.state});
               return;
             }
-            const session = await fs.getFileSession(file.path);
             // クエリパラメータにファイル名を設定
             setQueryParam(file);
             log.info(t('ファイルを選択しました', {filepath: file.path}));
@@ -349,24 +366,26 @@ export function CurrentFileContextProvider({
     // 状態
     state: FileState.none,
     session: null,
-    insertBuf: null
+    insertBuf: null,
   } as CurrentFileState;
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const insert = useCallback((str:string|null)=>{
+  const insert = useCallback((str: string | null) => {
     console.log('insert', str);
-    dispatch({type:'insert',str});
-  },[]);
+    dispatch({type: 'insert', str});
+  }, []);
 
-  const value = useMemo(()=>({
-    state,
-    // メソッド
-    modify,
-    commit,
-    insert
-  })
-  ,[state, commit, modify, insert]);
+  const value = useMemo(
+    () => ({
+      state,
+      // メソッド
+      modify,
+      commit,
+      insert,
+    }),
+    [state, commit, modify, insert],
+  );
 
   return (
     <CurrentFileContext.Provider value={value}>

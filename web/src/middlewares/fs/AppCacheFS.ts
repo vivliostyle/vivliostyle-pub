@@ -71,7 +71,7 @@ export class AppCacheFs implements Fs {
      */
     public async readFile(
       path: string,
-      json?: boolean | undefined,
+      options?: any,
     ): Promise<string | Buffer> {
       throw new Error("AppCacheFs::readFile not implemented");
     }

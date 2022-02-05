@@ -7,7 +7,7 @@ export type Fs = {
   /**
    * ファイルの内容を取得する
    */
-  readFile: (path: string, json?: boolean) => Promise<string | Buffer>;
+  readFile: (path: string, options?: any) => Promise<string | Buffer | any>;
   /**
    * ファイルの内容を書き込む
    */
@@ -15,12 +15,12 @@ export type Fs = {
   // node.jsのfsではfileの型にinteger,dataの型にTypedArrayが含まれている
   file: string | Buffer | URL,
     data: string | Buffer | DataView | Object,
-    options?: Object | string,
+    options?: any,
   ) => Promise<void>;
   /**
    * ファイルまたはディレクトリの一覧を取得
    */
-  readdir: (path: string, options?: string | Object) => Promise<VFile[]>;
+  readdir: (path: string, options?: any) => Promise<VFile[]>;
   /**
    * ファイルまたはディレクトリの削除
    */

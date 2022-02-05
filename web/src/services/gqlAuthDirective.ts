@@ -4,6 +4,7 @@ import { defaultFieldResolver, GraphQLSchema } from "graphql";
 
 export type queryContext = {
     roles?: string[];
+    uid?: string;
     token?: string;
   };
 

@@ -68,6 +68,13 @@ const _typeDefs = gql`
     message: String # コミットメッセージ
   }
 
+  extend type Blob {
+    """
+    firestoreとの連携用にBlob型にsessionIdを取得するためのフィールドを追加
+    """
+    sessionId:String!
+  }
+
   type Query @auth {
     """
     ユーザリストは管理者のみ取得可能(未実装)
@@ -162,7 +169,8 @@ export default cors(async function handler(req, res) {
     return send(res, 401);
   } else {
     // GraphQLのリゾルバで使えるようにGitHubのトークンをcontextにセットする
-    context.token = decryptedToken;
+    context.token = decryptedToken.decrypted;
+    context.uid = decryptedToken.uid;
     context.roles = ['USER'];
   }
 
@@ -194,7 +202,7 @@ export default cors(async function handler(req, res) {
  * @param res
  * @returns
  */
-async function getDecryptedToken(req: any, res: any): Promise<string | number> {
+async function getDecryptedToken(req: any, res: any): Promise<{ decrypted: string; uid: string; }|number> {
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
     return 401;
@@ -211,5 +219,5 @@ async function getDecryptedToken(req: any, res: any): Promise<string | number> {
     return 405;
   }
   const decrypted = decrypt(idTokenDecoded.githubAccessToken);
-  return decrypted;
+  return {decrypted,uid:idTokenDecoded.uid};
 }

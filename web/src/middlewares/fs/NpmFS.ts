@@ -52,14 +52,14 @@ import { Fs, VFile } from "theme-manager";
     }
   
     /**
-     * 
+     * ファイルの内容を読み込む
      * @param path 
-     * @param json 
+     * @param options {json?:boolean}
      * @returns 
      */
     public async readFile(
       path: string,
-      json?: boolean | undefined,
+      options?: {json?:boolean},
     ): Promise<string | Buffer> {
       // TODO: GraphQLにしたいけれど、GitHub App以外のトークンが必要っぽい
       // octokit-restはPublic repositoryへのアクセスはトークン不要
@@ -92,7 +92,7 @@ import { Fs, VFile } from "theme-manager";
       );
       const data = buffer.toString();
       // console.log('readFile content',data);
-      return json ? JSON.parse(data) : data;
+      return options?.json ? JSON.parse(data) : data;
     }
   
     /**

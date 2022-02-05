@@ -6,8 +6,12 @@ import {
 } from '@apollo/client';
 import {User} from '@firebase/auth';
 import {initializeApp} from 'firebase/app';
-import {doc, DocumentReference, getFirestore} from 'firebase/firestore';
-import {GithubRequestSessionApiResponse} from 'pages/api/github/requestSession';
+import {
+  doc,
+  DocumentReference,
+  Firestore,
+  getFirestore,
+} from 'firebase/firestore';
 import {Fs, VFile} from 'theme-manager';
 
 /**
@@ -22,6 +26,8 @@ export class WebApiFs implements Fs {
   root: string = '';
   client: ApolloClient<NormalizedCacheObject>;
   token: string;
+  db: Firestore;
+
   /**
    * キャッシュを開いてFsインターフェースを実装したオブジェクトを返す
    * @param cacheName キャッシュ名
@@ -51,7 +57,20 @@ export class WebApiFs implements Fs {
         'x-id-token': idToken,
       },
     });
-    const fs: WebApiFs = new WebApiFs(user, owner, repo, branch,idToken, client);
+
+    const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+
+    const fs: WebApiFs = new WebApiFs(
+      user,
+      owner,
+      repo,
+      branch,
+      idToken,
+      client,
+      db,
+    );
     return fs;
   }
 
@@ -69,6 +88,7 @@ export class WebApiFs implements Fs {
     branch: string,
     idToken: string,
     client: ApolloClient<NormalizedCacheObject>,
+    db: Firestore,
   ) {
     this.user = user;
     this.owner = owner;
@@ -77,22 +97,23 @@ export class WebApiFs implements Fs {
     this.tree_sha = '';
     this.token = idToken;
     this.client = client;
+    this.db = db;
   }
 
   /**
    * リポジトリからファイルを読み込む
    * Application Cacheの場合は使用しないかも
    * @param path
-   * @param json // 現在非対応 TODO: 必要があれば対応する
+   * @param options {hasSession?: boolean セッション(Firestoreの参照)を取得するならtrue}
    * @returns
    */
   public async readFile(
     path: string,
-    json?: boolean,
-  ): Promise<string | Buffer> {
-    if (json) {
-      throw new Error('WebApiFs::readFile json parameter not implemented');
-    } // オプション未実装
+    options?: {hasSession?: boolean},
+  ): Promise<
+    string | Buffer | {content: string | Buffer; session: DocumentReference}
+  > {
+    const sessionId = options?.hasSession? 'sessionId' : '';
 
     const result = await this.client.query({
       query: gql`
@@ -105,6 +126,7 @@ export class WebApiFs implements Fs {
                 oid
                 isBinary
                 text
+                ${sessionId}
               }
             }
           }
@@ -116,48 +138,27 @@ export class WebApiFs implements Fs {
         expr: `${this.branch}:${path}`,
       },
     });
-    console.log('readFile result', result);
-    if (result.data.repository.object.isBinary) {
-      return Buffer.from(result.data.repository.object.text,'base64');
+    console.log('readFile result', path, result);
+    if (result.data.repository.object === null ) {
+      throw new Error("file not found");
     }
-    return result.data.repository.object.text;
-  }
-
-  /**
-   * ファイルパスからfirestoreのsession idを取得する
-   * @param filePath
-   * @returns
-   */
-  private async getSessionId(filePath: string) {
-    const {id} = (await fetch('/api/github/requestSession', {
-      method: 'POST',
-      body: JSON.stringify({
-        owner: this.owner,
-        repo: this.repo,
-        branch: this.branch,
-        path: filePath,
-      }),
-      headers: {
-        'content-type': 'application/json',
-        'x-id-token': await this.user.getIdToken(),
-      },
-    }).then((r) => r.json())) as GithubRequestSessionApiResponse;
-    return id;
-  }
-
-  /**
-   * ファイルパスに対応するfirestoreのsessionオブジェクトを取得する
-   * @param filePath
-   * @returns
-   */
-  public async getFileSession(filePath: string): Promise<DocumentReference> {
-    // Firebase Web version 9対応
-    const id = await this.getSessionId(filePath);
-    const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
-    const firebaseApp = initializeApp(firebaseConfig);
-    const db = getFirestore(firebaseApp);
-    const docRef = doc(db, 'users', this.user.uid, 'sessions', id);
-    return docRef;
+    let content;
+    if (result.data.repository.object.isBinary) {
+      const binaryData = Buffer.from(
+        result.data.repository.object.text,
+        'base64',
+      );
+      content = binaryData;
+    } else {
+      content = result.data.repository.object.text;
+    }
+    if (options?.hasSession) {
+      const id = result.data.repository.object.sessionId;
+      const session = doc(this.db, 'users', this.user.uid, 'sessions', id);
+      return {content, session};
+    } else {
+      return content;
+    }
   }
 
   /**
@@ -217,7 +218,7 @@ export class WebApiFs implements Fs {
         expr: `${this.branch}:${path}`,
       },
     });
-    console.log('readdir',result);
+    console.log('readdir', result);
     const files = result.data.repository.object.entries.map((entry: any) => {
       // 取得したGitのファイル情報をVFile形式に変換する
       // この時点ではファイルの内容は取得していない
