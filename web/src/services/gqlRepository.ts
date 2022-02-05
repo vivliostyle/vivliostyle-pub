@@ -127,10 +127,14 @@ export const getRepositoryObject = async (
     if(result.repository.object.isBinary) {
       // GitHubのGraphQL APIではisBinaryがtrueのときは
       // textプロパティは空なので、REST APIを使ってバイナリデータを取得してtextプロパティにセットする
+      // const octokit = new Octokit({
+      //   appId: process.env.GH_APP_ID,
+      //   privateKey: githubAppPrivateKey,
+      //   installationId: parent.insId,
+      // });
+      // GitHub Appsの権限ではプライベートリポジトリにアクセスできないため、暫定的にユーザアカウントでBlob APIにアクセス
       const octokit = new Octokit({
-        appId: process.env.GH_APP_ID,
-        privateKey: githubAppPrivateKey,
-        installationId: parent.insId,
+        auth: `token ${context.token}`,
       });
       const blob = await octokit.git.getBlob({
         owner:parent.owner,
