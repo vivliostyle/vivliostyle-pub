@@ -57,6 +57,27 @@ export const MarkdownEditor = ({
   const display = currentFile.state.state == FileState.none || currentFile.state.state == FileState.busy ? 'block' : 'none';
 
   useEffect(()=>{
+    const editor = editorRef.current as any;
+    console.log('editor effect');
+    if(editor) {
+      console.log('editor set ctrl+s');
+      editor.addAction({
+        id: "saveDocument",
+        label: "Save current document",
+        keybindings: [monaco!.KeyMod.CtrlCmd|monaco!.KeyCode.KeyS],
+        precondition: "editorTextFocus",
+        run:()=>{
+          console.log('editor saved');
+        }
+      });
+      // editor.addCommand(monaco!.KeyMod.WinCtrl , () => {
+      //   console.log('editor saved');
+      //   // currentFile.commit();
+      // })  
+    }
+  },[editorRef, monaco]);
+
+  useEffect(()=>{
     if(currentFile.state.insertBuf != null) {
       const editor = editorRef.current as any;
       const pos = editor.getPosition();
@@ -71,10 +92,19 @@ export const MarkdownEditor = ({
       editor.focus();
       currentFile.insert(null);
     }
+
   },[currentFile, currentFile.state.insertBuf, monaco]);
 
   return (
-    <UI.Box w="100%" h="100%" position="relative" overflow='hidden'>
+    <UI.Box w="100%" h="100%" position="relative" overflow='hidden' onKeyDown={(e)=>{
+        if((e.ctrlKey||e.metaKey) && e.key == 's') {
+          e.preventDefault();
+          e.stopPropagation();
+          if(currentFile.state.state === FileState.modified){
+            currentFile.commit();
+          }
+        }
+      }}>
       <Editor
         height="100%"
         language={language}
