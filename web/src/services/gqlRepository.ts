@@ -4,6 +4,7 @@ import {graphql} from '@octokit/graphql';
 import {queryContext} from './gqlAuthDirective';
 import {createAppAuth} from '@octokit/auth-app';
 import { githubAppPrivateKey } from '@utils/keys';
+import { ApolloError, UserInputError } from 'apollo-server-micro';
 
 /**
  * 任意のパスの情報を返す
@@ -145,8 +146,9 @@ export const getRepositoryObject = async (
       result.repository.object.text = content;
     }
     return result.repository.object;
-  } catch (err) {
+  } catch (err:any) {
     console.error(err);
+    throw new ApolloError(err.message);
     return null;
   }  
 }
