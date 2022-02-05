@@ -142,8 +142,10 @@ export const getRepositoryObject = async (
         repo:parent.name,
         file_sha: result.repository.object.oid,
       });
-      const content = blob.data.content.replaceAll('\n', '');
-      result.repository.object.text = content;
+      if(blob.data.content) {
+        const content = blob.data.content.replaceAll('\n', '');
+        result.repository.object.text = content;
+      }
     }
     return result.repository.object;
   } catch (err:any) {
