@@ -63,6 +63,7 @@ type Actions =
       branches: string[];
       defaultBranch: string;
       branch: string;
+      tree: VFile[];
       files: VFile[];
       file: VFile | null;
     }
@@ -121,6 +122,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
         branches: action.branches,
         defaultBranch: action.defaultBranch,
         branch: action.branch,
+        currentTree: action.tree,
         files: action.files,
         currentFile: action.file,
       };
@@ -165,6 +167,29 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
   }
 };
+
+/**
+ * ディレクトリパス文字列をVFileの配列に変換する
+ * @param dir
+ */
+async function dir2tree(fs: WebApiFs | null, dir: string): Promise<VFile[]> {
+  const trees: VFile[] = [];
+  if (fs !== null) {
+    const rootFiles = await fs.readdir('');
+    console.log('dir2tree root', rootFiles);
+    const dirlist = dir.split('/');
+    for (let d of dirlist) {
+      const tree = rootFiles.find((entry: VFile) => entry.name === d);
+      if (tree) {
+        trees.push(tree);
+      } else {
+        break;
+      }
+    }
+  }
+  console.log('dir2tree', fs, dir, trees);
+  return trees;
+}
 
 /**
  * RepositoryContextProviderコンポーネント
@@ -229,7 +254,8 @@ export function RepositoryContextProvider({
             );
             const fs: WebApiFs = await WebApiFs.open(props);
             const dirname = filePath ? upath.dirname(filePath) : '';
-            const dir = dirname !== '.' ? dirname:''; // upath.dirname('sample.md') => '.' になるため、次のreaddirでルートではなくカレントディレクトリを取得してしまう。
+            const dir = dirname !== '.' ? dirname : ''; // upath.dirname('sample.md') => '.' になるため、次のreaddirでルートではなくカレントディレクトリを取得してしまう。
+            const tree = await dir2tree(fs, dir);
             const files = await fs.readdir(dir);
             let file;
             if (filePath && filePath != state.currentFile?.path) {
@@ -246,6 +272,7 @@ export function RepositoryContextProvider({
                 branches,
                 defaultBranch,
                 branch,
+                tree,
                 files,
                 file,
               });
@@ -340,76 +367,82 @@ export function RepositoryContextProvider({
    */
   const createFile = useCallback(
     (path: string, file: File) => {
-      dispatch({type:'createFile',func:(state:RepositoryState)=>{
-        (async () => {
-          // console.log('createFile action', action.path, action.file);
-          var encodedData = Buffer.from('\n', 'utf8').toString('base64');
-          // console.log('encodedData', encodedData);
-          try {
-            const result = await app.state.gqlclient?.mutate({
-              mutation: gql`
-                mutation createFile(
-                  $owner: String!
-                  $repo: String!
-                  $branch: String!
-                  $path: String!
-                  $encodedData: String!
-                  $message: String!
-                ) {
-                  commitContent(
-                    params: {
-                      owner: $owner
-                      repo: $repo
-                      branch: $branch
-                      newPath: $path
-                      newContent: $encodedData
-                      message: $message
-                    }
+      dispatch({
+        type: 'createFile',
+        func: (state: RepositoryState) => {
+          (async () => {
+            // console.log('createFile action', action.path, action.file);
+            var encodedData = Buffer.from('\n', 'utf8').toString('base64');
+            // console.log('encodedData', encodedData);
+            try {
+              const result = await app.state.gqlclient?.mutate({
+                mutation: gql`
+                  mutation createFile(
+                    $owner: String!
+                    $repo: String!
+                    $branch: String!
+                    $path: String!
+                    $encodedData: String!
+                    $message: String!
                   ) {
-                    state
-                    message
+                    commitContent(
+                      params: {
+                        owner: $owner
+                        repo: $repo
+                        branch: $branch
+                        newPath: $path
+                        newContent: $encodedData
+                        message: $message
+                      }
+                    ) {
+                      state
+                      message
+                    }
                   }
-                }
-              `,
-              variables: {
-                owner:state.owner,
-                repo:state.repo,
-                branch: state.branch,
-                path: path,
-                encodedData,
-                message: 'create file',
-              },
-            });
-            if (!result) {
-              return;
-            }
-            if (result.data.commitContent.state) {
-              log.success(t('ファイルを作成しました', {filepath: path}), 1000);
-              // ファイルリストを更新する
-              // TODO: mutationの結果として取得することでリクエスト回数を減らす
-              if (state.branch) {
-                selectBranch(state.branch);
+                `,
+                variables: {
+                  owner: state.owner,
+                  repo: state.repo,
+                  branch: state.branch,
+                  path: path,
+                  encodedData,
+                  message: 'create file',
+                },
+              });
+              if (!result) {
+                return;
               }
-            } else {
+              if (result.data.commitContent.state) {
+                log.success(
+                  t('ファイルを作成しました', {filepath: path}),
+                  1000,
+                );
+                // ファイルリストを更新する
+                // TODO: mutationの結果として取得することでリクエスト回数を減らす
+                if (state.branch) {
+                  selectBranch(state.branch);
+                }
+              } else {
+                log.error(
+                  t('ファイルが作成できませんでした', {
+                    filepath: path,
+                    error: result.data.commitContent.message,
+                  }),
+                  1000,
+                );
+              }
+            } catch (err: any) {
               log.error(
                 t('ファイルが作成できませんでした', {
                   filepath: path,
-                  error: result.data.commitContent.message,
+                  error: err.message,
                 }),
                 1000,
               );
             }
-          } catch (err: any) {
-            log.error(
-              t('ファイルが作成できませんでした', {
-                filepath: path,
-                error: err.message,
-              }),
-              1000,
-            );
-          }
-        })();  
-      }});
+          })();
+        },
+      });
     },
     [app, branch, log, owner, repo, selectBranch],
   );
