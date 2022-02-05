@@ -219,6 +219,9 @@ export class WebApiFs implements Fs {
       },
     });
     console.log('readdir', result);
+    if(!result.data.repository.object.entries) {
+      return [];
+    }
     const files = result.data.repository.object.entries.map((entry: any) => {
       // 取得したGitのファイル情報をVFile形式に変換する
       // この時点ではファイルの内容は取得していない

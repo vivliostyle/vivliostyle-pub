@@ -137,7 +137,7 @@ export const getRepositoryObject = async (
   // APIを実行
   try {
     const result = (await parent.graphqlWithAuth(query, parameters)) as any;
-    if (result.repository.object.isBinary) {
+    if (result.repository.object && result.repository.object.isBinary) {
       // GitHubのGraphQL APIではisBinaryがtrueのときは
       // textプロパティは空なので、REST APIを使ってバイナリデータを取得してtextプロパティにセットする
       // const octokit = new Octokit({
@@ -164,6 +164,7 @@ export const getRepositoryObject = async (
 
     // BlobかつsessiodIdが要求されている場合のみFirestoreに内容を保存する
     if (
+      result.repository.object &&
       result.repository.object.__typename === 'Blob' &&
       fieldNames.includes('sessionId')
     ) {

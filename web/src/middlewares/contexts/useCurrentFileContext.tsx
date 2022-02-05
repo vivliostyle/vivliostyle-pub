@@ -307,7 +307,9 @@ export function CurrentFileContextProvider({
             t('編集できないファイル形式です', {filepath: file.path}),
             3000,
           );
-          dispatch({type: 'setFileCancel', state: state.state});
+          repository.selectFile(null);
+          dispatch({
+            type: 'setFileCancel',state: state.state});
           return true;
         }
         (async (repository: RepositoryContext) => {
@@ -397,7 +399,7 @@ export function CurrentFileContextProvider({
    * クエリパラメータのfile属性にファイルパスをセットする
    * @param file
    */
-  function setQueryParam(file: VFile) {
+  function setQueryParam(file: VFile|null) {
     const url = new URL(window.location.toString());
     if (file) {
       url.searchParams.set('file', file.path);
