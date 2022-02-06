@@ -49,12 +49,14 @@ export default function FileEntry({
   onClick,
   onReload,
   onEmbedImage,
+  onEmbedLink,
 }: {
   file: VFile;
   currentDir: string;
   onClick: (file: VFile) => void;
   onReload: () => void;
-  onEmbedImage: (file: VFile)=>void;
+  onEmbedImage: (file: VFile) => void;
+  onEmbedLink: (file: VFile) => void;
 }) {
   const app = useAppContext();
   const log = useLogContext();
@@ -375,16 +377,30 @@ export default function FileEntry({
             >
               {t('ファイルをダウンロード')}
             </UI.MenuItem>
+            <UI.MenuDivider />
+            <UI.MenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentFile.state.file) {
+                  onEmbedLink(file);
+                }
+              }}
+              color={currentFile.state.file ? 'black' : 'gray'}
+            >
+              {t('編集中のファイルにリンクを挿入')}
+            </UI.MenuItem>
+
             {isImageFile(file.name) ? (
               <UI.MenuItem
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if(currentFile.state.file) {
+                  if (currentFile.state.file) {
                     onEmbedImage(file);
                   }
                 }}
-                color={currentFile.state.file ? 'black':'gray'}
+                color={currentFile.state.file ? 'black' : 'gray'}
               >
                 {t('編集中のファイルに画像を挿入')}
               </UI.MenuItem>

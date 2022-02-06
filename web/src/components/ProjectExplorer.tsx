@@ -268,7 +268,16 @@ export function ProjectExplorer() {
       </UI.Button>
     );
   });
-
+  /**
+   * リンクタグの埋め込み
+   * @param name ディレクトリ名を含まないファイル名 TODO: VFileオブジェクトのほうが良いかも
+   */
+   const handleEmbedLink = useCallback((file:VFile)=>{
+     if(currentFile.state.file) {
+      const editingPath = upath.dirname(currentFile.state.file.path);
+      currentFile.insert(`[${upath.trimExt(file.name)}](${upath.relative(editingPath, file.path)})`);
+     }
+  },[currentFile]);
   /**
    * 画像タグの埋め込み
    * @param file 画像ファイル
@@ -387,6 +396,7 @@ export function ProjectExplorer() {
                 onClick={onClick}
                 onReload={reload}
                 onEmbedImage={handleEmbedImage}
+                onEmbedLink={handleEmbedLink}
               />
             ) : (
               <DirEntry
