@@ -22,6 +22,7 @@ import {
 import {WebApiFs} from '@middlewares/fs/WebApiFS';
 import mime from 'mime-types';
 import {t} from 'i18next';
+import {isImageFile} from '@middlewares/frontendFunctions';
 
 /**
  * 与えられた文字列がBase64ならBufferを、そうでなければ文字列を返す
@@ -47,11 +48,13 @@ export default function FileEntry({
   currentDir,
   onClick,
   onReload,
+  onEmbedImage,
 }: {
   file: VFile;
   currentDir: string;
   onClick: (file: VFile) => void;
   onReload: () => void;
+  onEmbedImage: (file: VFile)=>void;
 }) {
   const app = useAppContext();
   const log = useLogContext();
@@ -372,6 +375,20 @@ export default function FileEntry({
             >
               {t('ファイルをダウンロード')}
             </UI.MenuItem>
+            {isImageFile(file.name) ? (
+              <UI.MenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if(currentFile.state.file) {
+                    onEmbedImage(file);
+                  }
+                }}
+                color={currentFile.state.file ? 'black':'gray'}
+              >
+                {t('編集中のファイルに画像を挿入')}
+              </UI.MenuItem>
+            ) : null}
           </UI.MenuList>
         )}
       >

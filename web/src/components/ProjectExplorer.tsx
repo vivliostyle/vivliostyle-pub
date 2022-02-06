@@ -18,6 +18,7 @@ import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {FileUploadModal} from './FileUploadModal';
 import {t} from 'i18next';
 import {User} from 'firebase/auth';
+import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 
 /**
  * プロジェクトエクスプローラーコンポーネント
@@ -27,6 +28,7 @@ export function ProjectExplorer() {
   console.log('[Project Explorer]');
   const app = useAppContext();
   const repository = useRepositoryContext();
+  const currentFile = useCurrentFileContext();
   const log = useLogContext();
 
   const {
@@ -43,14 +45,16 @@ export function ProjectExplorer() {
 
   // ライトボックスの表示フラグ
   const [lightBoxContent, setLightBoxContent] = useState<{
-    name: string;
+    file: VFile;
     data: string;
   } | null>(null); // ライトボックスに表示する画像
 
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
     // console.log('proj.files',repository.state.files);
-    return repository.state.files.filter((f) => f.name.includes(filenamesFilterText));
+    return repository.state.files.filter((f) =>
+      f.name.includes(filenamesFilterText),
+    );
   }, [repository.state.files, filenamesFilterText]);
 
   // 表示用のカレントディレクトリ
@@ -112,7 +116,7 @@ export function ProjectExplorer() {
           return;
         }
         const data = content ? `data:image/${type}${content}` : '';
-        setLightBoxContent({name: srcPath, data});
+        setLightBoxContent({file, data});
         return;
       }
       // 画像でなければエディタで編集できるよう選択する
@@ -266,13 +270,28 @@ export function ProjectExplorer() {
   });
 
   /**
+   * 画像タグの埋め込み
+   * @param file 画像ファイル
+   */
+  const handleEmbedImage = useCallback(
+    (file: VFile) => {
+      if(currentFile.state.file) {
+        console.log('embedImage', file.path, currentFile.state.file?.path);
+        const editingPath = upath.dirname(currentFile.state.file.path);
+        currentFile.insert(`![Fig. ${file.name}](${upath.relative(editingPath, file.path)})`);  
+      }
+    },
+    [currentFile],
+  );
+
+  /**
    * 画像表示用 ライトボックスコンポーネント
    * @param param0
    * @returns
    */
   const LightBox = memo(function lightBox(props: {
     lightBoxContent: {
-      name: string;
+      file: VFile;
       data: string;
     } | null;
   }) {
@@ -283,17 +302,30 @@ export function ProjectExplorer() {
           setLightBoxContent(null);
         }}
         isCentered
-        size={'6xl'}
+        size={'xl'}
       >
         <UI.ModalOverlay />
         <UI.ModalContent>
-          <UI.ModalHeader>{lightBoxContent?.name}</UI.ModalHeader>
+          <UI.ModalHeader>{lightBoxContent?.file.name}</UI.ModalHeader>
           <UI.ModalCloseButton />
           <UI.ModalBody backgroundColor={'gray'}>
             <Center>
               <UI.Image src={lightBoxContent?.data} objectFit={'scale-down'} />
             </Center>
           </UI.ModalBody>
+          <UI.ModalFooter backgroundColor={'gray'}>
+            <Center>
+              <UI.Button
+                onClick={() => {
+                  setLightBoxContent(null);
+                  console.log('embedImage lightbox', lightBoxContent?.file);
+                  handleEmbedImage(lightBoxContent?.file!);
+                }}
+              >
+                {t('画像を埋め込み')}
+              </UI.Button>
+            </Center>
+          </UI.ModalFooter>
         </UI.ModalContent>
       </UI.Modal>
     );
@@ -332,7 +364,9 @@ export function ProjectExplorer() {
           overflowY="scroll"
           backgroundColor="white"
         >
-          <UpToParentDirectoryButton currentTree={repository.state.currentTree} />
+          <UpToParentDirectoryButton
+            currentTree={repository.state.currentTree}
+          />
           {!createForm ? null : (
             <UI.Input
               onBlur={() => setCreateForm(null)}
@@ -352,6 +386,7 @@ export function ProjectExplorer() {
                 file={file}
                 onClick={onClick}
                 onReload={reload}
+                onEmbedImage={handleEmbedImage}
               />
             ) : (
               <DirEntry

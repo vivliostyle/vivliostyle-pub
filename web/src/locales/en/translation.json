@@ -46,5 +46,6 @@
   "フォルダ名を変更": "Rename folder",
   "フォルダを複製": "Duplicate folder",
   "フォルダを削除": "Delete folder",
-  "ファイルをダウンロード": "Download file"
+  "ファイルをダウンロード": "Download file",
+  "編集中のファイルに画像を挿入":"Insert a image to the file"
 }

@@ -30,6 +30,7 @@ type CurrentFileState = {
   state: FileState; // 状態
   timer?: NodeJS.Timeout;
   session: DocumentReference<DocumentData> | null;
+  insertBuf: string | null; // 挿入文字列 値がセットされていたらMarkdownEditorでエディタに挿入したあとnullにする
 };
 
 /**
@@ -39,6 +40,7 @@ export type CurrentFile = {
   state: CurrentFileState;
   modify: (text: string) => void; // テキスト更新の更新メソッド
   commit: () => void; // ファイルのコミットメソッド
+  insert: (str: string | null) => void;
 };
 
 /**
@@ -72,7 +74,8 @@ type CurrentFileActions =
       log: Log;
     }
   | {type: 'commit'; func: (state: CurrentFileState) => void}
-  | {type: 'commitCallback'; file: VFile; log: Log};
+  | {type: 'commitCallback'; file: VFile; log: Log}
+  | {type: 'insert'; str: string | null};
 
 /**
  * useReducer用のディスパッチャ定義
@@ -138,6 +141,9 @@ const reducer = (
         1000,
       );
       return {...state, state: FileState.clean};
+    case 'insert':
+      console.log('insert', action.str);
+      return {...state, insertBuf: action.str};
   }
 };
 
@@ -359,9 +365,15 @@ export function CurrentFileContextProvider({
     // 状態
     state: FileState.none,
     session: null,
+    insertBuf: null,
   } as CurrentFileState;
 
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  const insert = useCallback((str: string | null) => {
+    console.log('insert', str);
+    dispatch({type: 'insert', str});
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -369,8 +381,9 @@ export function CurrentFileContextProvider({
       // メソッド
       modify,
       commit,
+      insert,
     }),
-    [state, commit, modify],
+    [state, commit, modify, insert],
   );
 
   return (
