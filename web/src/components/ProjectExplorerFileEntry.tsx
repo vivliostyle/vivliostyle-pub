@@ -386,6 +386,9 @@ export default function FileEntry({
             display="inline-block"
             width="100%"
             _hover={{textDecoration: 'underline'}}
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
           >
             {isRenaming ? (
               <UI.Input
@@ -413,33 +416,37 @@ export default function FileEntry({
               <>
                 <UI.Icon as={icon} /> {file.name}
                 {isDuplicating ? (
-                  <UI.Input
-                    autoFocus={true}
-                    defaultValue={file.name}
-                    onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
-                      setDuplicating(false);
-                      duplicateFile(event);
-                    }}
-                    onKeyDown={(
-                      event: React.KeyboardEvent<HTMLInputElement>,
-                    ) => {
-                      console.log(event.key);
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        duplicateFile(event);
-                      } else if (
-                        event.key === 'Esc' ||
-                        event.key === 'Escape'
-                      ) {
-                        event.preventDefault();
+                  <>
+                    <br />
+
+                    <UI.Input
+                      autoFocus={true}
+                      defaultValue={file.name}
+                      onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
                         setDuplicating(false);
-                      }
-                    }}
-                    onClick={(event: React.MouseEvent<HTMLInputElement>) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
-                  />
+                        duplicateFile(event);
+                      }}
+                      onKeyDown={(
+                        event: React.KeyboardEvent<HTMLInputElement>,
+                      ) => {
+                        console.log(event.key);
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          duplicateFile(event);
+                        } else if (
+                          event.key === 'Esc' ||
+                          event.key === 'Escape'
+                        ) {
+                          event.preventDefault();
+                          setDuplicating(false);
+                        }
+                      }}
+                      onClick={(event: React.MouseEvent<HTMLInputElement>) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                    />
+                  </>
                 ) : null}
               </>
             )}
