@@ -442,6 +442,8 @@ export default function FileEntry({
               <>
                 <UI.Icon as={icon} /> {file.name}
                 {isDuplicating ? (
+                  <>
+                  <br />
                   <UI.Input
                     autoFocus={true}
                     defaultValue={file.name}
@@ -469,6 +471,7 @@ export default function FileEntry({
                       event.stopPropagation();
                     }}
                   />
+                  </>
                 ) : null}
               </>
             )}
