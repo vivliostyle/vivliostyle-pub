@@ -49,14 +49,14 @@ export default function FileEntry({
   onClick,
   onReload,
   onEmbedImage,
-  onEmbedLink
+  onEmbedLink,
 }: {
   file: VFile;
   currentDir: string;
   onClick: (file: VFile) => void;
   onReload: () => void;
-  onEmbedImage: (name:string)=>void;
-  onEmbedLink: (name:string)=>void;
+  onEmbedImage: (file: VFile) => void;
+  onEmbedLink: (file: VFile) => void;
 }) {
   const app = useAppContext();
   const log = useLogContext();
@@ -382,8 +382,11 @@ export default function FileEntry({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onEmbedLink(file.name);
+                if (currentFile.state.file) {
+                  onEmbedLink(file);
+                }
               }}
+              color={currentFile.state.file ? 'black' : 'gray'}
             >
               {t('編集中のファイルにリンクを挿入')}
             </UI.MenuItem>
@@ -392,8 +395,11 @@ export default function FileEntry({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onEmbedImage(file.name);
+                  if (currentFile.state.file) {
+                    onEmbedImage(file);
+                  }
                 }}
+                color={currentFile.state.file ? 'black' : 'gray'}
               >
                 {t('編集中のファイルに画像を挿入')}
               </UI.MenuItem>
@@ -443,34 +449,34 @@ export default function FileEntry({
                 <UI.Icon as={icon} /> {file.name}
                 {isDuplicating ? (
                   <>
-                  <br />
-                  <UI.Input
-                    autoFocus={true}
-                    defaultValue={file.name}
-                    onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
-                      setDuplicating(false);
-                      duplicateFile(event);
-                    }}
-                    onKeyDown={(
-                      event: React.KeyboardEvent<HTMLInputElement>,
-                    ) => {
-                      console.log(event.key);
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        duplicateFile(event);
-                      } else if (
-                        event.key === 'Esc' ||
-                        event.key === 'Escape'
-                      ) {
-                        event.preventDefault();
+                    <br />
+                    <UI.Input
+                      autoFocus={true}
+                      defaultValue={file.name}
+                      onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
                         setDuplicating(false);
-                      }
-                    }}
-                    onClick={(event: React.MouseEvent<HTMLInputElement>) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
-                  />
+                        duplicateFile(event);
+                      }}
+                      onKeyDown={(
+                        event: React.KeyboardEvent<HTMLInputElement>,
+                      ) => {
+                        console.log(event.key);
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          duplicateFile(event);
+                        } else if (
+                          event.key === 'Esc' ||
+                          event.key === 'Escape'
+                        ) {
+                          event.preventDefault();
+                          setDuplicating(false);
+                        }
+                      }}
+                      onClick={(event: React.MouseEvent<HTMLInputElement>) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                    />
                   </>
                 ) : null}
               </>

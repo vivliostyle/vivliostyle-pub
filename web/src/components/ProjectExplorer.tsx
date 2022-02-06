@@ -8,16 +8,14 @@ import FileEntry from './ProjectExplorerFileEntry';
 import DirEntry from './ProjectExplorerDirEntry';
 import {VscArrowUp, VscNewFile, VscNewFolder} from 'react-icons/vsc';
 import {CgCornerLeftUp} from 'react-icons/cg';
-import {
-  isImageFile,
-} from '@middlewares/frontendFunctions';
+import {isImageFile} from '@middlewares/frontendFunctions';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {Center, useDisclosure} from '@chakra-ui/react';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {FileUploadModal} from './FileUploadModal';
 import {t} from 'i18next';
 import {User} from 'firebase/auth';
-import { useCurrentFileContext } from '@middlewares/contexts/useCurrentFileContext';
+import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 
 /**
  * プロジェクトエクスプローラーコンポーネント
@@ -44,7 +42,7 @@ export function ProjectExplorer() {
 
   // ライトボックスの表示フラグ
   const [lightBoxContent, setLightBoxContent] = useState<{
-    name: string;
+    file: VFile;
     data: string;
   } | null>(null); // ライトボックスに表示する画像
 
@@ -102,12 +100,14 @@ export function ProjectExplorer() {
         } else if (ext === '.gif') {
           data = `data:image/gif;base64,${content.toString('base64')}`;
         } else if (ext === '.svg') {
-          data = `data:image/svg+xml,${encodeURIComponent(content as unknown as string)}`;
+          data = `data:image/svg+xml,${encodeURIComponent(
+            content as unknown as string,
+          )}`;
         } else {
           log.error(t('不明な画像ファイル形式です', {fileptah: srcPath}), 3000);
           return;
         }
-        setLightBoxContent({name: srcPath, data});
+        setLightBoxContent({file, data});
         return;
       }
       // 画像でなければエディタで編集できるよう選択する
@@ -260,21 +260,33 @@ export function ProjectExplorer() {
     );
   });
 
-
   /**
    * リンクタグの埋め込み
-   * @param name ディレクトリ名を含まないファイル名 TODO: VFileオブジェクトのほうが良いかも
+   * @param name ディレクトリ名を含まないファイル名
    */
-  const handleEmbedLink = useCallback((name?:string)=>{
-    currentFile.insert(`[${upath.trimExt(name!)}](${upath.join(currentDir,name)})`);
-  },[currentDir, currentFile]);
+   const handleEmbedLink = useCallback((file:VFile)=>{
+    if(currentFile.state.file) {
+     const editingPath = upath.dirname(currentFile.state.file.path);
+     currentFile.insert(`[${upath.trimExt(file.name)}](${upath.relative(editingPath, file.path)})`);
+    }
+ },[currentFile]);
+
   /**
    * 画像タグの埋め込み
-   * @param name ディレクトリ名を含まない画像ファイル名 TODO: VFileオブジェクトのほうが良いかも
+   * @param file 画像ファイル
    */
-  const handleEmbedImage = useCallback((name?:string)=>{
-    currentFile.insert(`![Fig. ${name}](${upath.join(currentDir,name)})`);
-  },[currentDir, currentFile]);
+  const handleEmbedImage = useCallback(
+    (file: VFile) => {
+      if (currentFile.state.file) {
+        console.log('embedImage', file.path, currentFile.state.file?.path);
+        const editingPath = upath.dirname(currentFile.state.file.path);
+        currentFile.insert(
+          `![Fig. ${file.name}](${upath.relative(editingPath, file.path)})`,
+        );
+      }
+    },
+    [currentFile],
+  );
 
   /**
    * 画像表示用 ライトボックスコンポーネント
@@ -283,7 +295,7 @@ export function ProjectExplorer() {
    */
   const LightBox = memo(function lightBox(props: {
     lightBoxContent: {
-      name: string;
+      file: VFile;
       data: string;
     } | null;
   }) {
@@ -298,7 +310,7 @@ export function ProjectExplorer() {
       >
         <UI.ModalOverlay />
         <UI.ModalContent>
-          <UI.ModalHeader>{lightBoxContent?.name}</UI.ModalHeader>
+          <UI.ModalHeader>{lightBoxContent?.file.name}</UI.ModalHeader>
           <UI.ModalCloseButton />
           <UI.ModalBody backgroundColor={'gray'}>
             <Center>
@@ -307,11 +319,14 @@ export function ProjectExplorer() {
           </UI.ModalBody>
           <UI.ModalFooter backgroundColor={'gray'}>
             <Center>
-              <UI.Button onClick={()=>{
+              <UI.Button
+                onClick={() => {
                   setLightBoxContent(null);
-                  handleEmbedImage(lightBoxContent?.name);
-                }
-              }>{t('画像を埋め込み')}</UI.Button>
+                  handleEmbedImage(lightBoxContent?.file!);
+                }}
+              >
+                {t('画像を埋め込み')}
+              </UI.Button>
             </Center>
           </UI.ModalFooter>
         </UI.ModalContent>
