@@ -205,7 +205,7 @@ export class PackageTheme implements Theme {
 
   private static async getPackageJson(fs: Fs): Promise<string | object> {
     const path = `package.json`;
-    const pkg_json = await fs.readFile(path, true);
+    const pkg_json = JSON.parse(await fs.readFile(path));
     return pkg_json;
   }
 }
