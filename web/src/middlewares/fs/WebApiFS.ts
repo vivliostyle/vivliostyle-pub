@@ -5,6 +5,7 @@ import {
   NormalizedCacheObject,
 } from '@apollo/client';
 import {User} from '@firebase/auth';
+import {devConsole} from '@middlewares/frontendFunctions';
 import {initializeApp} from 'firebase/app';
 import {
   doc,
@@ -13,6 +14,8 @@ import {
   getFirestore,
 } from 'firebase/firestore';
 import {Fs, VFile} from 'theme-manager';
+
+const {_log, _err} = devConsole('[WebApiFs]');
 
 /**
  * /api/github/* へのWeb APIアクセスを抽象化して提供する仮想FileSystemクラス
@@ -113,7 +116,7 @@ export class WebApiFs implements Fs {
   ): Promise<
     string | Buffer | {content: string | Buffer; session: DocumentReference}
   > {
-    const sessionId = options?.hasSession? 'sessionId' : '';
+    const sessionId = options?.hasSession ? 'sessionId' : '';
 
     const result = await this.client.query({
       query: gql`
@@ -138,9 +141,9 @@ export class WebApiFs implements Fs {
         expr: `${this.branch}:${path}`,
       },
     });
-    console.log('readFile result', path, result);
-    if (result.data.repository.object === null ) {
-      throw new Error("file not found");
+    _log('readFile result', path, result);
+    if (result.data.repository.object === null) {
+      throw new Error('file not found');
     }
     let content;
     if (result.data.repository.object.isBinary) {
@@ -218,8 +221,8 @@ export class WebApiFs implements Fs {
         expr: `${this.branch}:${path}`,
       },
     });
-    console.log('readdir', result);
-    if(!result.data.repository.object.entries) {
+    _log('readdir', result);
+    if (!result.data.repository.object.entries) {
       return [];
     }
     const files = result.data.repository.object.entries.map((entry: any) => {

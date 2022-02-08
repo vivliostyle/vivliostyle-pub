@@ -1,8 +1,10 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import Editor, {useMonaco} from '@monaco-editor/react';
-import {FileState} from '@middlewares/frontendFunctions';
+import {devConsole, FileState} from '@middlewares/frontendFunctions';
 import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 import * as UI from '@components/ui';
+
+const {_log, _err} = devConsole('[MarkdownEditor]');
 
 export const MarkdownEditor = ({
   onModified = () => {},
@@ -16,7 +18,7 @@ export const MarkdownEditor = ({
   // CurrentFileコンテクストが変化してもリロードしない
   const currentFile = useCurrentFileContext();
 
-  console.log('[Editor]' /* currentFile */);
+  _log('' /* currentFile */);
 
   /**
    * シンタックスハイライティング用のファイル種別
@@ -65,20 +67,20 @@ export const MarkdownEditor = ({
 
   useEffect(() => {
     const editor = editorRef.current as any;
-    console.log('editor effect');
+    _log('effect');
     if (editor) {
-      console.log('editor set ctrl+s');
+      _log('set ctrl+s');
       editor.addAction({
         id: 'saveDocument',
         label: 'Save current document',
         keybindings: [monaco!.KeyMod.CtrlCmd | monaco!.KeyCode.KeyS],
         precondition: 'editorTextFocus',
         run: () => {
-          console.log('editor saved');
+          _log('saved');
         },
       });
       // editor.addCommand(monaco!.KeyMod.WinCtrl , () => {
-      //   console.log('editor saved');
+      //   _log('saved');
       //   // currentFile.commit();
       // })
     }
@@ -96,7 +98,7 @@ export const MarkdownEditor = ({
         pos.lineNumber,
         pos.column,
       );
-      // console.log('monaco position', pos, range,currentFile.state.insertBuf);
+      // _log('monaco position', pos, range,currentFile.state.insertBuf);
       // カーソル位置に文字列を挿入
       editor!.executeEdits('', [{range, text: currentFile.state.insertBuf}]);
       // カーソル位置を画像タグの後ろに移動する この処理を入れない場合は画像タグ全体が選択された状態になる

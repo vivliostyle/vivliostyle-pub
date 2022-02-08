@@ -22,7 +22,9 @@ import {
 import {WebApiFs} from '@middlewares/fs/WebApiFS';
 import mime from 'mime-types';
 import {t} from 'i18next';
-import {isImageFile} from '@middlewares/frontendFunctions';
+import {devConsole, isImageFile} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[FileEntry]');
 
 /**
  * 与えられた文字列がBase64ならBufferを、そうでなければ文字列を返す
@@ -104,7 +106,7 @@ export default function FileEntry({
     const oldFilePath = upath.join(currentDir, oldFilename);
     const newFilePath = upath.join(currentDir, newFilename);
 
-    console.log('[FileEntry] copy', oldFilePath, newFilePath);
+    _log('copy', oldFilePath, newFilePath);
 
     const result = (await app.state.gqlclient?.mutate({
       mutation: gql`
@@ -144,13 +146,13 @@ export default function FileEntry({
       },
     })) as any;
 
-    console.log('[FileEntry] copy result', result);
+    _log('copy result', result);
     return result;
   };
 
   const renameFile = async (e: any) => {
     setRenaming(false);
-    // console.log('renameFile', e);
+    // _log('renameFile', e);
     const oldFilename = file.name;
     const newFilename = e.target!.value;
     if (oldFilename === newFilename) {
@@ -258,7 +260,7 @@ export default function FileEntry({
           message: 'delete file',
         },
       })) as any;
-      console.log('delete result', result);
+      _log('delete result', result);
       if (result.data.commitContent.state) {
         log.success(t('ファイルを削除しました', {filepath: filePath}), 3000);
         onReload();
@@ -293,7 +295,7 @@ export default function FileEntry({
     WebApiFs.open(props)
       .then((fs) => {
         fs.readFile(path).then((content) => {
-          // console.log('dispatch setFileCallback', seq,action.file,content);
+          // _log('dispatch setFileCallback', seq,action.file,content);
           if (content == undefined || content == null) {
             // 0バイトのファイルがあるため、!contentでは駄目
             log.error(
@@ -460,7 +462,7 @@ export default function FileEntry({
                       onKeyDown={(
                         event: React.KeyboardEvent<HTMLInputElement>,
                       ) => {
-                        console.log(event.key);
+                        _log(event.key);
                         if (event.key === 'Enter') {
                           event.preventDefault();
                           duplicateFile(event);

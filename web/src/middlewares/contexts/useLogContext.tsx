@@ -7,6 +7,9 @@ import React, {
   useState,
 } from 'react';
 import {useToast} from '@chakra-ui/react';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[useLogContext]');
 
 type MessageType = 'info' | 'success' | 'warning' | 'error';
 
@@ -57,9 +60,10 @@ export function LogBufferContextProvider({children}: {children: JSX.Element}) {
    * @param entry 記録内容
    */
   const handleLogging = (entry: LogEntry) => {
-    setBuf((pre)=>{ // preにはレンダリング前でも最新の値が入っている
+    setBuf((pre) => {
+      // preにはレンダリング前でも最新の値が入っている
       const newBuf = [entry, ...pre];
-      return newBuf
+      return newBuf;
     });
   };
 
@@ -70,7 +74,7 @@ export function LogBufferContextProvider({children}: {children: JSX.Element}) {
     setBuf([]);
   };
 
-  // console.log('[LogBufferContext] render');
+  // _log('[LogBufferContext] render');
   return (
     <React.StrictMode>
       <LogBufferContext.Provider value={buf}>
@@ -97,7 +101,7 @@ function LogContextProvider({
   onLogging: (entry: LogEntry) => void;
   onClear: () => void;
 }) {
-  // console.log('[LogContext]',onLogging,onClear);
+  // _log(onLogging,onClear);
 
   const toast = useToast();
 
@@ -135,7 +139,7 @@ function LogContextProvider({
         logging('warning', message, toastDuration);
       },
       clear: () => {
-        console.log('clear');
+        _log('clear');
         onClear();
       },
     };

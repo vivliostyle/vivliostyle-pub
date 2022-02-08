@@ -15,6 +15,9 @@ import {WebApiFs} from '../fs/WebApiFS';
 import {gql} from '@apollo/client';
 import upath from 'upath';
 import {t} from 'i18next';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[useRepositoryContext]');
 
 export type RepositoryState = {
   id: number;
@@ -112,7 +115,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       if (state.name != action.name || state.branch != action.branch) {
         setQueryParam('file', null);
       }
-      console.log('[repositoryContext] selectRepositoryCallback', action);
+      _log('selectRepositoryCallback', action);
       return {
         ...state,
         owner: action.owner,
@@ -120,7 +123,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
         branches: action.branches,
         defaultBranch: action.defaultBranch,
         branch: action.branch,
-        currentTree:action.tree,
+        currentTree: action.tree,
         files: action.files,
         currentFile: action.file,
       };
@@ -133,7 +136,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       // クエリパラメータにブランチをセットする
       setQueryParam('branch', action.branch);
       setQueryParam('file', null);
-      console.log('[repositoryContext] selectBranchCallback', action);
+      _log('selectBranchCallback', action);
       action.log.info(
         t('ブランチを変更しました', {branch: action.branch}),
         1000,
@@ -150,7 +153,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       action.func(state);
       return state;
     case 'selectTreeCallback':
-      console.log('[repositoryContext] selectTreeCallback', action);
+      _log('selectTreeCallback', action);
       return {...state, currentTree: action.tree, files: action.files};
     // 編集ファイル選択アクション
     case 'selectFile':
@@ -158,7 +161,7 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
     case 'selectFileCallback':
       setQueryParam('file', action.file?.path ?? null);
-      console.log('[repositoryContext] selectFileCallback', action.file);
+      _log('selectFileCallback', action.file);
       return {...state, currentFile: action.file};
     case 'createFile':
       action.func(state);
@@ -168,24 +171,24 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
 
 /**
  * ディレクトリパス文字列をVFileの配列に変換する
- * @param dir 
+ * @param dir
  */
-async function dir2tree(fs:WebApiFs|null,dir:string):Promise<VFile[]> {
-  const trees:VFile[] = [];
-  if(fs !== null) {
+async function dir2tree(fs: WebApiFs | null, dir: string): Promise<VFile[]> {
+  const trees: VFile[] = [];
+  if (fs !== null) {
     const rootFiles = await fs.readdir('');
-    console.log('dir2tree root',rootFiles);
+    _log('dir2tree root', rootFiles);
     const dirlist = dir.split('/');
-    for(let d of dirlist) {
-      const tree = rootFiles.find((entry:VFile)=>entry.name === d);
-      if(tree) {
+    for (let d of dirlist) {
+      const tree = rootFiles.find((entry: VFile) => entry.name === d);
+      if (tree) {
         trees.push(tree);
-      }else{
+      } else {
         break;
       }
-    }  
+    }
   }
-  console.log('dir2tree',fs,dir,trees);
+  _log('dir2tree', fs, dir, trees);
   return trees;
 }
 
@@ -207,7 +210,7 @@ export function RepositoryContextProvider({
   branch?: string;
   file?: string;
 }) {
-  console.log('[repositoryContext]', owner, repo, branch, file);
+  _log(owner, repo, branch, file);
   const log = useLogContext();
   const app = useAppContext();
 
@@ -220,16 +223,10 @@ export function RepositoryContextProvider({
         type: 'selectRepository',
         func: (state: RepositoryState) => {
           if (!app.state.user || app.state.isPending) {
-            console.log('[repositoryContext] selectRepository cancel');
+            _log('selectRepository cancel');
             return null;
           }
-          console.log(
-            '[repositoryContext] selectRepostiory',
-            owner,
-            repo,
-            branch,
-            filePath,
-          );
+          _log('selectRepostiory', owner, repo, branch, filePath);
           (async () => {
             const repositoryState = app.state.repositories?.find(
               (rep) => rep.owner == owner && rep.name == repo,
@@ -246,14 +243,11 @@ export function RepositoryContextProvider({
               repo,
               branch,
             };
-            console.log(
-              '[repositoryContext] selectRepository WebApiFs props',
-              props,
-            );
+            _log('selectRepository WebApiFs props', props);
             const fs: WebApiFs = await WebApiFs.open(props);
             const dirname = filePath ? upath.dirname(filePath) : '';
-            const dir = dirname !== '.' ? dirname:''; // upath.dirname('sample.md') => '.' になるため
-            const tree = await dir2tree(fs,dir);
+            const dir = dirname !== '.' ? dirname : ''; // upath.dirname('sample.md') => '.' になるため
+            const tree = await dir2tree(fs, dir);
             const files = await fs.readdir(dir);
             let file;
             if (filePath && filePath != state.currentFile?.path) {
@@ -289,7 +283,7 @@ export function RepositoryContextProvider({
    */
   const selectBranch = useCallback(
     (newBranch: string) => {
-      console.log('[repositoryContext] selectBranch', newBranch);
+      _log('selectBranch', newBranch);
       dispatch({
         type: 'selectBranch',
         func: (state: RepositoryState) => {
@@ -299,8 +293,8 @@ export function RepositoryContextProvider({
             !newBranch ||
             state.branch === newBranch
           ) {
-            console.log(
-              '[repositoryContext] selectBranch cancel',
+            _log(
+              'selectBranch cancel',
               state.owner,
               state.name,
               state.branch,
@@ -330,7 +324,7 @@ export function RepositoryContextProvider({
                 file: null,
               });
             } catch (err: any) {
-              console.error(err);
+              _err(err);
             }
           })();
         },
@@ -347,12 +341,7 @@ export function RepositoryContextProvider({
     dispatch({
       type: 'selectFile',
       func: (state: RepositoryState) => {
-        console.log(
-          '[repositoryContext] selectFile',
-          state.currentFile,
-          '\n>>>>\n',
-          file,
-        );
+        _log('selectFile', state.currentFile, '\n>>>>\n', file);
         if (file?.path !== state.currentFile?.path) {
           dispatch({type: 'selectFileCallback', file});
         }
@@ -365,76 +354,82 @@ export function RepositoryContextProvider({
    */
   const createFile = useCallback(
     (path: string, file: File) => {
-      dispatch({type:'createFile',func:(state:RepositoryState)=>{
-        (async () => {
-          // console.log('createFile action', action.path, action.file);
-          var encodedData = Buffer.from('\n', 'utf8').toString('base64');
-          // console.log('encodedData', encodedData);
-          try {
-            const result = await app.state.gqlclient?.mutate({
-              mutation: gql`
-                mutation createFile(
-                  $owner: String!
-                  $repo: String!
-                  $branch: String!
-                  $path: String!
-                  $encodedData: String!
-                  $message: String!
-                ) {
-                  commitContent(
-                    params: {
-                      owner: $owner
-                      repo: $repo
-                      branch: $branch
-                      newPath: $path
-                      newContent: $encodedData
-                      message: $message
-                    }
+      dispatch({
+        type: 'createFile',
+        func: (state: RepositoryState) => {
+          (async () => {
+            // _log('createFile action', action.path, action.file);
+            var encodedData = Buffer.from('\n', 'utf8').toString('base64');
+            // _log('encodedData', encodedData);
+            try {
+              const result = await app.state.gqlclient?.mutate({
+                mutation: gql`
+                  mutation createFile(
+                    $owner: String!
+                    $repo: String!
+                    $branch: String!
+                    $path: String!
+                    $encodedData: String!
+                    $message: String!
                   ) {
-                    state
-                    message
+                    commitContent(
+                      params: {
+                        owner: $owner
+                        repo: $repo
+                        branch: $branch
+                        newPath: $path
+                        newContent: $encodedData
+                        message: $message
+                      }
+                    ) {
+                      state
+                      message
+                    }
                   }
-                }
-              `,
-              variables: {
-                owner:state.owner,
-                repo:state.name,
-                branch: state.branch,
-                path: path,
-                encodedData,
-                message: 'create file',
-              },
-            });
-            if (!result) {
-              return;
-            }
-            if (result.data.commitContent.state) {
-              log.success(t('ファイルを作成しました', {filepath: path}), 1000);
-              // ファイルリストを更新する
-              // TODO: mutationの結果として取得することでリクエスト回数を減らす
-              if (state.branch) {
-                selectBranch(state.branch);
+                `,
+                variables: {
+                  owner: state.owner,
+                  repo: state.name,
+                  branch: state.branch,
+                  path: path,
+                  encodedData,
+                  message: 'create file',
+                },
+              });
+              if (!result) {
+                return;
               }
-            } else {
+              if (result.data.commitContent.state) {
+                log.success(
+                  t('ファイルを作成しました', {filepath: path}),
+                  1000,
+                );
+                // ファイルリストを更新する
+                // TODO: mutationの結果として取得することでリクエスト回数を減らす
+                if (state.branch) {
+                  selectBranch(state.branch);
+                }
+              } else {
+                log.error(
+                  t('ファイルが作成できませんでした', {
+                    filepath: path,
+                    error: result.data.commitContent.message,
+                  }),
+                  1000,
+                );
+              }
+            } catch (err: any) {
               log.error(
                 t('ファイルが作成できませんでした', {
                   filepath: path,
-                  error: result.data.commitContent.message,
+                  error: err.message,
                 }),
                 1000,
               );
             }
-          } catch (err: any) {
-            log.error(
-              t('ファイルが作成できませんでした', {
-                filepath: path,
-                error: err.message,
-              }),
-              1000,
-            );
-          }
-        })();  
-      }});
+          })();
+        },
+      });
     },
     [app, branch, log, owner, repo, selectBranch],
   );
@@ -450,8 +445,8 @@ export function RepositoryContextProvider({
       type: 'selectTree',
       func: (state: RepositoryState) => {
         (async () => {
-          console.log('[repositoryContext] selectTree', tree);
-          // console.log('selectTreeAction');
+          _log('selectTree', tree);
+          // _log('selectTreeAction');
           const trees = [...state.currentTree];
           if (tree == '.') {
             // 何もせず後段でファイルリストを読み込みなおす
@@ -512,7 +507,7 @@ export function RepositoryContextProvider({
   );
 
   useEffect(() => {
-    console.log('[repositoryContext] init ', owner, repo, branch, file);
+    _log('init ', owner, repo, branch, file);
     if (!app.state.user || app.state.isPending) {
       return;
     }

@@ -1,14 +1,17 @@
 import {useEffect, useState} from 'react';
 
-import type {VivliostyleConfigSchema} from './vivliostyle.config'
-import { User } from 'firebase/auth';
-import { WebApiFs } from './fs/WebApiFS';
+import type {VivliostyleConfigSchema} from './vivliostyle.config';
+import {User} from 'firebase/auth';
+import {WebApiFs} from './fs/WebApiFS';
+import {devConsole} from './frontendFunctions';
+
+const {_log, _err} = devConsole('[useVivliostyleConfig]');
 
 const parseConfig = (configString: string) => {
-  // 
+  //
   // 本当はサーバーサイドで以下のようにしたいのですが
   // 現状サーバーサイドで requireFromString を行うと任意コード実行できてしまうため妥協しています
-  // 
+  //
   // const config = requireFromString(configString) as VivliostyleConfigSchema;
   // const ajv = new Ajv({ strict: false });
   // const validate = ajv.getSchema<VivliostyleConfigSchema>('https://raw.githubusercontent.com/vivliostyle/vivliostyle-cli/37e588154c7647792c1c05f8144400719872f069/src/schema/vivliostyle.config.schema.json')
@@ -24,16 +27,16 @@ const parseConfig = (configString: string) => {
   //   );
   // }
   // return config;
-  // 
+  //
 
-  console.log('config',configString);
+  _log(configString);
   const configJsonString = configString
     .replace('module.exports = ', '')
     .replaceAll(/^\s*(.+):/gm, '"$1":')
     .replaceAll(`'`, '"')
-    .replaceAll(/,[\s\n]*([\]}])/g, "$1")
-    .replaceAll(/};/g, "}")
-    
+    .replaceAll(/,[\s\n]*([\]}])/g, '$1')
+    .replaceAll(/};/g, '}');
+
   return JSON.parse(configJsonString) as VivliostyleConfigSchema;
 };
 
@@ -48,27 +51,27 @@ export function useVivlioStyleConfig({
   branch: string | undefined;
   user: User | null;
 }) {
-  const [config, setConfig] = useState<VivliostyleConfigSchema>()
+  const [config, setConfig] = useState<VivliostyleConfigSchema>();
   useEffect(() => {
-    if (!user || !branch) return
+    if (!user || !branch) return;
     (async () => {
       const props = {
         user,
         owner,
         repo,
-        branch
+        branch,
       };
-      console.log('config props',props);
+      _log('props', props);
       const fs = await WebApiFs.open(props);
       const content = await fs.readFile('vivliostyle.config.js');
-      if( Array.isArray(content) ) {
+      if (Array.isArray(content)) {
         // https://docs.github.com/en/rest/reference/repos#get-repository-content--code-samples
         throw new Error(`Content type is not file`);
       }
-      console.log('config',content);
+      _log('content', content);
       const parsedContent = parseConfig(content.toString()); //Buffer.from(content.content, 'base64').toString('utf8'))
       setConfig(parsedContent);
     })();
   }, [owner, repo, user, branch]);
-  return config
+  return config;
 }

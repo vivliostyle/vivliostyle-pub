@@ -22,7 +22,10 @@ import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentTheme
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {doc, onSnapshot} from 'firebase/firestore';
 import {db} from '@services/firebase';
-import { t } from 'i18next';
+import {t} from 'i18next';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[repo]');
 
 interface BuildRecord {
   url: string | null;
@@ -40,13 +43,13 @@ function useBuildStatus(
 ) {
   useEffect(() => {
     if (!buildID) return;
-    console.log('useBuildStatus', buildID);
+    _log('useBuildStatus', buildID);
     const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
       const {signedUrl} = doc.data() as BuildRecord;
-      console.log('Current data: ', doc.data());
+      _log('Current data: ', doc.data());
       if (!signedUrl) return;
       unsubscribe();
-      console.log('buildStatus unsubscribed', unsubscribe);
+      _log('buildStatus unsubscribed', unsubscribe);
       if (onBuildFinished) onBuildFinished(signedUrl);
     });
 
@@ -56,7 +59,7 @@ function useBuildStatus(
     //   .doc(buildID)
     //   .onSnapshot(function (doc) {
     //     const {url} = doc.data() as BuildRecord;
-    //     console.log('Current data: ', doc.data());
+    //     _log('Current data: ', doc.data());
     //     if (!url) return;
     //     unsubscribe();
     //     if (onBuildFinished) onBuildFinished(url);
@@ -83,9 +86,8 @@ const GitHubOwnerRepo = () => {
 
   // クエリパラメータでカレントブランチ、カレントファイルが指定されている
   const url = new URL(window.location.toString());
-  const paramBranch = url.searchParams.get('branch')?? undefined;
+  const paramBranch = url.searchParams.get('branch') ?? undefined;
   const paramFile = url.searchParams.get('file') ?? undefined;
-  
 
   // check login
   useEffect(() => {
@@ -106,7 +108,7 @@ const GitHubOwnerRepo = () => {
     }
     return {};
   }, [app.state.user, router.query]);
-  console.log('[GitHubOwnerRepo]', app.state.isPending, owner, repo);
+  _log('isPending', app.state.isPending, 'owner', owner, 'repo', repo);
 
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
@@ -126,7 +128,7 @@ const GitHubOwnerRepo = () => {
     //     </UI.Link>
     //   </UI.Box>
     // );
-    console.log('build complete:' + artifactURL);
+    _log('build complete]', artifactURL);
     log.success(
       <UI.Text>
         {t('以下のリンクをクリックして表示してください')}
@@ -149,13 +151,13 @@ const GitHubOwnerRepo = () => {
   //   if (!session) {
   //     return;
   //   }
-  //   // console.log('setOnSnapshot', session, currentFile);
+  //   // _log('setOnSnapshot', session, currentFile);
   //   return session.onSnapshot((doc) => {
   //     const data = doc.data();
   //     if(data?.path !== currentFile.path) {
   //       return;
   //     }
-  //     // console.log(
+  //     // _log(
   //     //   'session(' + session.id + ').onSnapshot(state:',
   //     //   data?.state,
   //     //   ' path:',
@@ -177,7 +179,7 @@ const GitHubOwnerRepo = () => {
   //     ) {
   //       return;
   //     }
-  //     // console.log('setText');
+  //     // _log('setText');
   //     // setCurrentFile({...currentFile, text: data.text});
   //     //      setText(data.text);
   //     // setStatus('clean');
@@ -198,7 +200,7 @@ const GitHubOwnerRepo = () => {
     const stylesheet = '';
     buildPDF({owner, repo, stylesheet})
       .then((result: any) => {
-        console.log('buildPDF function', result);
+        _log('buildPDF function', result);
         const buildID = result.data.buildID;
         setBuildID(buildID);
         log.info(t('ビルドを開始しました'), 5000);
@@ -209,7 +211,7 @@ const GitHubOwnerRepo = () => {
   }
 
   const onLogging = (num: number) => {
-    console.log('onLogging', num);
+    _log('onLogging', num);
     // TODO: ログが追加されたらLogViewを表示する。 手動で大きさを変えたあとでも対応できるようにする。
   };
 
@@ -217,7 +219,12 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <CurrentThemeContextProvider>
-          <RepositoryContextProvider owner={owner} repo={repo} branch={paramBranch} file={paramFile} >
+          <RepositoryContextProvider
+            owner={owner}
+            repo={repo}
+            branch={paramBranch}
+            file={paramFile}
+          >
             <PreviewSourceContextProvider isAutoReload={isAutoReload}>
               <UI.Box height={'calc(100vh - 4rem)'}>
                 {/* Wrapper  サイズ固定*/}

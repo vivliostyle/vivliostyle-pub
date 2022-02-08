@@ -18,6 +18,9 @@ import {Theme} from 'theme-manager';
 import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeContext';
 import {CustomTheme} from '@middlewares/themes/CustomTheme';
 import {PlainTheme} from '@middlewares/themes/PlainTheme';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[MenuBar]');
 
 export function MenuBar({
   isProcessing,
@@ -64,21 +67,23 @@ export function MenuBar({
     // ブランチが変更されたらカスタムテーマを読み直し
     // ブランチ毎に保存したテーマを保持する
     // TODO: config.jsが編集されたらカスタムテーマを読み直し
-    CustomTheme.create(app, repository).then((theme) => {
-      if(theme) {
-        setCustomTheme(theme);
-        currentTheme.changeTheme(theme);  
-      }else{
+    CustomTheme.create(app, repository)
+      .then((theme) => {
+        if (theme) {
+          setCustomTheme(theme);
+          currentTheme.changeTheme(theme);
+        } else {
+          currentTheme.changeTheme(plainTheme);
+        }
+      })
+      .catch(() => {
         currentTheme.changeTheme(plainTheme);
-      }
-    }).catch(()=>{      
-      currentTheme.changeTheme(plainTheme);
-    });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, repository.state.branch]);
 
   const onDidSaved = useCallback(() => {
-    console.log('onDidSaved');
+    _log('onDidSaved');
     setWarnDialog(false);
   }, [setWarnDialog]);
 
@@ -94,11 +99,13 @@ export function MenuBar({
    */
   const onThemeSelected = useCallback(
     (theme: Theme) => {
-      console.log('theme selected', theme);
+      _log('theme selected', theme);
       currentTheme.changeTheme(theme);
     },
     [currentTheme],
   );
+
+  _log('themes', app.state.onlineThemes);
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
@@ -178,7 +185,9 @@ export function MenuBar({
                 key={plainTheme.name}
                 onClick={() => onThemeSelected(plainTheme)}
               >
-                {plainTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
+                {plainTheme.name === currentTheme.state.theme?.name
+                  ? '✔ '
+                  : ' '}
                 {plainTheme.description}
               </UI.MenuItem>
               {!customTheme ? null : (
@@ -186,13 +195,15 @@ export function MenuBar({
                   key={customTheme.name}
                   onClick={() => onThemeSelected(customTheme)}
                 >
-                  {customTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
+                  {customTheme.name === currentTheme.state.theme?.name
+                    ? '✔ '
+                    : ' '}
                   {customTheme.description}
                 </UI.MenuItem>
               )}
               {app.state.onlineThemes.map((theme) => (
                 <UI.MenuItem
-                  key={theme.name}
+                  key={theme.fs.root}
                   onClick={() => onThemeSelected(theme)}
                 >
                   {theme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
@@ -202,7 +213,7 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Add Files">
-              <UI.MenuItem onClick={onOpenFileUploadModal}>
+              <UI.MenuItem key="addImage" onClick={onOpenFileUploadModal}>
                 Add Image
               </UI.MenuItem>
               <FileUploadModal
@@ -216,11 +227,14 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Export">
-              <UI.MenuItem onClick={onBuildPDFButtonClicked}>PDF</UI.MenuItem>
+              <UI.MenuItem key="buildPDF" onClick={onBuildPDFButtonClicked}>
+                PDF
+              </UI.MenuItem>
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Help">
               <UI.MenuItem
+                key="vfm"
                 onClick={() => {
                   let option =
                     'width=1024,height=768,menubar=no,toolbar=no,status=no,location=no';

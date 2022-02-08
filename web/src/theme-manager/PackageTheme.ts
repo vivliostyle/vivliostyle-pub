@@ -1,13 +1,16 @@
 import {Fs, Theme} from 'theme-manager';
 import {PackageJson} from './theme';
 import upath from 'upath';
+import {devConsole} from './utility';
+
+const {_log, _err} = devConsole('[PackageTheme]');
 
 /**
  * CSSから参照されているファイルのリストアップ
  * @param text
  * @returns
  */
- export const pickupCSSResources = (text: string): string[] => {
+export const pickupCSSResources = (text: string): string[] => {
   // TODO: パースして取り出す エラー処理も重要
   // const ast = parse(text);
 
@@ -15,7 +18,7 @@ import upath from 'upath';
     text.matchAll(/url\("?(.+?)"?\)/g),
     (m) => m[1],
   );
-  // console.log('imagePaths', imagePaths);
+  // _log('imagePaths', imagePaths);
   return imagePaths;
 };
 
@@ -44,44 +47,47 @@ export class PackageTheme implements Theme {
     const pkgJson = (await PackageTheme.getPackageJson(
       fs,
     )) as unknown as PackageJson;
-    console.log(pkgJson);
+    _log(pkgJson);
     const theme = new PackageTheme(fs, pkgJson);
     return theme;
   }
 
   /**
    * テーマのもろもろを処理して指定の場所(FS)に書き出す
-   * @param dstFs 
+   * @param dstFs
    * @returns 書き出した主となるCSSの相対パス(dstFsのルートディレクトリ基準)
    */
-  public async process(dstFs:Fs): Promise<string> {
-    console.log('processingThemeString',this);
-    if( !this.style ) { console.log('empty theme'); return ''; }
-    const themePath = `${this.name}/${this.style}`;
-    const stylesheet = await this.fs.readFile(this.style) as string;
-    // console.log('stylesheet',stylesheet);
-    if(!stylesheet) {
+  public async process(dstFs: Fs): Promise<string> {
+    _log('processingThemeString', this);
+    if (!this.style) {
+      _log('empty theme');
       return '';
     }
-  
+    const themePath = `${this.name}/${this.style}`;
+    const stylesheet = (await this.fs.readFile(this.style)) as string;
+    // _log('stylesheet',stylesheet);
+    if (!stylesheet) {
+      return '';
+    }
+
     await dstFs!.writeFile(themePath, stylesheet);
-    console.log(`updateCache : ${themePath}`);
-    
+    _log(`updateCache : ${themePath}`);
+
     const imagesOfStyle = pickupCSSResources(stylesheet);
-    // console.log('imagesOfStyle',imagesOfStyle);
+    // _log('imagesOfStyle',imagesOfStyle);
     await Promise.all(
-      imagesOfStyle.map(async(imageOfStyle) => {
-        const contentPath = upath.join(upath.dirname(this.style),imageOfStyle);
-        // console.log('contentPath',contentPath);
+      imagesOfStyle.map(async (imageOfStyle) => {
+        const contentPath = upath.join(upath.dirname(this.style), imageOfStyle);
+        // _log('contentPath',contentPath);
         const content = await this.fs.readFile(contentPath);
         dstFs.writeFile(contentPath, content);
       }),
     ).catch((error) => {
-      console.log(error);
+      _err(error);
       throw error;
     });
-  
-    return dstFs?.root+'/'+themePath;
+
+    return dstFs?.root + '/' + themePath;
   }
 
   public constructor(fs: Fs, pkgJson: PackageJson) {
@@ -150,7 +156,7 @@ export class PackageTheme implements Theme {
     //   };
     // };
     // const theme = new PackageTheme();
-    // // console.log(pkgJson);
+    // // _log(pkgJson);
     // theme.name = packageName;
     // theme.description = pkgJson.description;
     // theme.version = pkgJson.version;

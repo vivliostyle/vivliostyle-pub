@@ -31,6 +31,9 @@ import {
 import {RepositoryState} from './useRepositoryContext';
 import {Theme, ThemeManager} from 'theme-manager';
 import {NpmFs} from '../fs/NpmFS';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[useAppContext]');
 
 // GraphQLでサーバに問合せをするためのメソッドの型
 type GraphQlQueryMethod = (
@@ -138,7 +141,7 @@ async function getRepositories(
               name
             }
             isPrivate
-            refs(first:100, refPrefix:"refs/heads") {
+            refs(first: 100, refPrefix: "refs/heads") {
               nodes {
                 name
               }
@@ -149,7 +152,7 @@ async function getRepositories(
     );
     const repositories: RepositoryState[] = await result.data.repositories.map(
       (r: any) => {
-        console.log('r', r);
+        // _log('r', r);
         return {
           id: r.id,
           private: r.isPrivate,
@@ -158,7 +161,7 @@ async function getRepositories(
           // branch: null,
           // currentConfig: null,
           // currentTree:null,
-          branches: r.refs.nodes.flat().map((node:any)=>node.name),
+          branches: r.refs.nodes.flat().map((node: any) => node.name),
           defaultBranch: r.defaultBranchRef ? r.defaultBranchRef.name : '', // ブランチが存在しない空のリポジトリもありうるため
           // files:[],
           // currentFile: null,
@@ -166,10 +169,10 @@ async function getRepositories(
         };
       },
     );
-    console.log('repositories',repositories);
+    _log('repositories', repositories);
     return repositories;
   } catch (error) {
-    console.error(error);
+    _err(error);
     return [];
   }
 }
@@ -208,7 +211,7 @@ const reducer = (state: AppContextState, action: Actions): AppContextState => {
       };
     case 'clearCache':
       // ApplicationCacheを削除
-      console.log('app clearCache');
+      _log('app clearCache');
       state.vpubFs?.unlinkCache().then(() => {});
       return state;
     case 'reload':
@@ -224,14 +227,14 @@ const reducer = (state: AppContextState, action: Actions): AppContextState => {
  * @returns
  */
 export function AppContextProvider({children}: {children: JSX.Element}) {
-  // console.log('[AppContext]');
+  // _log('');
   /**
    * ユーザがサインインしている場合の初期化処理
    * @param user
    * @returns
    */
   const init = useCallback((user: User | null) => {
-    console.log('app init', user);
+    _log('app init', user);
     if (!user) {
       dispatch({type: 'notSignedIn'});
       return;
@@ -239,7 +242,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     (async () => {
       // ユーザアカウントの初期化
       user.getIdToken(true);
-      // console.log('providerData', user.providerData);
+      // _log('providerData', user.providerData);
       await user.getIdTokenResult(true);
 
       // Application CacheへのI/O
@@ -259,11 +262,10 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
         return client.query({query});
       };
       const repositories = await getRepositories(query);
-      console.log('repositories\n', repositories);
 
       // テーマ一覧を取得
       const themes: Theme[] = await getOfficialThemes();
-      console.log('themes', themes);
+      _log('themes', themes);
       //
       dispatch({
         type: 'initCallback',
@@ -313,7 +315,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    *  リポジトリリストのリロード
    */
   const reload = useCallback(() => {
-    console.log('app.reload');
+    _log('reload');
     dispatch({
       type: 'reload',
       func: (state: AppContextState) => {

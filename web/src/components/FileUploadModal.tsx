@@ -7,6 +7,9 @@ import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {gql} from '@apollo/client';
 import upath from 'upath';
 import {useTranslation} from 'react-i18next';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[FileUploadModal]');
 
 /**
  *
@@ -84,7 +87,7 @@ export const FileUploadModal = ({
           .map((f) => f.name)
           .join('/');
         const filePath = upath.join(currentDir, fileName);
-        // console.log('upload image encodedData', encodedData);
+        // _log('encodedData', encodedData);
         if (!encodedData) {
           log.error(
             t('ファイルを取得できませんでした', {
@@ -131,7 +134,7 @@ export const FileUploadModal = ({
             message: 'create file',
           },
         })) as any;
-        // console.log('upload image result',result);
+        // _log('upload image result',result);
         if (result.data.commitContent.state) {
           log.success(t('ファイルを追加しました', {filename: file.name}), 1000);
           repository.selectTree('.'); // ファイル一覧の更新
@@ -143,7 +146,7 @@ export const FileUploadModal = ({
         }
         onClose();
       } catch (error) {
-        console.error(error);
+        _err(error);
         log.error(
           t('ファイルを追加できませんでした', {filename: file.name}),
           1000,

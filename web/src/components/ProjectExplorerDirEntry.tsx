@@ -12,6 +12,9 @@ import upath from 'upath';
 import {VscFolder} from 'react-icons/vsc';
 import {useState} from 'react';
 import {t} from 'i18next';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[DirEntry]');
 
 export default function DirEntry({
   file,
@@ -81,7 +84,7 @@ export default function DirEntry({
         message,
       },
     })) as any;
-    console.log('delete result', result);
+    _log('delete result', result);
     return result;
   };
 
@@ -174,7 +177,7 @@ export default function DirEntry({
           message: 'delete directory',
         },
       })) as any;
-      console.log('delete result', result);
+      _log('delete result', result);
       if (result.data.commitDirectory.state) {
         log.success(t('フォルダを削除しました', {filepath: filePath}), 3000);
         onReload();
@@ -278,7 +281,7 @@ export default function DirEntry({
                     onKeyDown={(
                       event: React.KeyboardEvent<HTMLInputElement>,
                     ) => {
-                      console.log(event.key);
+                      _log(event.key);
                       if (event.key === 'Enter') {
                         event.preventDefault();
                         onDuplicateDirectory(event);

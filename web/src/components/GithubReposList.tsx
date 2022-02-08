@@ -3,13 +3,16 @@ import Link from 'next/link';
 import * as UI from './ui';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {RepeatIcon, LockIcon, UnlockIcon} from '@chakra-ui/icons';
+import {devConsole} from '@middlewares/frontendFunctions';
+
+const {_log, _err} = devConsole('[GithubReposList]');
 
 export const GithubReposList: React.FC<{}> = ({}) => {
   const app = useAppContext();
-  console.log('rep list', app.state.repositories);
+  _log('rep list', app.state.repositories);
 
   const reload = () => {
-    console.log('reload repositories');
+    _log('reload repositories');
     app.reload();
   };
 
@@ -47,10 +50,14 @@ export const GithubReposList: React.FC<{}> = ({}) => {
               as={`/github/${repo.owner}/${repo.name}`}
             >
               <a>
-                  <UI.Heading size="sm">
-                    {repo.private ? <LockIcon /> : <UnlockIcon color='transparent' />}
-                    &nbsp;{repo.owner}/{repo.name}
-                  </UI.Heading>
+                <UI.Heading size="sm">
+                  {repo.private ? (
+                    <LockIcon />
+                  ) : (
+                    <UnlockIcon color="transparent" />
+                  )}
+                  &nbsp;{repo.owner}/{repo.name}
+                </UI.Heading>
               </a>
             </Link>
           </UI.Box>

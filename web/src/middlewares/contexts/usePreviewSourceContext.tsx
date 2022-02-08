@@ -5,7 +5,7 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import {FileState, isEditableFile} from '../frontendFunctions';
+import {devConsole, FileState, isEditableFile} from '../frontendFunctions';
 import {RepositoryContext, useRepositoryContext} from './useRepositoryContext';
 import {AppContext, useAppContext} from './useAppContext';
 import {CurrentFile, useCurrentFileContext} from './useCurrentFileContext';
@@ -13,6 +13,8 @@ import {transpileMarkdown} from '../previewFunctions';
 import {Log, useLogContext} from './useLogContext';
 import {VFile} from 'theme-manager';
 import {t} from 'i18next';
+
+const {_log, _err} = devConsole('[usePreviewSourceContext]');
 
 /**
  * 遅延処理
@@ -81,7 +83,7 @@ const transpile = async (
   vPubPath: string | null;
   text: string | null;
 } | null> => {
-  console.log('[PreviewSourceContext] transpile', currentFile);
+  _log('transpile', currentFile);
   try {
     if (!currentFile.state.file) {
       return null;
@@ -97,7 +99,7 @@ const transpile = async (
       );
     }
     // 準備が終わったら状態を変化させる
-    // console.log('call dispatcher', dispatch);
+    // _log('call dispatcher', dispatch);
     return {file: currentFile.state.file, vPubPath: vPubPath, text: resultText};
   } catch (err: any) {
     log.error(
@@ -121,7 +123,7 @@ const transpile = async (
 const reducer = (state: PreviewSource, action: Actions): PreviewSource => {
   switch (action.type) {
     case 'changeFileCallback': // ドキュメントの準備が完了
-      console.log('[PreviewSourceContext] changeFileCallback', action.vPubPath /*, action.text */);
+      _log('changeFileCallback', action.vPubPath /*, action.text */);
       return {
         ...state,
         path: action.file?.path ?? null,
@@ -152,7 +154,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
 
-  console.log('[PreviewSourceContext]' /*currentFile, repository*/);
+  _log('' /*currentFile, repository*/);
 
   /**
    * プレビューを更新
@@ -161,17 +163,17 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
     (force: boolean = false) => {
       (async () => {
         if (!(isAutoReload || force)) {
-          // console.log('自動更新停止中');
+          // _log('自動更新停止中');
           return;
         }
         if (currentFile.state.file && currentFile.state.text) {
-          // console.log('編集対象が変更された', currentFile);
+          // _log('編集対象が変更された', currentFile);
           if (
             currentFile.state.file.name &&
             isEditableFile(currentFile.state.file.name) &&
             (currentFile.state.ext == 'md' || currentFile.state.ext == 'html')
           ) {
-            // console.log('編集対象ファイルはプレビュー可能', currentFile);
+            // _log('編集対象ファイルはプレビュー可能', currentFile);
             const result = await transpile(currentFile, app, repository, log);
             if (result) {
               dispatch({
@@ -180,11 +182,16 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
               });
             }
           } else {
-            // console.log('編集対象ファイルはプレビュー不可');
+            // _log('編集対象ファイルはプレビュー不可');
           }
         } else {
-          // console.log('編集対象が無効', currentFile.state.file, currentFile.state.text);
-          dispatch({type: 'changeFileCallback', file:null, vPubPath:null, text:null});
+          // _log('編集対象が無効', currentFile.state.file, currentFile.state.text);
+          dispatch({
+            type: 'changeFileCallback',
+            file: null,
+            vPubPath: null,
+            text: null,
+          });
         }
       })();
     },
@@ -196,7 +203,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
    */
   const reload = useCallback((currentFile: CurrentFile | null) => {
     if (currentFile) {
-      console.log('[PreviewSourceContext] reload by user action');
+      _log('reload by user action');
       transpile(currentFile, app, repository, log);
       dispatch({type: 'reload', currentFile});
     }
@@ -243,7 +250,7 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
 
   const [previewSource, dispatch] = useReducer(reducer, initialState);
 
-  // console.log('PreviewSourceContext source', previewSource);
+  // _log('PreviewSourceContext source', previewSource);
 
   return (
     <PreviewSourceContext.Provider value={previewSource}>

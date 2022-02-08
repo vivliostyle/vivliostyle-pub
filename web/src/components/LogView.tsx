@@ -1,7 +1,13 @@
 import {DeleteIcon} from '@chakra-ui/icons';
 import * as UI from '@components/ui';
-import {useLogBufferContext, useLogContext} from '@middlewares/contexts/useLogContext';
+import {
+  useLogBufferContext,
+  useLogContext,
+} from '@middlewares/contexts/useLogContext';
+import {devConsole} from '@middlewares/frontendFunctions';
 import {useCallback, useEffect} from 'react';
+
+const {_log, _err} = devConsole('[LogView]');
 
 export function LogView({
   onLogging: onLogging,
@@ -10,14 +16,14 @@ export function LogView({
 }) {
   const logBuffer = useLogBufferContext();
   const log = useLogContext();
-  console.log('[LogView]' /*,logBuffer*/);
+  _log('' /*logBuffer*/);
 
   useEffect(() => {
     onLogging(logBuffer.length);
   }, [logBuffer, onLogging]);
 
   const clearLog = useCallback(() => {
-    console.log('[LogView] clear');
+    _log('clear');
     log.clear();
   }, [log]);
 
@@ -45,7 +51,10 @@ export function LogView({
       <UI.Box h="100%" overflow="scroll">
         <UI.Stack spacing={3} float="left" width="calc(100% - 64px)" p={2}>
           {logBuffer.map((entry) => (
-            <UI.Alert status={entry.type} key={`${entry.timestamp}:${Math.random()}`}>
+            <UI.Alert
+              status={entry.type}
+              key={`${entry.timestamp}:${Math.random()}`}
+            >
               <UI.AlertIcon />[{new Date(entry.timestamp).toISOString()}]:
               {entry.message}
             </UI.Alert>

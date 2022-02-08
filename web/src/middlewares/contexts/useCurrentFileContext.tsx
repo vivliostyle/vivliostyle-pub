@@ -12,7 +12,12 @@ import {
   useMemo,
   useReducer,
 } from 'react';
-import {FileState, getExt, isEditableFile} from '../frontendFunctions';
+import {
+  devConsole,
+  FileState,
+  getExt,
+  isEditableFile,
+} from '../frontendFunctions';
 import {useAppContext} from './useAppContext';
 import {Log, useLogContext} from './useLogContext';
 import {RepositoryContext} from './useRepositoryContext';
@@ -22,6 +27,8 @@ import {VFile} from 'theme-manager';
 import {useCurrentThemeContext} from './useCurrentThemeContext';
 import {VPUBFS_ROOT} from '@middlewares/previewFunctions';
 import {t} from 'i18next';
+
+const {_log, _err} = devConsole('[useCurrentFileContext]');
 
 type CurrentFileState = {
   file: VFile | null; // ファイル情報
@@ -91,7 +98,7 @@ const reducer = (
   switch (action.type) {
     // 内容の編集
     case 'modify':
-      console.log('[CurrentFileContextProvider] modify');
+      _log('modify');
       if (state.timer) {
         // タイマーが有効なら一度解除する
         clearTimeout(state.timer);
@@ -108,7 +115,7 @@ const reducer = (
 
     // 編集対象ファイルを選択
     case 'setFile':
-      console.log('[CurrentFileContextProvider] setFile action');
+      _log('setFile action');
       if (action.func(state)) {
         return state;
       } else {
@@ -118,10 +125,7 @@ const reducer = (
       return {...state, state: action.state};
     // ファイルの選択が完了
     case 'setFileCallback':
-      console.log(
-        '[CurrentFileContextProvider] setFileCallback action',
-        action,
-      );
+      _log('setFileCallback action', action);
       return {
         ...state,
         state: FileState.init,
@@ -142,7 +146,7 @@ const reducer = (
       );
       return {...state, state: FileState.clean};
     case 'insert':
-      console.log('insert', action.str);
+      _log('insert', action.str);
       return {...state, insertBuf: action.str};
   }
 };
@@ -163,13 +167,13 @@ export function CurrentFileContextProvider({
   repository: RepositoryContext;
   file: VFile | null;
 }) {
-  // console.log('[CurrentFileContextProvider]', repository, file);
+  // _log('[CurrentFileContextProvider]', repository, file);
   const app = useAppContext();
   const log = useLogContext();
   const currentTheme = useCurrentThemeContext();
 
   useEffect(() => {
-    console.log('[CurrentFileContextProvider] repository update', repository);
+    _log('repository update', repository);
   }, [repository]);
 
   /**
@@ -184,16 +188,12 @@ export function CurrentFileContextProvider({
    * TODO: ファイルリストの再読み込み
    */
   const commit = useCallback(() => {
-    // console.log('commit action currentTheme', currentTheme, state);
+    // _log('commit action currentTheme', currentTheme, state);
     dispatch({
       type: 'commit',
       func: (state: CurrentFileState) => {
         if (state.file == null || repository.state.branch == null) {
-          console.log(
-            '[CurrentFileContextProvider] commit cancel',
-            state,
-            repository,
-          );
+          _log('commit cancel', state, repository);
           return;
         }
         (async (repository: RepositoryContext) => {
@@ -217,10 +217,7 @@ export function CurrentFileContextProvider({
             const idToken = await app.state.user!.getIdToken();
             let sessionId = state.session?.id;
             // コミットAPIの呼び出し
-            console.log(
-              '[CurrentFileContextProvider] commit to repository',
-              repository,
-            );
+            _log('commit to repository', repository);
             const response = await fetch('/api/github/commitSession', {
               method: 'PUT',
               body: JSON.stringify({
@@ -233,10 +230,7 @@ export function CurrentFileContextProvider({
                 'x-id-token': idToken,
               },
             });
-            console.log(
-              '[CurrentFileContextProvider] commit session response',
-              response,
-            );
+            _log('commit session response', response);
             if (response.status == 201) {
               dispatch({type: 'commitCallback', file: state.file!, log});
             } else {
@@ -259,19 +253,19 @@ export function CurrentFileContextProvider({
 
   useEffect(() => {
     // 上位コンポーネントから渡されたfileが更新された
-    console.log('[CurrentFileContextProvider] changed file', repository, file);
+    _log('changed file', repository, file);
     if (
       !repository?.state.owner ||
       !repository?.state.name ||
       !repository?.state.branch
     ) {
-      console.log('[CurrentFileContextProvider] cancel');
+      _log('cancel');
       return;
     }
     dispatch({
       type: 'setFile',
       func: (state: CurrentFileState): boolean => {
-        console.log('[CurrentFileContextProvider] change file2', file, state);
+        _log('change file2', file, state);
         if (file?.path === state.file?.path) {
           return true;
         }
@@ -309,7 +303,9 @@ export function CurrentFileContextProvider({
           );
           repository.selectFile(null);
           dispatch({
-            type: 'setFileCancel',state: state.state});
+            type: 'setFileCancel',
+            state: state.state,
+          });
           return true;
         }
         (async (repository: RepositoryContext) => {
@@ -320,7 +316,7 @@ export function CurrentFileContextProvider({
               repo: repository.state.name!,
               branch: repository.state.branch!,
             };
-            console.log('[CurrentFileContextProvider] setFile props', props);
+            _log('setFile props', props);
             const fs = await WebApiFs.open(props);
             // ファイルの内容と同時にfirestoreのセッション情報も取得する
             const {content, session} = (await fs.readFile(file.path, {
@@ -352,7 +348,7 @@ export function CurrentFileContextProvider({
               t('セッション情報が取得できませんでした', {filepath: file.path}),
               3000,
             );
-            console.error(err);
+            _err(err);
             dispatch({type: 'setFileCancel', state: state.state});
           }
         })(repository);
@@ -374,7 +370,7 @@ export function CurrentFileContextProvider({
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const insert = useCallback((str: string | null) => {
-    console.log('insert', str);
+    _log('insert', str);
     dispatch({type: 'insert', str});
   }, []);
 
@@ -399,7 +395,7 @@ export function CurrentFileContextProvider({
    * クエリパラメータのfile属性にファイルパスをセットする
    * @param file
    */
-  function setQueryParam(file: VFile|null) {
+  function setQueryParam(file: VFile | null) {
     const url = new URL(window.location.toString());
     if (file) {
       url.searchParams.set('file', file.path);

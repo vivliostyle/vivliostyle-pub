@@ -1,11 +1,19 @@
-import {createContext, useCallback, useContext, useMemo, useReducer} from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useReducer,
+} from 'react';
 import {Theme} from 'theme-manager';
-import {isURL} from '../frontendFunctions';
+import {devConsole, isURL} from '../frontendFunctions';
 import upath from 'upath';
 import {VPUBFS_ROOT} from '../previewFunctions';
 import {useAppContext} from './useAppContext';
 import {Log, useLogContext} from './useLogContext';
 import {t} from 'i18next';
+
+const {_log, _err} = devConsole('[useCurrentThemeContext]');
 
 type CurrentThemeState = {
   theme: Theme | null;
@@ -39,7 +47,7 @@ type Actions =
       type: 'changeThemeCallback';
       theme: Theme | null;
       stylePath: string;
-      log:Log;
+      log: Log;
     };
 
 type CurrentThemeProps = {
@@ -53,13 +61,16 @@ type CurrentThemeProps = {
  * @param action アクションオブジェクト
  * @returns 新しい状態
  */
-const reducer = (state: CurrentThemeState, action: Actions): CurrentThemeState => {
+const reducer = (
+  state: CurrentThemeState,
+  action: Actions,
+): CurrentThemeState => {
   switch (action.type) {
     case 'changeTheme':
       action.func(state);
       return state;
     case 'changeThemeCallback': // テーマの準備が完了 TODOQ: 複数回呼ばれているので修正する
-      console.log('changeThemeCallback', action);
+      _log('changeThemeCallback', action);
       let stylePath: string | null = null;
       if (action.theme && action.stylePath) {
         stylePath = isURL(action.stylePath)
@@ -93,11 +104,11 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
       dispatch({
         type: 'changeTheme',
         func: (state: CurrentThemeState) => {
-          console.log('changeTheme', theme);
+          _log('changeTheme', theme);
           (async () => {
             if (theme) {
               try {
-                // console.log('[CurrentThemeContext] call process',theme);
+                // _log('call process',theme);
                 const themePath = await theme.process(app.state.vpubFs!);
                 //        processThemeString(app, theme)
                 // 準備が終わったら状態を変化させる
@@ -105,11 +116,11 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
                   type: 'changeThemeCallback',
                   theme: theme,
                   stylePath: themePath,
-                  log
+                  log,
                 });
               } catch (err: any) {
                 if (err.message.startsWith('403:')) {
-                  console.error(err);
+                  _err(err);
                   log.error(
                     t('テーマが大きすぎます', {
                       error: err.message.split(':')[1],
@@ -117,7 +128,7 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
                     3000,
                   );
                 } else {
-                  console.log(err);
+                  _log(err);
                   log.error(
                     t('テーマの準備に失敗しました', {
                       themeStyle: theme.style,
@@ -136,22 +147,25 @@ export const CurrentThemeContextProvider: React.FC<CurrentThemeProps> = ({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app,log],
+    [app, log],
   );
   /**
    * 初期値
    */
   const initialState = {
     theme: null,
-    stylePath: null
+    stylePath: null,
   } as CurrentThemeState;
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const value = useMemo(()=>({
-    state,
-    changeTheme
-  }),[changeTheme, state]);
+  const value = useMemo(
+    () => ({
+      state,
+      changeTheme,
+    }),
+    [changeTheme, state],
+  );
 
   return (
     <CurrentThemeContext.Provider value={value}>

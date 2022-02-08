@@ -8,7 +8,7 @@ import FileEntry from './ProjectExplorerFileEntry';
 import DirEntry from './ProjectExplorerDirEntry';
 import {VscArrowUp, VscNewFile, VscNewFolder} from 'react-icons/vsc';
 import {CgCornerLeftUp} from 'react-icons/cg';
-import {isImageFile} from '@middlewares/frontendFunctions';
+import {devConsole, isImageFile} from '@middlewares/frontendFunctions';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {Center, useDisclosure} from '@chakra-ui/react';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
@@ -17,12 +17,14 @@ import {t} from 'i18next';
 import {User} from 'firebase/auth';
 import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 
+const {_log, _err} = devConsole('[ProjectExplorer]');
+
 /**
  * プロジェクトエクスプローラーコンポーネント
  * @returns
  */
 export function ProjectExplorer() {
-  console.log('[Project Explorer]');
+  _log('');
   const app = useAppContext();
   const repository = useRepositoryContext();
   const currentFile = useCurrentFileContext();
@@ -48,7 +50,7 @@ export function ProjectExplorer() {
 
   // 絞り込み後のファイルリスト
   const filteredFiles = useMemo(() => {
-    // console.log('proj.files',repository.state.files);
+    // _log('proj.files',repository.state.files);
     return repository.state.files.filter((f) =>
       f.name.includes(filenamesFilterText),
     );
@@ -56,7 +58,7 @@ export function ProjectExplorer() {
 
   // 表示用のカレントディレクトリ
   const currentDir = useMemo(() => {
-    console.log('change currentDir');
+    _log('change currentDir');
     let path = repository.state.currentTree.map((f) => f.name).join('/');
     // 長すぎるパスは省略
     if (path.length > 15) {
@@ -124,7 +126,7 @@ export function ProjectExplorer() {
    * TODO: GitHubのリポジトリに直接変更を加えた場合にリロードしてもらうようマニュアルに追加
    */
   const reload = useCallback(async () => {
-    console.log('ProjectExplorer reload', currentDir);
+    _log('ProjectExplorer reload', currentDir);
     repository.selectTree('.');
   }, [repository, currentDir]);
 
@@ -264,12 +266,20 @@ export function ProjectExplorer() {
    * リンクタグの埋め込み
    * @param name ディレクトリ名を含まないファイル名
    */
-   const handleEmbedLink = useCallback((file:VFile)=>{
-    if(currentFile.state.file) {
-     const editingPath = upath.dirname(currentFile.state.file.path);
-     currentFile.insert(`[${upath.trimExt(file.name)}](${upath.relative(editingPath, file.path)})`);
-    }
- },[currentFile]);
+  const handleEmbedLink = useCallback(
+    (file: VFile) => {
+      if (currentFile.state.file) {
+        const editingPath = upath.dirname(currentFile.state.file.path);
+        currentFile.insert(
+          `[${upath.trimExt(file.name)}](${upath.relative(
+            editingPath,
+            file.path,
+          )})`,
+        );
+      }
+    },
+    [currentFile],
+  );
 
   /**
    * 画像タグの埋め込み
@@ -278,7 +288,7 @@ export function ProjectExplorer() {
   const handleEmbedImage = useCallback(
     (file: VFile) => {
       if (currentFile.state.file) {
-        console.log('embedImage', file.path, currentFile.state.file?.path);
+        _log('embedImage', file.path, currentFile.state.file?.path);
         const editingPath = upath.dirname(currentFile.state.file.path);
         currentFile.insert(
           `![Fig. ${file.name}](${upath.relative(editingPath, file.path)})`,
