@@ -1,6 +1,9 @@
-import NpmApi from "npm-api.js"; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
-import { Fs } from "./Fs";
-import { PackageTheme, Theme } from ".";
+import NpmApi from 'npm-api.js'; // npm-apiとnpm-api.jsという別のパッケージがあるので注意
+import {Fs} from './Fs';
+import {PackageTheme, Theme} from '.';
+import {devConsole} from './utility';
+
+const {_log, _err} = devConsole('[ThemeManager]');
 
 // テーマの検索
 // DONE: keywords:vivliostyle-themeで一覧取得
@@ -38,11 +41,11 @@ import { PackageTheme, Theme } from ".";
 
 // MEMO: テーマには形式(Package,CSSファイル)と保存場所(GitHub, NPM repository, ローカルファイル, ApplicationCache)の組合せが存在する
 
-export type FsFactory = (themeLocation:any)=>Promise<Fs|false>;
+export type FsFactory = (themeLocation: any) => Promise<Fs | false>;
 
 export type ThemeManagerConfig = {
   searchOrder: FsFactory[];
-}
+};
 
 /**
  *
@@ -50,7 +53,7 @@ export type ThemeManagerConfig = {
 export default class ThemeManager {
   config: ThemeManagerConfig | null;
   themes: Theme[] = [];
-  serchQuery: string = "keywords:vivliostyle-theme";
+  serchQuery: string = 'keywords:vivliostyle-theme';
 
   /**
    * コンストラクタ
@@ -65,26 +68,33 @@ export default class ThemeManager {
 
   /**
    * npmのパッケージ名からGitHubへのアクセスオブジェクトを生成する
-   * @param packageName 
-   * @returns 
+   * @param packageName
+   * @returns
    */
-  public async npmToFs(packageName:string):Promise<Fs|null> {
+  public async npmToFs(packageName: string): Promise<Fs | null> {
     // NPMのパッケージ情報からGitHubのURLを取得する
     const pkgName = encodeURIComponent(packageName);
     const result = await NpmApi.getPackage(pkgName);
     const repository = result.collected.metadata.repository; // {directory:string, type:"git", url:string }
     if (repository) {
-      if (repository.type === "git") {
-        return null; 
+      if (repository.type === 'git') {
+        return null;
         // new GitHubFs({
-        //   octkitOrToken:GitHubAccessToken!, 
+        //   octkitOrToken:GitHubAccessToken!,
         //   ownerOrUrl:repository.url
-        // });    
+        // });
       }
     } else {
-      console.error('not Git : ', result.collected.metadata.name,'\n', result.collected.npm, '\n', result.collected.source);
+      _err(
+        'not Git : ',
+        result.collected.metadata.name,
+        '\n',
+        result.collected.npm,
+        '\n',
+        result.collected.source,
+      );
     }
-    throw new Error("GitHub repository not found : " + pkgName);
+    throw new Error('GitHub repository not found : ' + pkgName);
   }
 
   /**
@@ -95,25 +105,28 @@ export default class ThemeManager {
    */
   public async searchFromNpm(query: string = this.serchQuery, max = 100) {
     try {
-      if( ! this.config?.searchOrder ) { throw new Error('no FsFactory'); }
+      if (!this.config?.searchOrder) {
+        throw new Error('no FsFactory');
+      }
       // npmのAPIを叩いて情報を取得する
       // {package:{name:string}}
       const results = await NpmApi.SearchPackage(query, max);
-      const themes:Theme[] = [];
+      _log('searchPackage', results);
+      const themes: Theme[] = [];
       for (const pkg of results) {
         // searchOrderリストの順に読み込みを試みる
-        for(const factory of this.config.searchOrder) {
-          // console.log('pkg',pkg);
+        for (const factory of this.config.searchOrder) {
+          // _log('pkg',pkg);
           const fs = await factory(pkg);
-          if(fs !== false) {
+          if (fs !== false) {
             // アクセス可能
-            const theme = await PackageTheme.create(fs,pkg.package.name);
+            const theme = await PackageTheme.create(fs, pkg.package.name);
             themes.push(theme);
             break; // 処理できたら次のパッケージへ
           }
         }
       }
-      // console.log(themes);
+      _log('searchFormNpm', themes);
       return themes;
       // [
       //   {
@@ -134,30 +147,30 @@ export default class ThemeManager {
       //     searchScore: 0.00008372865
       //   },
       // ]
-      // console.log(results);
+      // _log(results);
     } catch (error) {
-      console.error(error);
+      _err(error);
       return [] as Theme[];
     }
   }
 
   /**
-   * 
-   * @param themeName 
-   * @returns 
+   *
+   * @param themeName
+   * @returns
    */
   public async getPackageFromNpm(themeName: string): Promise<Theme> {
     // npmからパッケージ情報を取得する
     const results = await NpmApi.SearchPackage(themeName, 1);
     if (results.length != 1) {
-      throw new Error("theme not found");
+      throw new Error('theme not found');
     }
     // GitHubからテーマ情報を取得する
     const theme = await PackageTheme.fromNpm(results[0].package.name);
     if (theme != null) {
       return theme;
     } else {
-      throw new Error("theme not found");
+      throw new Error('theme not found');
     }
   }
 

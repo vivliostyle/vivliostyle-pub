@@ -108,6 +108,7 @@ async function getOfficialThemes() {
       },
     ],
   };
+  _log('themeManageConfig', themeManagerConfig);
   const themeManager = new ThemeManager(themeManagerConfig);
   const themes = await themeManager.searchFromNpm();
   return themes;

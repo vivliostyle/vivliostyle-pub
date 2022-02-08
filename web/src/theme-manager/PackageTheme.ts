@@ -47,7 +47,7 @@ export class PackageTheme implements Theme {
     const pkgJson = (await PackageTheme.getPackageJson(
       fs,
     )) as unknown as PackageJson;
-    _log(pkgJson);
+    _log('create', pkgJson);
     const theme = new PackageTheme(fs, pkgJson);
     return theme;
   }
@@ -90,9 +90,11 @@ export class PackageTheme implements Theme {
     return dstFs?.root + '/' + themePath;
   }
 
-  public constructor(fs: Fs, pkgJson: PackageJson) {
+  public constructor(fs: Fs, pkgJson: any) {
+    _log('constructor', fs, pkgJson);
     this.fs = fs;
     this.name = pkgJson.name;
+    _log('name', pkgJson.name, this.name);
     this.description = pkgJson.description;
     this.version = pkgJson.version;
     this.author = pkgJson.author;
@@ -104,6 +106,7 @@ export class PackageTheme implements Theme {
         this.style = upath.normalize(t.style ?? '');
       }
     }
+    _log('constructed', this);
   }
 
   public getStylePath(): string | null {
