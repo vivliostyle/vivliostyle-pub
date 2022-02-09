@@ -128,8 +128,17 @@ export const MarkdownEditor = ({
         }
       }}
     >
+      <UI.Box
+        height="1.5rem"
+        fontSize="11pt"
+        background="lightgray"
+        borderBottom="solid 1px gray"
+        paddingLeft="1em"
+      >
+        {currentFile.state.file?.path}
+      </UI.Box>
       <Editor
-        height="100%"
+        height="calc(100% - 2em)"
         language={language}
         path={currentFile.state.file?.name}
         options={{
