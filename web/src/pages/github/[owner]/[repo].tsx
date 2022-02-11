@@ -220,8 +220,9 @@ const GitHubOwnerRepo = () => {
       {owner && owner != '' && repo && repo != '' ? (
         <CurrentThemeContextProvider>
           <RepositoryContextProvider
-            owner={owner}
-            repo={repo}
+            repository={app.state.repositories?.find(
+              (r) => r.owner == owner && r.name == repo,
+            )}
             branch={paramBranch}
             file={paramFile}
           >

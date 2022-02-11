@@ -20,7 +20,7 @@ import {devConsole} from '@middlewares/frontendFunctions';
 const {_log, _err} = devConsole('[useRepositoryContext]');
 
 export type RepositoryState = {
-  id: number;
+  id: string;
   private: boolean;
   owner: string | null;
   branch: string | null;
@@ -59,10 +59,7 @@ type Actions =
     }
   | {
       type: 'selectRepositoryCallback';
-      owner: string;
-      name: string;
-      branches: string[];
-      defaultBranch: string;
+      repository: RepositoryState;
       branch: string;
       tree: VFile[];
       files: VFile[];
@@ -112,16 +109,17 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
       return state;
     case 'selectRepositoryCallback':
       setQueryParam('branch', action.branch);
-      if (state.name != action.name || state.branch != action.branch) {
+      if (
+        state.name != action.repository.name ||
+        state.branch != action.branch
+      ) {
         setQueryParam('file', null);
       }
       _log('selectRepositoryCallback', action);
       return {
-        ...state,
-        owner: action.owner,
-        name: action.name,
-        branches: action.branches,
-        defaultBranch: action.defaultBranch,
+        // AppContextから引き継いだプロパティ
+        ...action.repository,
+        // selectRepositoryアクションで取得したプロパティ
         branch: action.branch,
         currentTree: action.tree,
         files: action.files,
@@ -199,18 +197,16 @@ async function dir2tree(fs: WebApiFs | null, dir: string): Promise<VFile[]> {
  */
 export function RepositoryContextProvider({
   children,
-  owner,
-  repo,
+  repository,
   branch,
   file,
 }: {
   children: JSX.Element;
-  owner: string;
-  repo: string;
+  repository?: RepositoryState;
   branch?: string;
   file?: string;
 }) {
-  _log(owner, repo, branch, file);
+  _log(repository, branch, file);
   const log = useLogContext();
   const app = useAppContext();
 
@@ -218,7 +214,13 @@ export function RepositoryContextProvider({
    * リポジトリを選択する
    */
   const selectRepository = useCallback(
-    (owner: string, repo: string, branch?: string, filePath?: string) => {
+    /**
+     *
+     * @param repository 選択されたリポジトリ
+     * @param branch 選択されたブランチ ?branch=
+     * @param filePath 選択されたブランチ ?file=
+     */
+    (repository?: RepositoryState, branch?: string, filePath?: string) => {
       dispatch({
         type: 'selectRepository',
         func: (state: RepositoryState) => {
@@ -226,21 +228,22 @@ export function RepositoryContextProvider({
             _log('selectRepository cancel');
             return null;
           }
-          _log('selectRepostiory', owner, repo, branch, filePath);
+          _log('selectRepostiory', branch, filePath);
           (async () => {
-            const repositoryState = app.state.repositories?.find(
-              (rep) => rep.owner == owner && rep.name == repo,
-            );
-            if (!repositoryState) {
+            if (!repository) {
               return;
             }
-            const branches = repositoryState.branches;
-            const defaultBranch = repositoryState.defaultBranch as string;
+            const defaultBranch = repository.defaultBranch;
             branch = branch ?? defaultBranch;
+            let tree: VFile[] = [];
+            let files: VFile[] = [];
+            let file: VFile | null = null;
+            // GitHubで作成直後はブランチの無いリポジトリもあるためチェックする
+            if (branch) {
             const props = {
               user: app.state.user!,
-              owner,
-              repo,
+              owner: repository.owner!,
+              repo: repository.name,
               branch,
             };
             _log('selectRepository WebApiFs props', props);
@@ -256,17 +259,15 @@ export function RepositoryContextProvider({
             } else {
               file = state.currentFile;
             }
+            }
             if (dispatch) {
               dispatch({
                 type: 'selectRepositoryCallback',
-                owner,
-                name: repo,
-                branches,
-                defaultBranch,
-                branch,
-                tree,
-                files,
-                file,
+                repository,
+                branch, // カレントブランチ
+                tree, // カレントディレクトリ
+                files, // カレントディレクトリのファイルリスト
+                file, // カレントファイル
               });
             }
           })();
@@ -431,7 +432,7 @@ export function RepositoryContextProvider({
         },
       });
     },
-    [app, branch, log, owner, repo, selectBranch],
+    [app, log, selectBranch],
   );
 
   /**
@@ -478,7 +479,7 @@ export function RepositoryContextProvider({
   }, []);
 
   const initialState = {
-    id: 0,
+    id: '',
     private: false,
     owner: null,
     repo: null,
@@ -507,18 +508,17 @@ export function RepositoryContextProvider({
   );
 
   useEffect(() => {
-    _log('init ', owner, repo, branch, file);
+    _log('init ', repository, branch, file);
     if (!app.state.user || app.state.isPending) {
       return;
     }
-    selectRepository(owner, repo, branch, file);
+    selectRepository(repository, branch, file);
   }, [
     app.state.isPending,
     app.state.user,
     branch,
     file,
-    owner,
-    repo,
+    repository,
     selectRepository,
   ]);
 
