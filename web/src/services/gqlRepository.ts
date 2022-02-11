@@ -193,3 +193,72 @@ export const getRepositoryObject = async (
     throw new ApolloError(err.message);
   }
 };
+
+/**
+ * リポジトリ内のブランチ(Ref)を返す
+ * @param parent
+ * @param args
+ * @param context
+ * @param info
+ * @returns
+ */
+export const getRepositoryRef = async (
+  parent: any,
+  args: any,
+  context: queryContext,
+  info: any,
+) => {
+  console.log('getRepositoryRef', args);
+
+  // repository > ref という階層構造
+  // repository{ } で選択されているフィールド
+  // const repositorySelections = info.fieldNodes[0].selectionSet.selections;
+  // repository{ ref{ } } で選択されているフィールド
+  // const objectSelections = repositorySelections[1].selectionSet.selections;
+  // クエリで選択されているフィールド名のリスト
+  // const fieldNames = objectSelections.map((f: any) => f.name.value);
+
+  const parameters = {
+    owner: parent.owner,
+    name: parent.name,
+    qualifiedName: args.qualifiedName,
+  };
+
+  console.log('getReposistoryRef', parameters);
+
+  const query = `
+  query getRef($owner: String!, $name: String!, $qualifiedName: String!) {
+    repository(owner: $owner, name: $name) {
+      __typename
+      ref(qualifiedName: $qualifiedName){
+        # associatedPullRequests
+        # branchProtectionRule
+        name
+        prefix
+        # refUpdateRule
+        # repository 再帰呼び出しになるので省略
+        target {
+          __typename
+          ... on GitObject {
+            abbreviatedOid
+            commitResourcePath 
+            commitUrl
+            oid
+            # repository 再帰呼び出しになるので省略
+          }
+        }
+      }
+    }
+  }
+`;
+
+  // APIを実行
+  try {
+    const result = (await parent.graphqlWithAuth(query, parameters)) as any;
+    console.log(result, result.repository.ref.target);
+    return result.repository.ref;
+  } catch (err: any) {
+    console.error(err);
+    throw new ApolloError(err.message);
+  }
+};

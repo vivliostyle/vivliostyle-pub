@@ -12,7 +12,11 @@ import {makeExecutableSchema} from '@graphql-tools/schema';
 import {mergeTypeDefs} from '@graphql-tools/merge';
 import {isNumber} from 'lodash';
 import {getRepositories} from '@services/gqlRepositories';
-import {getRepository, getRepositoryObject} from '@services/gqlRepository';
+import {
+  getRepository,
+  getRepositoryObject,
+  getRepositoryRef,
+} from '@services/gqlRepository';
 import {
   authDirectiveTransformer,
   queryContext,
@@ -20,6 +24,8 @@ import {
 import {send} from 'micro';
 import {commitContent} from '@services/gqlCommitContent';
 import {commitDirectory} from '@services/gqlCommitDirectory';
+import {createRef} from '@services/gqlCreateRef';
+
 import GihHubSchema from '../../services/GitHubSchema';
 
 const cors = Cors();
@@ -72,7 +78,7 @@ const _typeDefs = gql`
     """
     firestoreとの連携用にBlob型にsessionIdを取得するためのフィールドを追加
     """
-    sessionId:String!
+    sessionId: String!
   }
 
   type Query @auth {
@@ -101,6 +107,11 @@ const _typeDefs = gql`
     ): CreateCommitOnBranchPayload!
 
     """
+    ブランチを作成
+    """
+    createRef(params: CreateRefInput): CreateRefPayload!
+
+    """
     ファイル管理 パラメータによって異なる動作をする
     createCommitOnBranchに移行予定
     # commitContentの利用例
@@ -111,7 +122,7 @@ const _typeDefs = gql`
     delete file:       commitContent({owner, repo, branch, oldPath, removeOldPath})
     """
     commitContent(params: CommitParams!): Result!
-    
+
     """
     ディレクトリ管理 CommitParamsのnewContentは指定されても無視する
     createCommitOnBranchに移行予定
@@ -129,7 +140,16 @@ const typeDefs = mergeTypeDefs([GihHubSchema, _typeDefs]);
 
 const resolvers = {
   RepositoryOwner: {
+    // RepositoryOwnerインターフェースの実装クラス名を解決する
     __resolveType(owner: any, context: any, info: any) {
+      // 個別のリゾルバの中で__typenameを返しているならそのまま返せば良い
+      return owner.__typename;
+    },
+  },
+  GitObject: {
+    // GitObjectインターフェースの実装クラス名を解決する
+    __resolveType(owner: any, context: any, info: any) {
+      // 個別のリゾルバの中で__typenameを返しているならそのまま返せば良い
       return owner.__typename;
     },
   },
@@ -137,19 +157,19 @@ const resolvers = {
     // parent  親のリゾルバ呼び出しの結果
     // args    リゾルバのフィールドの引数
     // context 各リゾルバが読み書きできるカスタムオブジェクト
-    repositories:getRepositories,
-    repository:getRepository
+    repositories: getRepositories,
+    repository: getRepository,
   },
   Mutation: {
     commitContent,
     commitDirectory,
-
-    //createBranch,
-    //renameBranch,
-    //deleteBranch
+    createRef,
   },
   Repository: {
-    object: getRepositoryObject
+    // この形式でリゾルバを構築すると楽だがGitHubへは複数回のリクエストが行なわれる
+    // TODO: getRepositoryメソッドの中で文字列組み立てのほうがリクエスト回数は減らせるのでは
+    object: getRepositoryObject,
+    ref: getRepositoryRef,
   },
 };
 
@@ -202,7 +222,10 @@ export default cors(async function handler(req, res) {
  * @param res
  * @returns
  */
-async function getDecryptedToken(req: any, res: any): Promise<{ decrypted: string; uid: string; }|number> {
+async function getDecryptedToken(
+  req: any,
+  res: any,
+): Promise<{decrypted: string; uid: string} | number> {
   const idToken = req.headers['x-id-token'];
   if (!idToken) {
     return 401;
@@ -219,5 +242,5 @@ async function getDecryptedToken(req: any, res: any): Promise<{ decrypted: strin
     return 405;
   }
   const decrypted = decrypt(idTokenDecoded.githubAccessToken);
-  return {decrypted,uid:idTokenDecoded.uid};
+  return {decrypted, uid: idTokenDecoded.uid};
 }

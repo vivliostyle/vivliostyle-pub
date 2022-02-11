@@ -41,6 +41,7 @@ export type RepositoryContext = {
   selectTree: (tree: '.' | '..' | VFile) => void; // .は現在のディレクトリのリロード用
   selectFile: (path: VFile | null) => void;
   createFile: (path: string, file: File) => void;
+  createBranch: (fromBranch: string, newBranch: string) => void;
 };
 
 const RepositoryContext = createContext({} as RepositoryContext);
@@ -74,6 +75,7 @@ type Actions =
       file: VFile | null;
       log: Log;
     }
+  | {type: 'createBranch'; func: (state: RepositoryState) => void}
   | {type: 'selectTree'; func: (state: RepositoryState) => void}
   | {type: 'selectTreeCallback'; tree: VFile[]; files: VFile[]}
   | {type: 'selectFile'; func: (state: RepositoryState) => void}
@@ -146,6 +148,10 @@ const reducer = (state: RepositoryState, action: Actions): RepositoryState => {
         files: action.files,
         currentFile: action.file,
       };
+    // ブランチ作成アクション
+    case 'createBranch':
+      action.func(state);
+      return state;
     // カレントフォルダ変更アクション
     case 'selectTree':
       action.func(state);
@@ -240,25 +246,25 @@ export function RepositoryContextProvider({
             let file: VFile | null = null;
             // GitHubで作成直後はブランチの無いリポジトリもあるためチェックする
             if (branch) {
-            const props = {
-              user: app.state.user!,
-              owner: repository.owner!,
-              repo: repository.name,
-              branch,
-            };
-            _log('selectRepository WebApiFs props', props);
-            const fs: WebApiFs = await WebApiFs.open(props);
-            const dirname = filePath ? upath.dirname(filePath) : '';
-            const dir = dirname !== '.' ? dirname : ''; // upath.dirname('sample.md') => '.' になるため
-            const tree = await dir2tree(fs, dir);
-            const files = await fs.readdir(dir);
-            let file;
-            if (filePath && filePath != state.currentFile?.path) {
-              const name = upath.basename(filePath);
-              file = new VFile({fs, dirname, type: 'file', name});
-            } else {
-              file = state.currentFile;
-            }
+              const props = {
+                user: app.state.user!,
+                owner: repository.owner!,
+                repo: repository.name,
+                branch,
+              };
+              _log('selectRepository WebApiFs props', props);
+              const fs: WebApiFs = await WebApiFs.open(props);
+              const dirname = filePath ? upath.dirname(filePath) : '';
+              const dir = dirname !== '.' ? dirname : ''; // upath.dirname('sample.md') => '.' になるため
+              const tree = await dir2tree(fs, dir);
+              const files = await fs.readdir(dir);
+              let file;
+              if (filePath && filePath != state.currentFile?.path) {
+                const name = upath.basename(filePath);
+                file = new VFile({fs, dirname, type: 'file', name});
+              } else {
+                file = state.currentFile;
+              }
             }
             if (dispatch) {
               dispatch({
@@ -332,6 +338,78 @@ export function RepositoryContextProvider({
       });
     },
     [app, log],
+  );
+
+  /**
+   * ブランチを作成
+   * fromBranch: 元になるブランチ名
+   * newBranch: 作成するブランチ名
+   */
+  const createBranch = useCallback(
+    async (fromBranch: string, newBranch: string) => {
+      dispatch({
+        type: 'createBranch',
+        func: (state: RepositoryState) => {
+          (async () => {
+            const repositoryId = state.id;
+
+            // 元ブランチの最新コミットのIDを取得する
+            const queryResult = await app.state.gqlclient?.query({
+              query: gql`
+                query GetCommitID(
+                  $owner: String!
+                  $name: String!
+                  $qualifiedName: String!
+                ) {
+                  repository(owner: $owner, name: $name) {
+                    ref(qualifiedName: $qualifiedName) {
+                      target {
+                        oid
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                owner: state.owner,
+                name: state.name,
+                qualifiedName: `refs/heads/${fromBranch}`,
+              },
+            });
+            const commitID = queryResult?.data.repository.ref.target.oid;
+            _log('GetCommitID', commitID);
+            const result = await app.state.gqlclient?.mutate({
+              mutation: gql`
+                mutation createRef(
+                  $name: String!
+                  $oid: GitObjectID!
+                  $repositoryId: ID!
+                ) {
+                  createRef(
+                    input: {
+                      name: $name # refs/heads/my_new_branch
+                      oid: $oid
+                      repositoryId: $repositoryId
+                    }
+                  ) {
+                    clientMutationId
+                  }
+                }
+              `,
+              variables: {
+                name: `refs/heads/${newBranch}`,
+                oid: commitID,
+                repositoryId,
+              },
+            });
+            if (!result) {
+              return;
+            }
+          })();
+        },
+      });
+    },
+    [app.state.gqlclient],
   );
 
   /**
@@ -503,8 +581,9 @@ export function RepositoryContextProvider({
       selectTree,
       selectFile,
       createFile,
+      createBranch,
     }),
-    [createFile, selectBranch, selectFile, selectTree, state],
+    [createBranch, createFile, selectBranch, selectFile, selectTree, state],
   );
 
   useEffect(() => {
