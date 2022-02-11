@@ -1,52 +1,45 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import Link from 'next/link';
-import {useAuthorizedUser} from '@middlewares/useAuthorizedUser';
-import firebase from '@services/firebase';
 import * as UI from './ui';
-
-const signIn = async () => {
-  const provider = new firebase.auth.GithubAuthProvider();
-  await firebase.auth().signInWithRedirect(provider);
-};
-
-const signOut = async () => {
-  await firebase.auth().signOut();
-};
+import { useAppContext } from '@middlewares/contexts/useAppContext';
+import { useTranslation } from 'react-i18next';
 
 const HeaderUserInfo: React.FC = () => {
-  const {user, isPending} = useAuthorizedUser();
-  useEffect(() => {
-    if (user) {
-      console.log(user.providerData);
+  const app = useAppContext();
+  console.log('user',app.state.user);
+  const {t, i18n} = useTranslation();
 
-      user.getIdTokenResult(true).then((data) => console.log(data));
-    }
-  }, [user]);
-  if (isPending) {
-    return null;
-  }
   return (
     <>
-      {user && <UI.Text mr={2}>logged in as {user.displayName}</UI.Text>}
-      {user && (
+      {app.state.user ? (
+        <>
+        <UI.Text mr={2} fontSize={"small"}><UI.Link href='https://docs.google.com/forms/d/e/1FAIpQLSeh_7rm4RbwKRSHsEXexC4-PBZGK4JJFyQrW_Ee5JGUJHoB5w/viewform?usp=sf_link' isExternal={true}>{t('利用者アンケート')}</UI.Link></UI.Text>
+        <UI.Text mr={2}  fontSize={"small"}><UI.Link href='https://docs.google.com/forms/d/e/1FAIpQLSfdbtDe9SsFyHJD5wFg4cHc91qf7GsSLydH2wsK4xnwffQwjQ/viewform?usp=sf_link' isExternal={true}>{t('不具合のフィードバック')}</UI.Link></UI.Text>
+        <UI.Text mr={2}>logged in as {app.state.user.displayName}</UI.Text>
         <UI.Button
           variant="outline"
           colorScheme="blackAlpha"
-          onClick={signOut}
+          onClick={app.signOut}
         >
           Logout
         </UI.Button>
-      )}
-      {!user && (
-        <UI.Button variant="outline" colorScheme="blackAlpha" onClick={signIn}>
+        </>
+      ) : (
+        <UI.Button variant="outline" colorScheme="blackAlpha" onClick={app.signIn}>
           Login
         </UI.Button>
       )}
+      <UI.Select width={'7em'} size="sm" value={i18n.language} onChange={(e)=>{ console.log(e.target.value);i18n.changeLanguage(e.target.value)}}>
+        <option value="en">{t('English')}</option>
+        <option value="ja">{t('日本語')}</option>
+      </UI.Select>
     </>
   );
 };
 
-export const Header: React.FC = () => (
+export const Header: React.FC = () => {
+  console.log('[Header]');
+  return (
   <UI.Flex w="100%" h={16} backgroundColor="gray.200">
     <UI.Container w="100%" justify="space-between" align="center">
       <Link href="/">
@@ -60,3 +53,4 @@ export const Header: React.FC = () => (
     </UI.Container>
   </UI.Flex>
 );
+};

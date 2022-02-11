@@ -8,6 +8,7 @@ fs.copySync(viewerPath, 'public/viewer', {
   overwrite: true
 })
 
+fs.writeFileSync('public/viewer/empty.html','');
 fs.copyFileSync('public/worker/serviceWorker.js','public/viewer/serviceWorker.js')
 
 const jspath = 'public/viewer/js/vivliostyle-viewer.js'
