@@ -109,6 +109,9 @@ export const BranchSelecter = () => {
               {name}
             </option>
           ))}
+          {repository.state.branches.length == 0 ? (
+            <option>{t('ブランチが存在しません')}</option>
+          ) : null}
         </optgroup>
         <optgroup label={t('ブランチ操作')}>
           <option value={__create_branch__}>{t('ブランチ作成')}</option>
