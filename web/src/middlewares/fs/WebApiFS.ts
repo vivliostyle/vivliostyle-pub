@@ -55,7 +55,17 @@ export class WebApiFs implements Fs {
     const idToken = await user.getIdToken();
     const client = new ApolloClient({
       uri: '/api/graphql',
-      cache: new InMemoryCache(),
+      cache: new InMemoryCache({
+        // 同種のオブジェクトをキャッシュする際のIDとなるフィールドを指定
+        typePolicies: {
+          Repository: {
+            keyFields: ['owner', 'name'],
+          },
+          Tree: {
+            keyFields: ['oid'],
+          },
+        },
+      }),
       headers: {
         'x-id-token': idToken,
       },
@@ -122,6 +132,8 @@ export class WebApiFs implements Fs {
       query: gql`
         query getContent($owner: String!, $name: String!, $expr: String!) {
           repository(owner: $owner, name: $name) {
+            owner { login }
+            name
             object(expression: $expr) {
               __typename
               ... on Blob {
@@ -198,9 +210,15 @@ export class WebApiFs implements Fs {
       query: gql`
         query getEntries($owner: String!, $name: String!, $expr: String!) {
           repository(owner: $owner, name: $name) {
+            owner {
+              __typename
+              login
+            }
+            name
             object(expression: $expr) {
               __typename
               ... on Tree {
+                oid
                 entries {
                   type
                   name
@@ -221,7 +239,7 @@ export class WebApiFs implements Fs {
         expr: `${this.branch}:${path}`,
       },
     });
-    _log('readdir', result);
+    // _log('readdir', result);
     if (!result.data.repository.object.entries) {
       return [];
     }
@@ -241,6 +259,7 @@ export class WebApiFs implements Fs {
         hash: entry.oid,
       });
     });
+    // _log('readdir files', files);
     return files;
   }
 

@@ -256,8 +256,8 @@ export function RepositoryContextProvider({
               const fs: WebApiFs = await WebApiFs.open(props);
               const dirname = filePath ? upath.dirname(filePath) : '';
               const dir = dirname !== '.' ? dirname : ''; // upath.dirname('sample.md') => '.' になるため
-              const tree = await dir2tree(fs, dir);
-              const files = await fs.readdir(dir);
+              tree = await dir2tree(fs, dir);
+              files = await fs.readdir(dir);
               let file;
               if (filePath && filePath != state.currentFile?.path) {
                 const name = upath.basename(filePath);

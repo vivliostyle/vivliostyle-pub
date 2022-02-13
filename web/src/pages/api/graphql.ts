@@ -143,6 +143,8 @@ const resolvers = {
     // RepositoryOwnerインターフェースの実装クラス名を解決する
     __resolveType(owner: any, context: any, info: any) {
       // 個別のリゾルバの中で__typenameを返しているならそのまま返せば良い
+      // User(https://docs.github.com/en/graphql/reference/objects#user)か
+      // Organization(https://docs.github.com/en/graphql/reference/objects#organization)になる
       return owner.__typename;
     },
   },
@@ -166,7 +168,7 @@ const resolvers = {
     createRef,
   },
   Repository: {
-    // この形式でリゾルバを構築すると楽だがGitHubへは複数回のリクエストが行なわれる
+    // この形式でリゾルバを構築すると楽だがGitHubへはobject,refごとにリクエストが行なわれる
     // TODO: getRepositoryメソッドの中で文字列組み立てのほうがリクエスト回数は減らせるのでは
     object: getRepositoryObject,
     ref: getRepositoryRef,

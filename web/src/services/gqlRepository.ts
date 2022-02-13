@@ -64,7 +64,7 @@ export const getRepository = async (
 
   return {
     graphqlWithAuth,
-    owner: args.owner,
+    owner: {__typename: 'User', login: args.owner},
     name: args.name,
     insId: installationId,
   };
@@ -95,17 +95,22 @@ export const getRepositoryObject = async (
   const fieldNames = objectSelections.map((f: any) => f.name.value);
 
   const parameters = {
-    owner: parent.owner,
+    owner: parent.owner.login,
     name: parent.name,
     expr: args.expression,
   };
 
+  // repositoryはクライアント側でキャッシュのキーとして使用するのでowner { login }とnameを返すこと
+  // objectはクライアント側でキャッシュのキーとして使用するのでoidを返すこと
   const query = `
   query getEntries($owner: String!, $name: String!, $expr: String!) {
     repository(owner: $owner, name: $name) {
       __typename
+      owner { __typename, login }
+      name
       object(expression: $expr) {
         __typename
+        oid
         ... on Tree {
           entries {
             type
@@ -187,6 +192,7 @@ export const getRepositoryObject = async (
         .add(data);
       result.repository.object.sessionId = sessionDoc.id;
     }
+    console.log('repository.object', result.repository.object);
     return result.repository.object;
   } catch (err: any) {
     console.error(err);
@@ -226,10 +232,13 @@ export const getRepositoryRef = async (
 
   console.log('getReposistoryRef', parameters);
 
+  // repositoryはクライアント側でキャッシュのキーとして使用するのでowner{ login }とnameを返すこと
   const query = `
   query getRef($owner: String!, $name: String!, $qualifiedName: String!) {
     repository(owner: $owner, name: $name) {
       __typename
+      owner { __typename, login }
+      name
       ref(qualifiedName: $qualifiedName){
         # associatedPullRequests
         # branchProtectionRule

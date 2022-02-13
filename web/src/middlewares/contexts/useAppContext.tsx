@@ -252,7 +252,17 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       const idToken = await user!.getIdToken();
       const client = new ApolloClient({
         uri: '/api/graphql',
-        cache: new InMemoryCache(),
+        cache: new InMemoryCache({
+          // 同種のオブジェクトをキャッシュする際のIDとなるフィールドを指定
+          typePolicies: {
+            Repository: {
+              keyFields: ['owner', 'name'],
+            },
+            Tree: {
+              keyFields: ['oid'],
+            },
+          },
+        }),
         headers: {
           'x-id-token': idToken,
         },
