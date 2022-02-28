@@ -108,8 +108,8 @@ const commitSession: NextApiHandler<null> = async (req, res) => {
           $repositoryNameWithOwner: String!
           $branch: String!
           $message: String!
-          $additions: [FileAddition]
-          $headOid: String!
+          $additions: [FileAddition!]
+          $headOid: GitObjectID!
         ) {
           createCommitOnBranch(
             input: {
