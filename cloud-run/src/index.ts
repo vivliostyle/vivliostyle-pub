@@ -97,7 +97,7 @@ app.post('/', async (req, res) => {
 // GCS 上の PDF の URL をレスポンスとして返却する
 app.get('/pdf/:owner/:repo', async (req, res) => {
   try {
-    const url = await buildAndUpload(req.params.owner, req.params.repo);
+    const url = await buildAndUpload(req.params.owner, req.params.repo, '');
     res.send(url);
   } catch (error) {
     console.error(`error: ${error}`);
