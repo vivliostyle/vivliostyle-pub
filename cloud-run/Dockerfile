@@ -12,7 +12,7 @@ COPY package.json package*.json ./
 RUN npm install
 COPY . .
 
-RUN chown -R node tmp
+RUN chown -R node /tmp
 
 ARG GH_APPS_ID
 ARG GH_APPS_PRIVATEKEY
