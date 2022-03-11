@@ -53,5 +53,7 @@
   "ブランチ操作": "Manipulation",
   "ブランチ作成": "Create Branch",
   "ブランチ削除": "Delete Branch",
-  "作成": "Create"
+  "作成": "Create",
+  "ユーザアカウントを削除します。よろしいですか?": "Do you want to delete Viliostyle-Pub Account?",
+  "ユーザアカウントの削除に失敗しました": "Failed to delete Vivliostyle-Pub Account"
 }

@@ -27,6 +27,7 @@ import {commitDirectory} from '@services/gqlCommitDirectory';
 import {createRef} from '@services/gqlCreateRef';
 
 import GihHubSchema from '../../services/GitHubSchema';
+import {removeAccount} from '@services/gqlRemoveAccount';
 
 const cors = Cors();
 
@@ -98,6 +99,10 @@ const _typeDefs = gql`
     repository(owner: String!, name: String!): Repository
   }
 
+  input RemoveParams {
+    id: String!
+  }
+
   type Mutation @auth {
     """
     指定ブランチにコミットを作成(未実装)
@@ -133,6 +138,11 @@ const _typeDefs = gql`
     delete directory:       commitDirectory({owner, repo, branch, oldPath, removeOldPath});
     """
     commitDirectory(params: CommitParams!): Result!
+
+    """
+    アカウント削除
+    """
+    removeAccount(params: RemoveParams!): Result!
   }
 `;
 
@@ -166,6 +176,7 @@ const resolvers = {
     commitContent,
     commitDirectory,
     createRef,
+    removeAccount,
   },
   Repository: {
     // この形式でリゾルバを構築すると楽だがGitHubへはobject,refごとにリクエストが行なわれる

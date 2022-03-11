@@ -32,6 +32,8 @@ import {RepositoryState} from './useRepositoryContext';
 import {Theme, ThemeManager} from 'theme-manager';
 import {NpmFs} from '../fs/NpmFS';
 import {devConsole} from '@middlewares/frontendFunctions';
+import {useLogContext} from './useLogContext';
+import {t} from 'i18next';
 
 const {_log, _err} = devConsole('[useAppContext]');
 
@@ -61,6 +63,7 @@ export type AppContext = {
   signIn: () => void;
   signOut: () => void;
   clearCache: () => void;
+  removeAccount: () => void;
 };
 
 /**
@@ -89,7 +92,8 @@ type Actions =
   | {type: 'signOut'; func: (state: AppContextState) => void}
   | {type: 'signOutCallback'}
   | {type: 'clearCache'}
-  | {type: 'reload'; func: (state: AppContextState) => void};
+  | {type: 'reload'; func: (state: AppContextState) => void}
+  | {type: 'removeAccount'; func: (state: AppContextState) => void};
 
 /**
  * 公式テーマのリストを返す
@@ -218,6 +222,9 @@ const reducer = (state: AppContextState, action: Actions): AppContextState => {
     case 'reload':
       action.func(state);
       return state;
+    case 'removeAccount':
+      action.func(state);
+      return state;
   }
 };
 
@@ -228,6 +235,8 @@ const reducer = (state: AppContextState, action: Actions): AppContextState => {
  * @returns
  */
 export function AppContextProvider({children}: {children: JSX.Element}) {
+  const log = useLogContext();
+
   // _log('');
   /**
    * ユーザがサインインしている場合の初期化処理
@@ -342,6 +351,33 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
     dispatch({type: 'clearCache'});
   };
 
+  const removeAccount = useCallback(() => {
+    _log('removeAccount');
+    dispatch({
+      type: 'removeAccount',
+      func: async (state: AppContextState): Promise<void> => {
+        const result = await state.gqlclient?.mutate({
+          mutation: gql`
+            mutation removeAccount($id: String!) {
+              removeAccount(params: {id: $id}) {
+                state
+                message
+              }
+            }
+          `,
+          variables: {
+            id: 'dummy',
+          },
+        });
+        if (result?.data.removeAccount.state) {
+          signOut();
+        } else {
+          log.error(t('ユーザアカウントの削除に失敗しました'), 3000);
+        }
+      },
+    });
+  }, []);
+
   /**
    * 初期値
    */
@@ -361,8 +397,9 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
       signIn,
       signOut,
       clearCache,
+      removeAccount,
     }),
-    [reload, signIn, signOut, state],
+    [reload, signIn, signOut, state, removeAccount],
   );
 
   if (state.isPending) {
