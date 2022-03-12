@@ -4,6 +4,8 @@ import * as UI from './ui';
 import {AppContext, useAppContext} from '@middlewares/contexts/useAppContext';
 import {useTranslation} from 'react-i18next';
 import {devConsole} from '@middlewares/frontendFunctions';
+import {ChevronDownIcon} from '@chakra-ui/icons';
+import {MenuItem} from '@chakra-ui/react';
 
 const {_log, _err} = devConsole('[Header]');
 
@@ -16,34 +18,30 @@ const HeaderUserInfo = React.memo(function useHeaderUserInfo(props: {
   return (
     <>
       {props.app.state.user ? (
-        <>
-          <UI.Text mr={2} fontSize={'small'}>
-            <UI.Link
-              href="https://docs.google.com/forms/d/e/1FAIpQLSeh_7rm4RbwKRSHsEXexC4-PBZGK4JJFyQrW_Ee5JGUJHoB5w/viewform?usp=sf_link"
-              isExternal={true}
-            >
-              {t('利用者アンケート')}
-            </UI.Link>
-          </UI.Text>
-          <UI.Text mr={2} fontSize={'small'}>
-            <UI.Link
-              href="https://docs.google.com/forms/d/e/1FAIpQLSfdbtDe9SsFyHJD5wFg4cHc91qf7GsSLydH2wsK4xnwffQwjQ/viewform?usp=sf_link"
-              isExternal={true}
-            >
-              {t('不具合のフィードバック')}
-            </UI.Link>
-          </UI.Text>
-          <UI.Text mr={2}>
-            logged in as {props.app.state.user.displayName}
-          </UI.Text>
-          <UI.Button
-            variant="outline"
-            colorScheme="blackAlpha"
-            onClick={props.app.signOut}
-          >
-            Logout
-          </UI.Button>
-        </>
+        <UI.Menu>
+          <UI.MenuButton as={UI.Button} rightIcon={<ChevronDownIcon />}>
+            {props.app.state.user.displayName}
+          </UI.MenuButton>
+          <UI.MenuList>
+            <MenuItem>
+              <UI.Link
+                href="https://docs.google.com/forms/d/e/1FAIpQLSeh_7rm4RbwKRSHsEXexC4-PBZGK4JJFyQrW_Ee5JGUJHoB5w/viewform?usp=sf_link"
+                isExternal={true}
+              >
+                {t('利用者アンケート')}
+              </UI.Link>
+            </MenuItem>
+            <MenuItem>
+              <UI.Link
+                href="https://docs.google.com/forms/d/e/1FAIpQLSfdbtDe9SsFyHJD5wFg4cHc91qf7GsSLydH2wsK4xnwffQwjQ/viewform?usp=sf_link"
+                isExternal={true}
+              >
+                {t('不具合のフィードバック')}
+              </UI.Link>
+            </MenuItem>
+            <MenuItem onClick={props.app.signOut}>Logout</MenuItem>
+          </UI.MenuList>
+        </UI.Menu>
       ) : (
         <UI.Button
           variant="outline"
