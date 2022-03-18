@@ -201,7 +201,7 @@ export const commitDirectory = async (
         $message: String!
         $additions: [FileAddition]
         $deletions: [FileDeletion]
-        $headOid: String!
+        $headOid: GitObjectID!
       ) {
         createCommitOnBranch(
           input: {
