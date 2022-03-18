@@ -48,5 +48,8 @@
   "フォルダを削除": "Delete folder",
   "ファイルをダウンロード": "Download file",
   "編集中のファイルにリンクを挿入": "Insert a link to the file",
-  "編集中のファイルに画像を挿入": "Insert an image to the file"
+  "編集中のファイルに画像を挿入": "Insert an image to the file",
+  "English": "English",
+  "日本語": "日本語",
+  "画像を埋め込み": "Embed an image"
 }
