@@ -1,8 +1,6 @@
 import {queryContext} from './gqlAuthDirective';
 import {graphql} from '@octokit/graphql';
-import { Octokit } from '@octokit/rest';
-
-
+import {Octokit} from '@octokit/rest';
 
 /**
  * Githubリポジトリ上のファイルを管理する
@@ -81,8 +79,8 @@ export const commitContent = async (
       $owner: String!,
       $repo: String!, 
       $qualifiedName: String!, 
-      ${oldPathWithBranch?"$oldPathWithBranch: String ,":""}
-      ${newPathWithBranch?"$newPathWithBranch: String":""}
+      ${oldPathWithBranch ? '$oldPathWithBranch: String ,' : ''}
+      ${newPathWithBranch ? '$newPathWithBranch: String' : ''}
     ) {
       repository(owner: $owner, name: $repo) {
         ref(qualifiedName: $qualifiedName) {
@@ -111,12 +109,12 @@ export const commitContent = async (
   // console.log('branch obj', JSON.stringify(branchObj));
 
   // 新規ファイルと同名のファイルが存在すればエラー
-  if( newPath && branchObj.repository.existsFile !== null ) {
-    return {state: false, message: "File already exists"};
+  if (newPath && branchObj.repository.existsFile !== null) {
+    return {state: false, message: 'File already exists'};
   }
 
   // 既存ファイルの更新
-  if(newContent && !newPath) {
+  if (newContent && !newPath) {
     newPath = oldPath;
   }
 
@@ -134,8 +132,8 @@ export const commitContent = async (
         repo,
         file_sha: branchObj.repository.oldContent.oid,
       });
-      newContent = blob.data.content.replaceAll("\n","");
-    }else{
+      newContent = blob.data.content.replaceAll('\n', '');
+    } else {
       newContent = branchObj.repository.oldContent.text;
       // バイナリデータでない場合は再度Base64エンコードする
       newContent = Buffer.from(newContent, 'utf8').toString('base64');
@@ -147,7 +145,8 @@ export const commitContent = async (
   // 新しく作成するファイルのリスト
   const additions = [];
   // console.log(newPath, newContent);
-  if (newPath && newContent !== null) { // newContent = ""のこともあるのでnullでないこと
+  if (newPath && newContent !== null) {
+    // newContent = ""のこともあるのでnullでないこと
     additions.push({
       path: newPath,
       contents: newContent,
@@ -160,7 +159,7 @@ export const commitContent = async (
     deletions.push({path: oldPath});
   }
 
-  if(additions.length == 0 && deletions.length == 0) {
+  if (additions.length == 0 && deletions.length == 0) {
     return {state: false, message: 'no operation'};
   }
 
@@ -168,8 +167,7 @@ export const commitContent = async (
     repositoryNameWithOwner: `${owner}/${repo}`,
     branch,
     message,
-    additions,
-    deletions,
+    fileChanges: {additions, deletions},
     headOid,
     headers: {
       authorization: `token ${context.token}`,
@@ -184,9 +182,8 @@ export const commitContent = async (
         $repositoryNameWithOwner: String!
         $branch: String!
         $message: String!
-        $additions: [FileAddition]
-        $deletions: [FileDeletion]
-        $headOid: String!
+        $fileChanges: FileChanges!
+        $headOid: GitObjectID!
       ) {
         createCommitOnBranch(
           input: {
@@ -195,7 +192,7 @@ export const commitContent = async (
               branchName: $branch
             }
             message: {headline: $message}
-            fileChanges: {additions: $additions, deletions: $deletions}
+            fileChanges: $fileChanges
             expectedHeadOid: $headOid
           }
         ) {
@@ -207,7 +204,7 @@ export const commitContent = async (
         }
       }
     `,
-    parameters
+    parameters,
   );
   // console.log('gql result', result);
 
