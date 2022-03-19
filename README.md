@@ -27,3 +27,7 @@ yarn dev
 ### Dev
 
 Pupulating .env variables can be done easily by using [direnv](https://direnv.net/).
+
+## About front-end development
+
+See web/README.md

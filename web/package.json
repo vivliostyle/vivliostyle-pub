@@ -6,7 +6,8 @@
     "dev": "next -p 9990",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "i18next-extract": "NODE_ENV=development babel './src/**/*.{js,jsx,ts,tsx}' && node ./scripts/i18n-extract-check.js"
   },
   "dependencies": {
     "@apollo/client": "^3.5.8",
@@ -49,12 +50,15 @@
     "upath": "^2.0.1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.17.6",
     "@babel/core": "^7.16.12",
     "@types/micro-cors": "^0.1.2",
     "@types/mime-types": "^2.1.1",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "@types/scss-parser": "^1.0.1",
+    "babel-plugin-i18next-extract": "^0.8.3",
+    "babel-preset-react-app": "^10.0.1",
     "eslint": "^8.7.0",
     "eslint-config-next": "^12.0.8",
     "fs-extra": "^10.0.0",
@@ -78,5 +82,21 @@
   "private": true,
   "browser": {
     "fs": false
+  },
+  "babel": {
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      [
+        "i18next-extract",
+        {
+          "locales": [
+            "ja"
+          ],
+          "outputPath": "./src/locales/extract_{{locale}}.json"
+        }
+      ]
+    ]
   }
 }
