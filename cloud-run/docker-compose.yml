@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  pdf-builder:
+    build:
+      context: .
+      args:    
+        - GH_APPS_PRIVATEKEY=${GH_APPS_PRIVATEKEY}
+        - GH_APPS_ID=${GH_APPS_ID}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tmp/key.json:/tmp/gcp_cred.json
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred.json
+  pubsub-emulator:
+    image: "google/cloud-sdk"
+    ports:
+      - "8089:8089"
+    command: gcloud beta emulators pubsub start --project=test --host-port 0.0.0.0:8089
