@@ -47,8 +47,12 @@ async function buildFromGithubRepository(owner: string, repo: string, themeName:
     console.log('>> Start compile');
     const outputPdfPath = `${cwd}/tmp/pdfs/${processID}.pdf`
     process.chdir(repoDir);
-    if(themeName && themeName.length > 0) await execCommanad(`npm install ${themeName}`);
-    await execCommanad(`vivliostyle build --no-sandbox --timeout 3600 --verbose --output ${outputPdfPath}`);
+    if(themeName && themeName.length > 0) {
+      await execCommanad(`npm install ${themeName}`);
+      await execCommanad(`vivliostyle build --no-sandbox --timeout 3600 --verbose --theme ${themeName} --output ${outputPdfPath}`);
+    } else {
+      await execCommanad(`vivliostyle build --no-sandbox --timeout 3600 --verbose --output ${outputPdfPath}`);
+    }
     process.chdir(cwd);
     await execCommanad(`rm -rf ${cwd}/tmp/repos/${processID}`);
     return outputPdfPath;
@@ -84,7 +88,7 @@ app.post('/', async (req, res) => {
     );
     const url = await buildAndUpload(owner, repo, themeName);
     if (id) await firestore.collection('builds').doc(id).update(url);
-    console.log('>> Complete build: ' + url);
+    console.log('>> Complete build: ' + url.signedUrl);
     res.status(204).send();
   } catch (error) {
     console.error(`error: ${error}`);
