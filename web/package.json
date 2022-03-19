@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "i18next-extract": "NODE_ENV=development babel './src/**/*.{js,jsx,ts,tsx}' && node ./src/locales/checkkey.js"
+    "i18next-extract": "NODE_ENV=development babel './src/**/*.{js,jsx,ts,tsx}' && node ./scripts/i18n-extract-check.js"
   },
   "dependencies": {
     "@apollo/client": "^3.5.8",
