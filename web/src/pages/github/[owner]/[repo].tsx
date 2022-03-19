@@ -23,6 +23,7 @@ import {getFunctions, httpsCallable} from 'firebase/functions';
 import {doc, onSnapshot} from 'firebase/firestore';
 import {db} from '@services/firebase';
 import { t } from 'i18next';
+import {Theme} from 'theme-manager';
 
 interface BuildRecord {
   url: string | null;
@@ -191,22 +192,20 @@ const GitHubOwnerRepo = () => {
     [setWarnDialog],
   );
 
-  function onBuildPDFButtonClicked() {
+  const onBuildPDFButtonClicked = useCallback((theme: Theme | null)=>{
     setIsProcessing(true);
     const functions = getFunctions();
     const buildPDF = httpsCallable(functions, 'buildPDF');
-    const stylesheet = '';
-    buildPDF({owner, repo, stylesheet})
-      .then((result: any) => {
-        console.log('buildPDF function', result);
-        const buildID = result.data.buildID;
-        setBuildID(buildID);
-        log.info(t('ビルドを開始しました'), 5000);
-      })
-      .catch((err: any) => {
-        log.error(err.message, 9000);
-      });
-  }
+    const themeName = theme ? theme.name : '';
+    buildPDF({owner, repo, themeName}).then((result: any) => {
+      console.log('buildPDF function', result);
+      const buildID = result.data.buildID;
+      setBuildID(buildID);
+      log.info(t('ビルドを開始しました'), 5000);
+    }).catch((err: any) => {
+      log.error(err.message, 9000);
+    });
+  }, [])
 
   const onLogging = (num: number) => {
     console.log('onLogging', num);

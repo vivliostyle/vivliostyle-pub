@@ -39,7 +39,7 @@ export function MenuBar({
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: () => void;
+  onBuildPDFButtonClicked: (theme: Theme | null) => void;
   isExplorerVisible: boolean;
   onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
@@ -99,6 +99,10 @@ export function MenuBar({
     },
     [currentTheme],
   );
+
+  const onBuildPDFButtonClickedInternal = useCallback(() => {
+    onBuildPDFButtonClicked(currentTheme.state?.theme)
+  }, [currentTheme],);
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
@@ -216,7 +220,7 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Export">
-              <UI.MenuItem onClick={onBuildPDFButtonClicked}>PDF</UI.MenuItem>
+              <UI.MenuItem onClick={onBuildPDFButtonClickedInternal}>PDF</UI.MenuItem>
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Help">
