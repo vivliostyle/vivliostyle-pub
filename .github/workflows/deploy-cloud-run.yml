@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - feature/build-pdf-with-theme # TODO: Remove
 
 env:
   GCP_REGION: asia-northeast1
