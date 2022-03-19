@@ -8,8 +8,7 @@ const translation = JSON.parse(
 );
 
 for (key of Object.keys(translation)) {
-  //   console.log(key);
   delete extracted[key];
 }
 
-console.log('missing translation keys :', extracted);
+console.log('missing translation keys :', Object.keys(extracted));

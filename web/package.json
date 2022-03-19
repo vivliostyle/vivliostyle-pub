@@ -7,7 +7,6 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "//": "ソースコード中からt(...)を抽出してlocales/extract_ja.jsonに書き出す。その後、locals/ja/translation.jsonのキーリストと比較して足りないものを表示する",
     "i18next-extract": "NODE_ENV=development babel './src/**/*.{js,jsx,ts,tsx}' && node ./src/locales/checkkey.js"
   },
   "dependencies": {
@@ -84,7 +83,6 @@
   "browser": {
     "fs": false
   },
-  "//": "i18next-extractのための設定",
   "babel": {
     "presets": [
       "react-app"
