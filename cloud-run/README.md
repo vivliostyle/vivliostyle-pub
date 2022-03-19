@@ -47,3 +47,18 @@ gcloud run deploy --timeout 900 --memory 1Gi --image gcr.io/vivliostyle-81c48/vi
 ```shell
 curl -m 900 -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://vivliostyle-pub-build-pdf-xm6ya42m7a-an.a.run.app/pdf/takanakahiko/vivliostyle-sample
 ```
+
+## Check behavior using PubSub emulator
+
+```shell
+$ docker-compose build
+$ docker-compose up
+
+# in another shell ...
+
+# Create PubSub Topic in local emulator
+$ node node ./scripts/createTopic.js test test
+
+# Create PubSub Message to build PDF
+$ node ./scripts/publishMessage.js test '{"owner":"vivliostyle", "repo":"vivliostyle-pub-sample", "themeName":"@vivliostyle/theme-techbook"}'
+```
