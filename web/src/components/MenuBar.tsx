@@ -102,7 +102,7 @@ export function MenuBar({
 
   const onBuildPDFButtonClickedInternal = useCallback(() => {
     onBuildPDFButtonClicked(currentTheme.state?.theme)
-  }, [currentTheme],);
+  }, [currentTheme]);
 
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
