@@ -16,7 +16,7 @@ export function LogView({
 }) {
   const logBuffer = useLogBufferContext();
   const log = useLogContext();
-  _log('' /*logBuffer*/);
+  _log('reload' /*logBuffer*/);
 
   useEffect(() => {
     onLogging(logBuffer.length);
