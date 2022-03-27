@@ -1,3 +1,6 @@
+/**
+ * ログ管理コンテクスト
+ */
 import React, {
   createContext,
   FC,
