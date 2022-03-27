@@ -19,54 +19,10 @@ import {useLogContext} from '@middlewares/contexts/useLogContext';
 import {LogView} from '@components/LogView';
 import {Footer} from '@components/Footer';
 import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentThemeContext';
-import {getFunctions, httpsCallable} from 'firebase/functions';
-import {doc, onSnapshot} from 'firebase/firestore';
-import {db} from '@services/firebase';
 import {t} from 'i18next';
 import {devConsole} from '@middlewares/frontendFunctions';
 
 const {_log, _err} = devConsole('[repo]');
-
-interface BuildRecord {
-  url: string | null;
-  signedUrl: string | null;
-  repo: {
-    owner: string;
-    repo: string;
-    stylesheet: string;
-  };
-}
-
-function useBuildStatus(
-  buildID: string | null,
-  onBuildFinished?: (artifactURL: string) => void,
-) {
-  useEffect(() => {
-    if (!buildID) return;
-    _log('useBuildStatus', buildID);
-    const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
-      const {signedUrl} = doc.data() as BuildRecord;
-      _log('Current data: ', doc.data());
-      if (!signedUrl) return;
-      unsubscribe();
-      _log('buildStatus unsubscribed', unsubscribe);
-      if (onBuildFinished) onBuildFinished(signedUrl);
-    });
-
-    // const unsubscribe = firebase
-    //   .firestore()
-    //   .collection('builds')
-    //   .doc(buildID)
-    //   .onSnapshot(function (doc) {
-    //     const {url} = doc.data() as BuildRecord;
-    //     _log('Current data: ', doc.data());
-    //     if (!url) return;
-    //     unsubscribe();
-    //     if (onBuildFinished) onBuildFinished(url);
-    //   });
-    // return unsubscribe;
-  }, [buildID, onBuildFinished]);
-}
 
 /**
  * メインコンポーネント
@@ -113,38 +69,8 @@ const GitHubOwnerRepo = () => {
   // const [session, setSession] =
   //   useState<DocumentReference<DocumentData> | null>(null);
 
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [buildID, setBuildID] = useState<string | null>(null);
-  // const toast = useToast();
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
-
-  useBuildStatus(buildID, (artifactURL: string) => {
-    setIsProcessing(false);
-    // const ViewPDFToast = ({onClose}: RenderProps) => (
-    //   <UI.Box bg="tomato" p={5} color="white">
-    //     <UI.Link href={artifactURL} isExternal onClick={onClose}>
-    //       View PDF
-    //     </UI.Link>
-    //   </UI.Box>
-    // );
-    _log('build complete]', artifactURL);
-    log.success(
-      <UI.Text>
-        {t('以下のリンクをクリックして表示してください')}
-        <UI.Link href={artifactURL} isExternal textDecoration={'underline'}>
-          View PDF
-        </UI.Link>
-      </UI.Text>,
-      5000,
-    ); // TODO リンクにする
-    setBuildID(null);
-    // toast({
-    //   duration: 9000,
-    //   isClosable: true,
-    //   render: ViewPDFToast,
-    // });
-  });
 
   // set text
   // useEffect(() => {
@@ -193,23 +119,6 @@ const GitHubOwnerRepo = () => {
     [setWarnDialog],
   );
 
-  function onBuildPDFButtonClicked() {
-    setIsProcessing(true);
-    const functions = getFunctions();
-    const buildPDF = httpsCallable(functions, 'buildPDF');
-    const stylesheet = '';
-    buildPDF({owner, repo, stylesheet})
-      .then((result: any) => {
-        _log('buildPDF function', result);
-        const buildID = result.data.buildID;
-        setBuildID(buildID);
-        log.info(t('ビルドを開始しました'), 5000);
-      })
-      .catch((err: any) => {
-        log.error(err.message, 9000);
-      });
-  }
-
   const onLogging = (num: number) => {
     _log('onLogging', num);
     // TODO: ログが追加されたらLogViewを表示する。 手動で大きさを変えたあとでも対応できるようにする。
@@ -230,11 +139,9 @@ const GitHubOwnerRepo = () => {
               <UI.Box height={'calc(100vh - 4rem)'}>
                 {/* Wrapper  サイズ固定*/}
                 <MenuBar
-                  isProcessing={isProcessing}
                   isPresentationMode={isPresentationMode}
                   setPresentationMode={setPresentationMode}
                   setWarnDialog={setWarnDialog}
-                  onBuildPDFButtonClicked={onBuildPDFButtonClicked}
                   isEditorVisible={isEditorVisible}
                   onToggleEditor={(f: boolean) => {
                     setEditorVisible(f);

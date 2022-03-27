@@ -9,6 +9,7 @@ import enJson from '../locales/en/translation.json';
 import jaJson from '../locales/ja/translation.json';
 import {devConsole} from '@middlewares/frontendFunctions';
 import {LogContextProvider} from '@middlewares/contexts/useLogContext';
+import {PDFBuildContextProvider} from '@middlewares/contexts/usePDFBuildContext';
 
 const {_log, _err} = devConsole('[MyApp]');
 
@@ -32,9 +33,11 @@ const MyApp = ({Component, pageProps}: AppProps) => {
     <ChakraProvider>
       <CSSReset />
       <LogContextProvider>
-        <AppContextProvider>
-          <Component {...pageProps} />
-        </AppContextProvider>
+        <PDFBuildContextProvider>
+          <AppContextProvider>
+            <Component {...pageProps} />
+          </AppContextProvider>
+        </PDFBuildContextProvider>
       </LogContextProvider>
     </ChakraProvider>
   );

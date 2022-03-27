@@ -20,7 +20,7 @@
   "プレビュー変換に失敗しました": "Failed to prepare preview: ({{filepath}}):{{error}}",
   "ブランチを変更しました": "Branch changed: {{branch}}",
   "ビルドを開始しました": "Your build has been started",
-  "以下のリンクをクリックして表示してください": "Click on the following link to view",
+  "以下のリンクをクリックしてダウンロードしてください": "Click on the following link to download",
   "ファイルを作成しました": "Created a file : {{filepath}}",
   "ファイルが作成できませんでした": "The file could not be created.({{filepath}}):{{error}}",
   "以下のファイルの処理に失敗しました": "Failed to process the following file:{{error}}",

@@ -19,15 +19,17 @@ import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeConte
 import {CustomTheme} from '@middlewares/themes/CustomTheme';
 import {PlainTheme} from '@middlewares/themes/PlainTheme';
 import {devConsole} from '@middlewares/frontendFunctions';
+import {
+  usePDFBuildContext,
+  usePDFBuildStateContext,
+} from '@middlewares/contexts/usePDFBuildContext';
 
 const {_log, _err} = devConsole('[MenuBar]');
 
 export function MenuBar({
-  isProcessing,
   isPresentationMode,
   setPresentationMode,
   setWarnDialog,
-  onBuildPDFButtonClicked,
   isExplorerVisible,
   onToggleExplorer,
   isEditorVisible,
@@ -38,11 +40,9 @@ export function MenuBar({
   setAutoReload,
   onReload,
 }: {
-  isProcessing: boolean;
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: () => void;
   isExplorerVisible: boolean;
   onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
@@ -56,6 +56,8 @@ export function MenuBar({
   const app = useAppContext();
   const currentTheme = useCurrentThemeContext();
   const repository = useRepositoryContext();
+  const buildPDF = usePDFBuildContext();
+  const buildState = usePDFBuildStateContext();
   const plainTheme = useMemo(() => {
     // Viewerのデフォルトスタイルを使用するテーマ
     const plainTheme = new PlainTheme();
@@ -107,6 +109,8 @@ export function MenuBar({
 
   _log('themes', app.state.onlineThemes);
 
+  const onBuildPDFLogButtonClicked = () => {};
+
   return (
     <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
       <UI.Flex align="center">
@@ -121,7 +125,7 @@ export function MenuBar({
         )}
       </UI.Flex>
       <UI.Flex align="center">
-        {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
+        {buildState && <UI.Spinner style={{marginRight: '10px'}} />}
         <UI.ButtonGroup>
           <UI.Button
             title="Project Explorer Visiblity"
@@ -227,8 +231,24 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Export">
-              <UI.MenuItem key="buildPDF" onClick={onBuildPDFButtonClicked}>
+              <UI.MenuItem
+                key="buildPDF"
+                onClick={() => {
+                  buildPDF.buildProject({
+                    owner: repository.state.owner!,
+                    repo: repository.state.name!,
+                    branch: repository.state.branch!, // branch指定ビルドは未実装
+                    theme: currentTheme.state?.theme,
+                  });
+                }}
+              >
                 PDF
+              </UI.MenuItem>
+              <UI.MenuItem
+                key="buildPDFLog"
+                onClick={onBuildPDFLogButtonClicked}
+              >
+                Build LOG
               </UI.MenuItem>
             </UI.MenuGroup>
             <UI.MenuDivider />
