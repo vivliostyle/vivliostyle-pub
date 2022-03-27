@@ -8,7 +8,6 @@ import React, {
 import * as UI from '@components/ui';
 import {BranchSelecter} from './BranchSelecter';
 import {CommitSessionButton} from './CommitSessionButton';
-import {FileUploadModal} from './FileUploadModal';
 import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 
@@ -214,20 +213,6 @@ export function MenuBar({
                   {theme.description}
                 </UI.MenuItem>
               ))}
-            </UI.MenuGroup>
-            <UI.MenuDivider />
-            <UI.MenuGroup title="Add Files">
-              <UI.MenuItem key="addImage" onClick={onOpenFileUploadModal}>
-                Add Image
-              </UI.MenuItem>
-              <FileUploadModal
-                user={app.state.user}
-                isOpen={isOpenFileUploadModal}
-                onOpen={onOpenFileUploadModal}
-                onClose={onCloseFileUploadModal}
-                title="Upload Image"
-                accept="image/*"
-              />
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Export">
