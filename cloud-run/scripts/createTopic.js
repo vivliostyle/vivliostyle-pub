@@ -7,7 +7,7 @@ const main = async (topicName, subscriptionName) => {
   });
   const [topic] = await pubSubClient.createTopic(topicName);
   console.log(`>> Topic ${topicName} created.`);
-  const options = {pushConfig: {pushEndpoint: `http://localhost:8080/`}};
+  const options = {pushConfig: {pushEndpoint: `http://pdf-builder:8080/`}};
   await pubSubClient
     .topic(topicName)
     .createSubscription(subscriptionName, options);
