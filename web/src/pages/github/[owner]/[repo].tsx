@@ -192,12 +192,12 @@ const GitHubOwnerRepo = () => {
     [setWarnDialog],
   );
 
-  const onBuildPDFButtonClicked = useCallback((theme: Theme | null)=>{
+  const onBuildPDFButtonClicked = useCallback((theme: Theme | null, httpMode: boolean)=>{
     setIsProcessing(true);
     const functions = getFunctions();
     const buildPDF = httpsCallable(functions, 'buildPDF');
     const themeName = theme ? theme.name : '';
-    buildPDF({owner, repo, themeName}).then((result: any) => {
+    buildPDF({owner, repo, themeName, httpMode}).then((result: any) => {
       console.log('buildPDF function', result);
       const buildID = result.data.buildID;
       setBuildID(buildID);
