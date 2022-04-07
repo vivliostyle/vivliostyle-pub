@@ -3,7 +3,7 @@ name: Delivery Containers
 on:
   push:
     branches:
-      - feature/fix-gh-actions
+      - master
 
 env:
   GCP_REGION: asia-northeast1
