@@ -12,6 +12,7 @@ COPY package.json package*.json ./
 RUN npm install
 COPY . .
 
+RUN mkdir tmp; exit 0
 RUN chown -R node tmp
 
 ARG GH_APPS_ID
