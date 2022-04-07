@@ -19,6 +19,12 @@ import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeConte
 import {CustomTheme} from '@middlewares/themes/CustomTheme';
 import {PlainTheme} from '@middlewares/themes/PlainTheme';
 
+interface MenuBarState {
+  isProcessing: boolean;
+  isPresentationMode: boolean;
+
+}
+
 export function MenuBar({
   isProcessing,
   isPresentationMode,
@@ -39,7 +45,7 @@ export function MenuBar({
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: (theme: Theme | null) => void;
+  onBuildPDFButtonClicked: (theme: Theme | null, httpMode: boolean) => void;
   isExplorerVisible: boolean;
   onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
@@ -100,8 +106,10 @@ export function MenuBar({
     [currentTheme],
   );
 
+  const [isUsingHttpModeInBuild, setIsUsingHttpModeInBuild] = useState<boolean>(false);
+
   const onBuildPDFButtonClickedInternal = useCallback(() => {
-    onBuildPDFButtonClicked(currentTheme.state?.theme)
+    onBuildPDFButtonClicked(currentTheme.state?.theme, isUsingHttpModeInBuild)
   }, [currentTheme]);
 
   return (
@@ -160,22 +168,30 @@ export function MenuBar({
             <UI.Icon name="chevron-down" /> Actions
           </UI.MenuButton>
           <UI.MenuList>
-            <UI.MenuItem
-              key="presen"
-              onClick={() => {
-                setPresentationMode(!isPresentationMode);
-              }}
-            >
-              {isPresentationMode ? '✔ ' : ' '}Presentation Mode
-            </UI.MenuItem>
-            <UI.MenuItem
-              key="autoReload"
-              onClick={() => {
-                setAutoReload(!isAutoReload);
-              }}
-            >
-              {isAutoReload ? '✔ ' : ' '}Auto reload
-            </UI.MenuItem>
+            <UI.MenuGroup title="Setting">
+              <UI.MenuItem
+                key="presen"
+                onClick={() => {
+                  setPresentationMode(!isPresentationMode);
+                }}
+              >
+                {isPresentationMode ? '✔ ' : ' '}Presentation Mode
+              </UI.MenuItem>
+              <UI.MenuItem
+                key="autoReload"
+                onClick={() => {
+                  setAutoReload(!isAutoReload);
+                }}
+              >
+                {isAutoReload ? '✔ ' : ' '}Auto reload
+              </UI.MenuItem>
+              <UI.MenuItem
+                key="usingHttpModeInBuild"
+                onClick={() => setIsUsingHttpModeInBuild(!isUsingHttpModeInBuild)}
+              >
+                {isUsingHttpModeInBuild ? '✔ ' : ' '}Using HTTP Mode In Build
+              </UI.MenuItem>
+            </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Theme">
               <UI.MenuItem
