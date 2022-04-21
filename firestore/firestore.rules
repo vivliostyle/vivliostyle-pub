@@ -12,6 +12,10 @@ service cloud.firestore {
           && request.resource.data.owner == resource.data.owner
           && request.resource.data.repo == resource.data.repo;
       }
+
+      match /builds/{buildId} {
+        allow read: if authenticated(userId);
+      }
     }
 
     function authenticated(userId) {
