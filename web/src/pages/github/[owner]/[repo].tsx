@@ -35,36 +35,6 @@ interface BuildRecord {
   };
 }
 
-function useBuildStatus(
-  buildID: string | null,
-  onBuildFinished?: (artifactURL: string) => void,
-) {
-  useEffect(() => {
-    if (!buildID) return;
-    console.log('useBuildStatus', buildID);
-    const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
-      const {signedUrl} = doc.data() as BuildRecord;
-      console.log('Current data: ', doc.data());
-      if (!signedUrl) return;
-      unsubscribe();
-      console.log('buildStatus unsubscribed', unsubscribe);
-      if (onBuildFinished) onBuildFinished(signedUrl);
-    });
-
-    // const unsubscribe = firebase
-    //   .firestore()
-    //   .collection('builds')
-    //   .doc(buildID)
-    //   .onSnapshot(function (doc) {
-    //     const {url} = doc.data() as BuildRecord;
-    //     console.log('Current data: ', doc.data());
-    //     if (!url) return;
-    //     unsubscribe();
-    //     if (onBuildFinished) onBuildFinished(url);
-    //   });
-    // return unsubscribe;
-  }, [buildID, onBuildFinished]);
-}
 
 /**
  * メインコンポーネント
@@ -118,32 +88,25 @@ const GitHubOwnerRepo = () => {
   const setWarnDialog = useWarnBeforeLeaving();
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
 
-  useBuildStatus(buildID, (artifactURL: string) => {
-    setIsProcessing(false);
-    // const ViewPDFToast = ({onClose}: RenderProps) => (
-    //   <UI.Box bg="tomato" p={5} color="white">
-    //     <UI.Link href={artifactURL} isExternal onClick={onClose}>
-    //       View PDF
-    //     </UI.Link>
-    //   </UI.Box>
-    // );
-    console.log('build complete:' + artifactURL);
-    log.success(
-      <UI.Text>
-        {t('以下のリンクをクリックして表示してください')}
-        <UI.Link href={artifactURL} isExternal textDecoration={'underline'}>
-          View PDF
-        </UI.Link>
-      </UI.Text>,
-      5000,
-    ); // TODO リンクにする
-    setBuildID(null);
-    // toast({
-    //   duration: 9000,
-    //   isClosable: true,
-    //   render: ViewPDFToast,
-    // });
-  });
+  useEffect(() => {
+    if (!buildID) return;
+    const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
+      const {signedUrl} = doc.data() as BuildRecord;
+      if (!signedUrl) return;
+      unsubscribe();
+      setIsProcessing(false);
+      log.success(
+        <UI.Text>
+          {t('以下のリンクをクリックして表示してください')}
+          <UI.Link href={signedUrl} isExternal textDecoration={'underline'}>
+            View PDF
+          </UI.Link>
+        </UI.Text>,
+        5000,
+      );
+      setBuildID(null);
+    });
+  }, [buildID]);
 
   // set text
   // useEffect(() => {
