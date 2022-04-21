@@ -3,7 +3,7 @@ name: Delivery Containers
 on:
   push:
     branches:
-      - master
+      - change-build-result-path-of-firestore
 
 env:
   GCP_REGION: asia-northeast1
