@@ -89,8 +89,8 @@ const GitHubOwnerRepo = () => {
   const [isPresentationMode, setPresentationMode] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!buildID) return;
-    const unsubscribe = onSnapshot(doc(db, 'builds', buildID), (doc) => {
+    if (!buildID || !app.state.user) return;
+    const unsubscribe = onSnapshot(doc(db, `users/${app.state.user.uid}/builds/${buildID}`), (doc) => {
       const {signedUrl} = doc.data() as BuildRecord;
       if (!signedUrl) return;
       unsubscribe();
@@ -106,7 +106,7 @@ const GitHubOwnerRepo = () => {
       );
       setBuildID(null);
     });
-  }, [buildID]);
+  }, [buildID, app.state.user]);
 
   // set text
   // useEffect(() => {
