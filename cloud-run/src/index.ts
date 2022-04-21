@@ -89,14 +89,15 @@ app.post('/', async (req, res) => {
       repo: string;
       themeName: string;
       httpMode: boolean;
+      uid: string;
       id: string;
     }
     const buidRequest: BuidRequest = JSON.parse(
       Buffer.from(req.body.message.data, 'base64').toString(),
     );
-    const url = await buildAndUpload(buidRequest.owner, buidRequest.repo, buidRequest.themeName, buidRequest.httpMode);
-    if (buidRequest.id) await firestore.collection('builds').doc(buidRequest.id).update(url);
-    console.log('>> Complete build: ' + url.signedUrl);
+    const uploadFileResult = await buildAndUpload(buidRequest.owner, buidRequest.repo, buidRequest.themeName, buidRequest.httpMode);
+    if (buidRequest.id) await firestore.doc(`users/${buidRequest.uid}/builds/${buidRequest.id}`).update(uploadFileResult);
+    console.log('>> Complete build: ' + uploadFileResult.signedUrl);
     res.status(204).send();
   } catch (error) {
     console.error(`error: ${error}`);

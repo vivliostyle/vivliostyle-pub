@@ -16,7 +16,7 @@ const publishMessage = async(topicName:string, data:any) => {
 }
 
 export const buildPDF = functions.https.onCall(async(repoInfo, context) => {
-  const ref = await firestore.collection('builds').add({
+  const ref = await firestore.collection(`users/${context.auth?.uid}/builds`).add({
     url: null, 
     repo: repoInfo
   });
@@ -25,7 +25,8 @@ export const buildPDF = functions.https.onCall(async(repoInfo, context) => {
     repo: repoInfo.repo,
     themeName: repoInfo.themeName,
     httpMode: repoInfo.httpMode,
-    id: ref.id
+    uid: context.auth?.uid,
+    id: ref.id,
   });
   return { buildID : ref.id };
 })
