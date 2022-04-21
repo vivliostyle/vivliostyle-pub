@@ -52,3 +52,6 @@ jobs:
             --memory 8Gi \
             --concurrency 1 \
             --quiet
+          gcloud run services update-traffic vivliostyle-pub-build-pdf --to-latest \
+            --region $GCP_REGION \
+            --platform managed \
