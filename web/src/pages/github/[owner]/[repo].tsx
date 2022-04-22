@@ -159,7 +159,7 @@ const GitHubOwnerRepo = () => {
     setIsProcessing(true);
     const functions = getFunctions();
     const buildPDF = httpsCallable(functions, 'buildPDF');
-    const themeName = theme ? theme.name : '';
+    const themeName = theme ? (theme.name!='plain-theme'? theme.name: '') : '';
     buildPDF({owner, repo, themeName, httpMode}).then((result: any) => {
       console.log('buildPDF function', result);
       const buildID = result.data.buildID;
