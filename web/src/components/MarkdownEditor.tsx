@@ -98,6 +98,7 @@ export const MarkdownEditor = ({
         options={{
           minimap: {enabled: false},
           wordWrap: 'on',
+          wrappingStrategy: "advanced",
         }}
         onChange={onChange}
         value={currentFile.state.text}
