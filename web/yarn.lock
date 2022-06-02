@@ -3346,17 +3346,17 @@
     "@typescript-eslint/types" "5.8.0"
     eslint-visitor-keys "^3.0.0"
 
-"@vivliostyle/core@^2.14.4":
-  version "2.14.4"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.14.4.tgz#7266345f781c0f600b817ee28ea4fcad644190d2"
-  integrity sha512-h3L3yJNOJ4gGUGNI5stsfsKog170UYvevsf6hxlsTHfcQmilGNEZ4Ox0QX2ThRUYHB6TK8AYb3oB2cMAlRi+IA==
+"@vivliostyle/core@^2.15.4":
+  version "2.15.4"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.15.4.tgz#c4f88d22bf3ae82ef63839964d8104eca5583a41"
+  integrity sha512-3gwvh9G4MjdgzPgecsaznZM+6Zo3X+7egcgexXU3nmrlOf2bRVjLYMtY2JxeydwXOyjTvTZWaZ3mdavDjyPRjA==
   dependencies:
     fast-diff "^1.2.0"
 
-"@vivliostyle/vfm@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-1.2.1.tgz#ff8993696212fd9dfe7c02bc3f84f855bf506d23"
-  integrity sha512-dmE1kn1a0J+gnZ2gCULTI13sJc3YqlNMJeaAcjTqK7eh5AV04qebioeIJeiMelFz4uqOSKX4vnnDj5Jpbz09LA==
+"@vivliostyle/vfm@1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-1.2.2.tgz#ae8fa4ed44b3bcf2d033e74f2b61d115994645fe"
+  integrity sha512-M8iGJ2wbJfrYUlvciZj1N234qnJIuX6ui7sywZr0RXlh7SbhKvOEQsezLKy00/TT2VSF0R+pVRnxMVBDSy6iag==
   dependencies:
     debug "^4.3.1"
     doctype "^2.0.4"
@@ -3392,12 +3392,12 @@
     unist-util-visit "^2.0.3"
     unist-util-visit-parents "^3.1.1"
 
-"@vivliostyle/viewer@2.14.4":
-  version "2.14.4"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.14.4.tgz#125251080968095cfc61a91bd719706a6d1e4407"
-  integrity sha512-U2pTE3qAcn0gTNWYOkD5xbF9g9gAcDk9Ez492i3K2h+H5ai5ip8ZrGzl8UvqRheCqiRKreNquZahME2JxPKiFg==
+"@vivliostyle/viewer@2.15.4":
+  version "2.15.4"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.15.4.tgz#f0c5970d27d3590331e6d4307664ba072409b2a2"
+  integrity sha512-ixCOYCSwYSIto+VLLay0FAagrww2y+vf+QmKVYK1oSc1EGpcgjJ3O8snNGcK39P4XKoPIP9zT/P5IX/11uUHOA==
   dependencies:
-    "@vivliostyle/core" "^2.14.4"
+    "@vivliostyle/core" "^2.15.4"
     font-awesome "^4.7.0"
     knockout "^3.5.0"
 
