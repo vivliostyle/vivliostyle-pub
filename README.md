@@ -31,3 +31,7 @@ Pupulating .env variables can be done easily by using [direnv](https://direnv.ne
 ## About front-end development
 
 See web/README.md
+
+## Credits
+
+[![Powered By Vercel](https://www.datocms-assets.com/31049/1618983297-powered-by-vercel.svg)](https://vercel.com/?utm_source=vivliostyle&utm_campaign=oss)
