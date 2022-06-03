@@ -39,13 +39,25 @@ const HeaderUserInfo: React.FC = () => {
           </UI.MenuList>
         </UI.Menu>
       ) : (
-        <UI.Button
-          variant="outline"
-          colorScheme="blackAlpha"
-          onClick={app.signIn}
-        >
-          Login
-        </UI.Button>
+        <>
+          <UI.Button
+            variant="outline"
+            colorScheme="blackAlpha"
+            onClick={app.signIn}
+          >
+            Login
+          </UI.Button>
+          <UI.Link
+            href="https://vercel.com/?utm_source=vivliostyle&amp;utm_campaign=oss"
+            isExternal={true}
+            style={{position: 'fixed', bottom: 0, right: 0}}
+          >
+            <UI.Image
+              src="https://www.datocms-assets.com/31049/1618983297-powered-by-vercel.svg"
+              alt="Powered By Vercel"
+            />
+          </UI.Link>
+        </>
       )}
       <UI.Select
         width={'7em'}
