@@ -71,6 +71,13 @@ const HeaderUserInfo: React.FC = () => {
         <option value="en">{t('English')}</option>
         <option value="ja">{t('日本語')}</option>
       </UI.Select>
+      <UI.Link
+        href={t('URL-vivliostyle-pub-user-guide')}
+        isExternal={true}
+        marginInlineStart={'1em'}
+      >
+        {t('ユーザーガイド')}
+      </UI.Link>
     </>
   );
 };

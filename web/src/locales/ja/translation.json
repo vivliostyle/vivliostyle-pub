@@ -51,5 +51,7 @@
   "編集中のファイルに画像を挿入": "編集中のファイルに画像を挿入",
   "English": "English",
   "日本語": "日本語",
-  "画像を埋め込み": "画像を埋め込み"
+  "画像を埋め込み": "画像を埋め込み",
+  "ユーザーガイド": "ユーザーガイド",
+  "URL-vivliostyle-pub-user-guide": "https://vivliostyle.github.io/docs-vivliostyle-pub/#/ja/"
 }
