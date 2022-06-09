@@ -7,6 +7,6 @@
   },
   "devDependencies": {},
   "repository": "ssh://git@github.com/vivliostyle/vivliostyle-pub",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true
 }
