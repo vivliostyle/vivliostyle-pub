@@ -1,8 +1,6 @@
 FROM ghcr.io/vivliostyle/cli:latest
 LABEL maintainer "Vivliostyle Foundation <mail@vivliostyle.org>"
 
-USER root
-
 RUN set -x \
   && apt-get update \
   && apt-get install -y git
@@ -13,7 +11,6 @@ RUN npm install
 COPY . .
 
 RUN mkdir tmp; exit 0
-RUN chown -R node tmp
 
 ARG GH_APPS_ID
 ARG GH_APPS_PRIVATEKEY
@@ -22,6 +19,5 @@ ENV GH_APPS_PRIVATEKEY=$GH_APPS_PRIVATEKEY
 
 RUN npm run build
 
-USER node
 ENTRYPOINT [ "/bin/sh", "-c" ]
 CMD [ "npm start" ]
