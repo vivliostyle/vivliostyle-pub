@@ -106,10 +106,8 @@ export function MenuBar({
     [currentTheme],
   );
 
-  const [isUsingHttpModeInBuild, setIsUsingHttpModeInBuild] = useState<boolean>(false);
-
   const onBuildPDFButtonClickedInternal = useCallback(() => {
-    onBuildPDFButtonClicked(currentTheme.state?.theme, isUsingHttpModeInBuild)
+    onBuildPDFButtonClicked(currentTheme.state?.theme, true)
   }, [currentTheme]);
 
   return (
@@ -184,12 +182,6 @@ export function MenuBar({
                 }}
               >
                 {isAutoReload ? '✔ ' : ' '}Auto reload
-              </UI.MenuItem>
-              <UI.MenuItem
-                key="usingHttpModeInBuild"
-                onClick={() => setIsUsingHttpModeInBuild(!isUsingHttpModeInBuild)}
-              >
-                {isUsingHttpModeInBuild ? '✔ ' : ' '}Using HTTP Mode In Build
               </UI.MenuItem>
             </UI.MenuGroup>
             <UI.MenuDivider />
