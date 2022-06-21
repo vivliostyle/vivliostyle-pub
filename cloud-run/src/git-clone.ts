@@ -8,7 +8,7 @@ const app = new App({
   privateKey: process.env.GH_APPS_PRIVATEKEY || "",
 });
 
-export async function gitClone(owner: string, repo: string, repoDir: string) {
+export async function gitClone(owner: string, repo: string, repoDir: string, branch: string) {
   const {data} = await request('GET /repos/:owner/:repo/installation', {
     owner,
     repo,
@@ -24,5 +24,6 @@ export async function gitClone(owner: string, repo: string, repoDir: string) {
     installationId: data.id,
   });
 
-  await execCommanad(`git clone --depth 1 https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git ${repoDir}`)
+  const branchParam = branch ? `-b '${branch}'` : '';
+  await execCommanad(`git clone ${branchParam} --depth 1 https://x-access-token:${installationAccessToken}@github.com/${owner}/${repo}.git ${repoDir}`)
 }

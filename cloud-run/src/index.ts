@@ -36,14 +36,14 @@ app.use(express.urlencoded({extended: true}));
 
 // 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から PDF をローカルに生成する
 // PDF のパスを返却する
-async function buildFromGithubRepository(owner: string, repo: string, themeName: string, httpMode: boolean) {
+async function buildFromGithubRepository(owner: string, repo: string, themeName: string, httpMode: boolean, branch: string) {
   const processID = uuid.v4()
   console.log(`>> Run buildFromGithubRepository( process ID: ${processID} )`)
   try {
     console.log(`>> git clone https://github.com/${owner}/${repo}`);
     const cwd = process.cwd();
     const repoDir = `${cwd}/tmp/repos/${processID}/${owner}/${repo}`;
-    await gitClone(owner, repo, repoDir);
+    await gitClone(owner, repo, repoDir, branch);
     console.log('>> Start compile');
     const outputPdfPath = `${cwd}/tmp/pdfs/${processID}.pdf`
     process.chdir(repoDir);
@@ -65,9 +65,9 @@ async function buildFromGithubRepository(owner: string, repo: string, themeName:
 
 // 指定された GitHub のリポジトリ( Vivliostyle のプロジェクト )から GCS 上に PDF を生成する
 // GCS 上の PDF の URL を返却する
-const buildAndUpload = async(owner: string, repo: string, themeName: string, httpMode: boolean) => {
+const buildAndUpload = async(owner: string, repo: string, themeName: string, httpMode: boolean, branch: string) => {
   try {
-    const outputPdfPath = await buildFromGithubRepository(owner, repo, themeName, httpMode);
+    const outputPdfPath = await buildFromGithubRepository(owner, repo, themeName, httpMode, branch);
     const url = await uploadFile(`${owner}-${repo}`, outputPdfPath);
     await execCommanad(`rm ${outputPdfPath}`);
     return url
@@ -87,6 +87,7 @@ app.post('/', async (req, res) => {
     interface BuidRequest {
       owner: string;
       repo: string;
+      branch: string;
       themeName: string;
       httpMode: boolean;
       uid: string;
@@ -95,7 +96,7 @@ app.post('/', async (req, res) => {
     const buidRequest: BuidRequest = JSON.parse(
       Buffer.from(req.body.message.data, 'base64').toString(),
     );
-    const uploadFileResult = await buildAndUpload(buidRequest.owner, buidRequest.repo, buidRequest.themeName, buidRequest.httpMode);
+    const uploadFileResult = await buildAndUpload(buidRequest.owner, buidRequest.repo, buidRequest.themeName, buidRequest.httpMode, buidRequest.branch);
     if (buidRequest.id) await firestore.doc(`users/${buidRequest.uid}/builds/${buidRequest.id}`).update(uploadFileResult);
     console.log('>> Complete build: ' + uploadFileResult.signedUrl);
     res.status(204).send();
@@ -110,7 +111,7 @@ app.post('/', async (req, res) => {
 // GCS 上の PDF の URL をレスポンスとして返却する
 app.get('/pdf/:owner/:repo', async (req, res) => {
   try {
-    const url = await buildAndUpload(req.params.owner, req.params.repo, '', false);
+    const url = await buildAndUpload(req.params.owner, req.params.repo, '', true, '');
     res.send(url);
   } catch (error) {
     console.error(`error: ${error}`);
