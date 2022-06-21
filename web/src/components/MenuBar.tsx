@@ -45,7 +45,7 @@ export function MenuBar({
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: (theme: Theme | null, httpMode: boolean) => void;
+  onBuildPDFButtonClicked: (theme: Theme | null, httpMode: boolean, branch: string | null) => void;
   isExplorerVisible: boolean;
   onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
@@ -107,7 +107,7 @@ export function MenuBar({
   );
 
   const onBuildPDFButtonClickedInternal = useCallback(() => {
-    onBuildPDFButtonClicked(currentTheme.state?.theme, true)
+    onBuildPDFButtonClicked(currentTheme.state?.theme, true, repository.state.branch)
   }, [currentTheme]);
 
   return (

@@ -155,7 +155,7 @@ const GitHubOwnerRepo = () => {
     [setWarnDialog],
   );
 
-  const onBuildPDFButtonClicked = useCallback((theme: Theme | null, httpMode: boolean)=>{
+  const onBuildPDFButtonClicked = useCallback((theme: Theme | null, httpMode: boolean, branch: string | null) => {
     setIsProcessing(true);
     const functions = getFunctions();
     const buildPDF = httpsCallable(functions, 'buildPDF');
@@ -165,7 +165,7 @@ const GitHubOwnerRepo = () => {
       theme.name !== 'vivliostyle-custom-theme'
         ? theme.name
         : '';
-    buildPDF({owner, repo, themeName, httpMode}).then((result: any) => {
+    buildPDF({owner, repo, themeName, httpMode, branch: branch ?? ''}).then((result: any) => {
       console.log('buildPDF function', result);
       const buildID = result.data.buildID;
       setBuildID(buildID);

@@ -23,6 +23,7 @@ export const buildPDF = functions.https.onCall(async(repoInfo, context) => {
   await publishMessage("buildRequest", {
     owner: repoInfo.owner,
     repo: repoInfo.repo,
+    branch: repoInfo.branch,
     themeName: repoInfo.themeName,
     httpMode: repoInfo.httpMode,
     uid: context.auth?.uid,
