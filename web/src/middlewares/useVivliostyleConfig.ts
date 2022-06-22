@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import JSON5 from 'json5';
 
 import type {VivliostyleConfigSchema} from './vivliostyle.config'
 import { User } from 'firebase/auth';
@@ -27,14 +28,11 @@ const parseConfig = (configString: string) => {
   // 
 
   console.log('config',configString);
-  const configJsonString = configString
-    .replace('module.exports = ', '')
-    .replaceAll(/^\s*(.+):/gm, '"$1":')
-    .replaceAll(`'`, '"')
-    .replaceAll(/,[\s\n]*([\]}])/g, "$1")
-    .replaceAll(/};/g, "}")
-    
-  return JSON.parse(configJsonString) as VivliostyleConfigSchema;
+  const configJson5String = configString
+    .replace(/^([^\{\/]|\/\/[^\n]*(\n|$)|\/\*.*?\*\/)*\{/s, '{')
+    .replace(/\}([^\}\/]|\/\/[^\n]*(\n|$)|\/\*.*?\*\/)*$/s, '}');
+
+  return JSON5.parse(configJson5String) as VivliostyleConfigSchema;
 };
 
 export function useVivlioStyleConfig({
