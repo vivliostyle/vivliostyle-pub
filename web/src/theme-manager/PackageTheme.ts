@@ -12,8 +12,8 @@ import upath from 'upath';
   // const ast = parse(text);
 
   const imagePaths = Array.from(
-    text.matchAll(/url\("?(.+?)"?\)/g),
-    (m) => m[1],
+    text.matchAll(/\burl\((["']?)(?!["']|https?:|data:)(.+?)\1\)/g),
+    (m) => m[2],
   );
   // console.log('imagePaths', imagePaths);
   return imagePaths;
