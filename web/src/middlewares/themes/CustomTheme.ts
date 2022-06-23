@@ -4,6 +4,7 @@ import { RepositoryContext } from "../contexts/useRepositoryContext";
 import { VivliostyleConfigSchema } from "../vivliostyle.config";
 import { WebApiFs } from "../fs/WebApiFS";
 import upath from "upath";
+import JSON5 from "json5";
 
 /**
  * CSSからアプリケーションキャッシュの対象になるファイルのリストアップ
@@ -134,13 +135,10 @@ export class CustomTheme implements Theme {
       // console.log('CustomTheme::create configString', configString);
       // 設定ファイルからthemeを取得
       // TODO: entry別のテーマ
-      const configJsonString = configString
-        .replace('module.exports = ', '')
-        .replaceAll(/^\s*(.+):/gm, '"$1":')
-        .replaceAll(`'`, '"')
-        .replaceAll(/,[\s\n]*([\]}])/g, '$1')
-        .replaceAll(/};/g, '}');
-      const config = JSON.parse(configJsonString) as VivliostyleConfigSchema;
+      const configJson5String = configString
+        .replace(/^([^\{\/]|\/\/[^\n]*(\n|$)|\/\*.*?\*\/)*\{/s, '{')
+        .replace(/\}([^\}\/]|\/\/[^\n]*(\n|$)|\/\*.*?\*\/)*$/s, '}');
+      const config = JSON5.parse(configJson5String) as VivliostyleConfigSchema;
       if (!config || !config.theme) {
         return null;
       }
