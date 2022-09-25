@@ -14,7 +14,7 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
   const previewSource = usePreviewSourceContext();
 
   const [currentPath, setCurrentPath] = useState<string | null>(null);
-  const [stylePath, setStylePath] = useState<string|null>(null);
+  const [stylePath, setStylePath] = useState<string | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -29,11 +29,14 @@ export const Previewer: React.FC<PreviewerProps> = ({}) => {
       // 対象となるファイルが選択されていない
       // 初期状態、ブランチ切り替えやリポジトリ切り替えでこの状態になる
       iframeWindow.location.href = '/viewer/empty.html';
-    } else if (currentPath != previewSource.vpubPath || stylePath != currentTheme.state.stylePath) {
+    } else if (
+      currentPath != previewSource.vpubPath ||
+      stylePath != currentTheme.state.stylePath
+    ) {
       // 対象のファイルが変更された
-      let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#x=${
+      let url = `${VIVLIOSTYLE_VIEWER_HTML_URL}?${Date.now()}#src=${
         previewSource.vpubPath
-      }`;
+      }&bookMode=false`;
       const stylePath = currentTheme.state.theme?.getStylePath()
         ? '/vpubfs/' + currentTheme.state.theme?.getStylePath()
         : null;
