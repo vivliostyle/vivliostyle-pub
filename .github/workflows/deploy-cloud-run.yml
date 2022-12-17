@@ -52,7 +52,7 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --region $GCP_REGION \
             --platform managed \
-            --timeout 60m \
+            --timeout 15m \
             --cpu 4 \
             --memory 8Gi \
             --concurrency 1 \
