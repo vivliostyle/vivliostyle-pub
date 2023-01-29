@@ -1,4 +1,4 @@
-FROM ghcr.io/vivliostyle/cli:6.2.1
+FROM ghcr.io/vivliostyle/cli:6.2.2
 LABEL maintainer "Vivliostyle Foundation <mail@vivliostyle.org>"
 
 RUN set -x \
