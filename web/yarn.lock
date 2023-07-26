@@ -3428,10 +3428,10 @@
     "@typescript-eslint/types" "5.8.0"
     eslint-visitor-keys "^3.0.0"
 
-"@vivliostyle/core@^2.25.3":
-  version "2.25.3"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.25.3.tgz#553c2a1c6a9db051555d0aca792496e15c06e3a8"
-  integrity sha512-wtR04IjrVr1oydThyDnX3vtNAwqcn+JmYk04wr3pjdo39Fim+pdKNTvr7x+zWJDr3MQhyMncjIScS0stYKPyiQ==
+"@vivliostyle/core@^2.25.2":
+  version "2.25.2"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.25.2.tgz#e2139f1be3738ca6f453ecaaad8107d6c09d93fb"
+  integrity sha512-PO/+WiWqJftL6sJPXh9yphAEng/I2VXpFF0JCFHImqC4BPA6M3kWAb7ONq0dNeJVcbkmCEJqNj85U7ehZF3lWg==
   dependencies:
     fast-diff "^1.2.0"
 
@@ -3474,12 +3474,12 @@
     unist-util-visit "^2.0.3"
     unist-util-visit-parents "^3.1.1"
 
-"@vivliostyle/viewer@2.25.3":
-  version "2.25.3"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.25.3.tgz#b419a029ec6dda163eac6bbc7b0b97f300612817"
-  integrity sha512-l+Z4H+BHI3odMgzYYtSdy5rVK2q+kKuEy3oBRET1LDjudNxix9+fmv6RTu8JpGtdhQZmijDo3y1R2GeTtTrfBw==
+"@vivliostyle/viewer@2.25.2":
+  version "2.25.2"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.25.2.tgz#f7d392e3121e6e98d9a6c9bc4c41bd70c1f45a2b"
+  integrity sha512-Mkq7oq/78JdRx2Wp2burQaIRewsWY76HouHzBWNiL4sPAUbS7HFTJNP8tiAXE0pnThf6pYjfkuRkq8ZXUdmiog==
   dependencies:
-    "@vivliostyle/core" "^2.25.3"
+    "@vivliostyle/core" "^2.25.2"
     i18next-ko "^3.0.1"
     knockout "^3.5.0"
 
@@ -3957,9 +3957,9 @@ camelcase@^5.3.1:
   integrity sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==
 
 caniuse-lite@^1.0.30001283, caniuse-lite@^1.0.30001286, caniuse-lite@^1.0.30001317:
-  version "1.0.30001517"
-  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001517.tgz"
-  integrity sha512-Vdhm5S11DaFVLlyiKu4hiUTkpZu+y1KA/rZZqVQfOD5YdDT/eQKlkt7NaE0WGOFgX32diqt9MiP9CAiFeRklaA==
+  version "1.0.30001317"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001317.tgz#0548fb28fd5bc259a70b8c1ffdbe598037666a1b"
+  integrity sha512-xIZLh8gBm4dqNX0gkzrBeyI86J2eCjWzYAs40q88smG844YIrN4tVQl/RhquHvKEKImWWFIVh1Lxe5n1G/N+GQ==
 
 ccount@^1.0.0:
   version "1.1.0"
