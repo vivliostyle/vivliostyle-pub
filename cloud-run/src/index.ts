@@ -1,14 +1,15 @@
 import * as express from 'express';
 import {NextFunction, Request, Response} from 'express';
-import * as admin from 'firebase-admin';
+import {initializeApp, getApps} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
 import * as uuid from 'uuid'
 
 import {uploadFile} from './cloud-storage';
 import {gitClone} from './git-clone';
 import { execCommanad } from './util'
 
-if (!admin.apps.length) admin.initializeApp();
-const firestore = admin.firestore();
+if (!getApps().length) initializeApp();
+const firestore = getFirestore();
 
 const app = express();
 const allowCrossDomain = function (
@@ -97,7 +98,11 @@ app.post('/', async (req, res) => {
       Buffer.from(req.body.message.data, 'base64').toString(),
     );
     const uploadFileResult = await buildAndUpload(buidRequest.owner, buidRequest.repo, buidRequest.themeName, buidRequest.httpMode, buidRequest.branch);
-    if (buidRequest.id) await firestore.doc(`users/${buidRequest.uid}/builds/${buidRequest.id}`).update(uploadFileResult);
+    if (buidRequest.id) {
+      await firestore
+        .doc(`users/${buidRequest.uid}/builds/${buidRequest.id}`)
+        .update({data: uploadFileResult});
+    }
     console.log('>> Complete build: ' + uploadFileResult.signedUrl);
     res.status(204).send();
   } catch (error) {
