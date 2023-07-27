@@ -101,7 +101,7 @@ app.post('/', async (req, res) => {
     if (buidRequest.id) {
       await firestore
         .doc(`users/${buidRequest.uid}/builds/${buidRequest.id}`)
-        .update({data: uploadFileResult});
+        .update(uploadFileResult as {});
     }
     console.log('>> Complete build: ' + uploadFileResult.signedUrl);
     res.status(204).send();
