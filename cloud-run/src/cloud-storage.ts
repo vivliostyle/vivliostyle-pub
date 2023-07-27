@@ -6,7 +6,7 @@ const storage = new Storage();
 
 const bucketName = 'vivliostyle-pub-build-pdf';
 
-interface UploadFileResult {
+export interface UploadFileResult {
   signedUrl: string
   url: string
 }
