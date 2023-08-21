@@ -1,11 +1,10 @@
-import * as admin from 'firebase-admin';
+import {initializeApp, getApps} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions';
-import * as WebhooksApi from '@octokit/webhooks';
+import {Webhooks, createNodeMiddleware} from '@octokit/webhooks';
 
-if (!admin.apps.length) {
-  admin.initializeApp(functions.config().firebase);
-}
-const firestore = admin.firestore();
+if (!getApps().length) initializeApp(functions.config().firebase);
+const firestore = getFirestore();
 
 const getEnv = (key: string) =>
   process.env.FIREBASE_CONFIG
@@ -14,7 +13,7 @@ const getEnv = (key: string) =>
       ]
     : process.env[`GH_APP_${key}`];
 
-const webhooks = new WebhooksApi({
+const webhooks = new Webhooks({
   secret: getEnv('WEBHOOK_SECRET'),
 });
 
@@ -33,11 +32,13 @@ webhooks.on('installation', async (event) => {
   }
 });
 
-webhooks.on('error', (error) => {
+webhooks.onError((error) => {
   console.log(error.stack);
 });
 
 // Start writing Firebase Functions
 // https://firebase.google.com/docs/functions/typescript
 
-export const webhookHandler = functions.https.onRequest(webhooks.middleware);
+export const webhookHandler = functions.https.onRequest(
+  createNodeMiddleware(webhooks) as any,
+);
