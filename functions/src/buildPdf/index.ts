@@ -1,11 +1,10 @@
-import * as admin from 'firebase-admin';
+import {initializeApp, getApps} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions';
 import { PubSub } from '@google-cloud/pubsub';
 
-if (!admin.apps.length) {
-  admin.initializeApp(functions.config().firebase);
-}
-const firestore = admin.firestore();
+if (!getApps().length) initializeApp(functions.config().firebase);
+const firestore = getFirestore();
 
 const publishMessage = async(topicName:string, data:any) => {
   const pubSubClient = new PubSub();
