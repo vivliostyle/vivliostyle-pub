@@ -39,6 +39,13 @@ webhooks.onError((error) => {
 // Start writing Firebase Functions
 // https://firebase.google.com/docs/functions/typescript
 
-export const webhookHandler = functions.https.onRequest(
-  createNodeMiddleware(webhooks, {path: '/'}) as any,
-);
+const middleware = createNodeMiddleware(webhooks, {path: '/'});
+
+export const webhookHandler = functions.https.onRequest(async (req, res) => {
+  if (typeof req.body === 'object') {
+    req.body = JSON.stringify(req.body);
+  }
+  if (await middleware(req, res)) return;
+  res.writeHead(404);
+  res.end();
+});
