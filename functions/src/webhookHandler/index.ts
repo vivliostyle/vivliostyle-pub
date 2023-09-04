@@ -40,5 +40,5 @@ webhooks.onError((error) => {
 // https://firebase.google.com/docs/functions/typescript
 
 export const webhookHandler = functions.https.onRequest(
-  createNodeMiddleware(webhooks) as any,
+  createNodeMiddleware(webhooks, {path: '/'}) as any,
 );
