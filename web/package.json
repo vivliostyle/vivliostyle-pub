@@ -23,7 +23,7 @@
     "@octokit/graphql": "^4.8.0",
     "@octokit/rest": "^18.12.0",
     "@vivliostyle/vfm": "2.1.0",
-    "@vivliostyle/viewer": "2.25.5",
+    "@vivliostyle/viewer": "2.25.6",
     "apollo-server-micro": "^3.6.2",
     "chakra-ui-contextmenu": "^1.0.3",
     "dotenv": "^14.3.2",
