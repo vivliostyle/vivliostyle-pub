@@ -54,7 +54,7 @@ export async function transpileMarkdown(
   }
   console.log('transpiled', srcPath, '\n' /*, text*/);
   let errors:Error[] = [];
-  if (srcPath.endsWith('.html')) {
+  if (srcPath.endsWith('.html') || srcPath.endsWith('.xhtml')) {
     const imagePaths = pickupHtmlResources(text);
     console.log('transpile imagePaths',imagePaths);
     const promises = imagePaths.map(async (imagePath) => {
