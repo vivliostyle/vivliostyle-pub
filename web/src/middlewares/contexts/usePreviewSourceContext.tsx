@@ -169,7 +169,9 @@ export const PreviewSourceContextProvider: React.FC<PreviewSourceProps> = ({
           if (
             currentFile.state.file.name &&
             isEditableFile(currentFile.state.file.name) &&
-            (currentFile.state.ext == 'md' || currentFile.state.ext == 'html')
+            (currentFile.state.ext == 'md' ||
+              currentFile.state.ext == 'html' ||
+              currentFile.state.ext == 'xhtml')
           ) {
             // console.log('編集対象ファイルはプレビュー可能', currentFile);
             const result = await transpile(currentFile, app, repository, log);
