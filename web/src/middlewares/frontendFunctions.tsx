@@ -18,7 +18,13 @@ export const isURL = (value: string) => /^http(?:s)?:\/\//g.test(value);
  */
 export function isEditableFile(path?: string) {
   const ext = getExt(path);
-  return ext == 'md' || ext == 'html' || ext == 'css' || ext == 'js';
+  return (
+    ext == 'md' ||
+    ext == 'html' ||
+    ext == 'xhtml' ||
+    ext == 'css' ||
+    ext == 'js'
+  );
 }
 
 /**

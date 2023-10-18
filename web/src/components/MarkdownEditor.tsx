@@ -28,7 +28,7 @@ export const MarkdownEditor = ({
       return 'markdown';
     } else if (ext === 'js') {
       return 'javascript';
-    } else if (ext === 'html') {
+    } else if (ext === 'html' || ext === 'xhtml') {
       return 'html';
     } else if (ext === 'css') {
       return 'css';
