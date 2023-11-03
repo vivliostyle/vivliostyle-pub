@@ -3513,10 +3513,10 @@
   dependencies:
     fast-diff "^1.2.0"
 
-"@vivliostyle/vfm@2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-2.2.0.tgz#f62929bf92b5a3630ba8a26bb607f31d24aeb7e2"
-  integrity sha512-YlkfwmVpo0azJDkLKizCoK0UVGrjRM1UybPMeQnj/3qJYvWezMDNPzBDgOe0W94SCBux8ufO6KuGYyHvm/Z3wg==
+"@vivliostyle/vfm@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-2.1.0.tgz#8d4e068123cffe1c2081ce3a1389c4fbe003d42d"
+  integrity sha512-qs26plUnRTd/XGQd7iLVkpSIY3pYPxwvYty8QJsSt+i9uS5W+LEY3QSRoWvbJTHco0IS8mmPmmf4XouABSQaQg==
   dependencies:
     debug "^4.3.1"
     doctype "^2.0.4"
@@ -4800,9 +4800,9 @@ fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
 
 fast-diff@^1.2.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/fast-diff/-/fast-diff-1.3.0.tgz#ece407fa550a64d638536cd727e129c61616e0f0"
-  integrity sha512-VxPP4NqbUjj6MaAOafWeUn2cXWLcCtljklUtZf0Ind4XQ+QPtmA0b18zZy0jIQx+ExRVCR/ZQpBmik5lXshNsw==
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/fast-diff/-/fast-diff-1.2.0.tgz#73ee11982d86caaf7959828d519cfe927fac5f03"
+  integrity sha512-xJuoT5+L99XlZ8twedaRf6Ax2TgQVxvgZOYoPKqZufmJib0tL2tegPBOZb1pVNgIhlqDlA0eO0c3wBvQcmzx4w==
 
 fast-glob@^3.1.1:
   version "3.2.7"
