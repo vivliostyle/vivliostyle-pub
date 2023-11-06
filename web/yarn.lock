@@ -3506,17 +3506,17 @@
     "@typescript-eslint/types" "5.8.0"
     eslint-visitor-keys "^3.0.0"
 
-"@vivliostyle/core@^2.25.5":
-  version "2.25.5"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.25.5.tgz#1f8dc40b5a4969e34efbd60d6c6cda6523c946e3"
-  integrity sha512-JhHUMOHK7uMY9njvyNDnZjptKaVeTEgRR0KfZ7WMAXIVmaQaKt5gPTpuSVtIB0vDxfoYKoTrSVqpyOlOMAszuA==
+"@vivliostyle/core@^2.25.8":
+  version "2.25.8"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/core/-/core-2.25.8.tgz#3e55008bd4f2ae14d012d579bf4c3dc2e5cbd978"
+  integrity sha512-Mxhh9tARfg5B4bMKoGK/MLcXwUhmTLGAnJEQ+Q7Gjf3Ye0A0cqGrnIFZXJwotUrBIce6012ZBAYtABDefrTT4A==
   dependencies:
     fast-diff "^1.2.0"
 
-"@vivliostyle/vfm@2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-2.1.0.tgz#8d4e068123cffe1c2081ce3a1389c4fbe003d42d"
-  integrity sha512-qs26plUnRTd/XGQd7iLVkpSIY3pYPxwvYty8QJsSt+i9uS5W+LEY3QSRoWvbJTHco0IS8mmPmmf4XouABSQaQg==
+"@vivliostyle/vfm@2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/vfm/-/vfm-2.2.1.tgz#85b7f60081c197e8d4af508325948546ef0b352a"
+  integrity sha512-gxPISVo2kDDxGALKYY7uz7cDnp8RaaY+VSbWz443V7X77ofyfcyRbUM13tEPrje8TEIpuP6pYZ9HU+FVTcrQLw==
   dependencies:
     debug "^4.3.1"
     doctype "^2.0.4"
@@ -3552,12 +3552,12 @@
     unist-util-visit "^2.0.3"
     unist-util-visit-parents "^3.1.1"
 
-"@vivliostyle/viewer@2.25.6":
-  version "2.25.6"
-  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.25.6.tgz#1e494256b70f72cb05a66dcd72b6d42b08a74085"
-  integrity sha512-wpzE4/iDmeVaYymXC4illLstCI9GPMkvq7dNRA4CYpPxoHKN7BWzSdI2jrPu7r1LzarTcS0Mz0HEfngS3RSw3w==
+"@vivliostyle/viewer@2.25.8":
+  version "2.25.8"
+  resolved "https://registry.yarnpkg.com/@vivliostyle/viewer/-/viewer-2.25.8.tgz#90d69f14df00740400da926f49ac5f8852a120e7"
+  integrity sha512-lQVB1RfvU+LVZsxHqxeJ8uo5w6lQtUxQQGBcQ+GRRhN72OfDdBNOEtSZuv7v9qGOR2fG2RNq2JfgbdVjoDQ8Tg==
   dependencies:
-    "@vivliostyle/core" "^2.25.5"
+    "@vivliostyle/core" "^2.25.8"
     i18next-ko "^3.0.1"
     knockout "^3.5.0"
 
