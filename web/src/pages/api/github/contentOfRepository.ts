@@ -20,10 +20,10 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
     const {owner, repo, path, branch, oid} = req.query;
     if (
       req.method !== 'GET' ||
-      Array.isArray(owner) ||
-      Array.isArray(repo) ||
-      Array.isArray(path) ||
-      Array.isArray(branch)
+      typeof owner !== 'string' ||
+      typeof repo !== 'string' ||
+      typeof path !== 'string' ||
+      typeof branch !== 'string'
     ) {
       console.log('validation error');
       return res.status(400).send(null);
@@ -101,12 +101,10 @@ const contentOfRepository: NextApiHandler<ContentOfRepositoryApiResponse | null>
           }
         }
       }
-    `);
-      if (oid == repository.content.oid) {
-      // ハッシュが同じなら取得しない
-      res
-          .status(200)
-          .json({content: '', encoding: '', oid: repository.content.oid});
+      `) as { repository: { content: { isBinary: boolean; oid: string; text: string } } };
+      if (oid == repository.content?.oid) {
+        // ハッシュが同じなら取得しない
+        res.status(200).json({content: '', encoding: '', oid});
       } else if (repository.content.isBinary) {
         const octokit = new Octokit({
           auth: `token ${decrypted}`,

@@ -13,7 +13,13 @@ const commits: NextApiHandler<CommitsOfRepositoryApiResponse | null> = async (
   res,
 ) => {
   const {owner, repo, branch, path} = req.query;
-  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo) || Array.isArray(branch) || Array.isArray(path)) {
+  if (
+    req.method !== 'GET' ||
+    typeof owner !== 'string' ||
+    typeof repo !== 'string' ||
+    typeof branch !== 'string' ||
+    typeof path !== 'string'
+  ) {
     console.log('validation error');
     return res.status(400).send(null);
   }

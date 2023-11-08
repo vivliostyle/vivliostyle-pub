@@ -18,7 +18,7 @@ const branches: NextApiHandler<BranchesApiResponse | null> = async (
   res,
 ) => {
   const {owner, repo} = req.query;
-  if (req.method !== 'GET' || Array.isArray(owner) || Array.isArray(repo)) {
+  if (req.method !== 'GET' || typeof owner !== 'string' || typeof repo !== 'string') {
     console.log("validation error")
     return res.status(400).send(null);
   }
