@@ -149,7 +149,7 @@ const GitHubOwnerRepo = () => {
   // }, [session, currentFile]);
 
   const onModified = useCallback(
-    (updatedText) => {
+    (updatedText: string) => {
       setWarnDialog(true);
     },
     [setWarnDialog],

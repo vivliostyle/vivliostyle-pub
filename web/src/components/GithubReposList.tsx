@@ -40,6 +40,7 @@ export const GithubReposList: React.FC<{}> = ({}) => {
           href="github/[owner]/[repo]"
           as={`/github/${repo.full_name}`}
           key={repo.id}
+          legacyBehavior
         >
           <a>
             <UI.Box key={repo.node_id}>

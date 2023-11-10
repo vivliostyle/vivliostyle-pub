@@ -87,7 +87,7 @@ export const Header: React.FC = () => {
   return (
     <UI.Flex w="100%" h={16} backgroundColor="gray.200">
       <UI.Container w="100%" justify="space-between" align="center">
-        <Link href="/">
+        <Link href="/" legacyBehavior>
           <a>
             <UI.Heading size="sm">Vivliostyle Pub</UI.Heading>
           </a>
