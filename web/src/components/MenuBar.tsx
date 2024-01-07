@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import * as UI from '@components/ui';
-import {BranchSelecter} from './BranchSelecter';
+import {BranchSelector} from './BranchSelector';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
 import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
@@ -22,7 +22,6 @@ import {PlainTheme} from '@middlewares/themes/PlainTheme';
 interface MenuBarState {
   isProcessing: boolean;
   isPresentationMode: boolean;
-
 }
 
 export function MenuBar({
@@ -45,7 +44,11 @@ export function MenuBar({
   isPresentationMode: boolean;
   setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
   setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: (theme: Theme | null, httpMode: boolean, branch: string | null) => void;
+  onBuildPDFButtonClicked: (
+    theme: Theme | null,
+    httpMode: boolean,
+    branch: string | null,
+  ) => void;
   isExplorerVisible: boolean;
   onToggleExplorer: (f: boolean) => void;
   isEditorVisible: boolean;
@@ -70,16 +73,18 @@ export function MenuBar({
     // ブランチが変更されたらカスタムテーマを読み直し
     // ブランチ毎に保存したテーマを保持する
     // TODO: config.jsが編集されたらカスタムテーマを読み直し
-    CustomTheme.create(app, repository).then((theme) => {
-      if(theme) {
-        setCustomTheme(theme);
-        currentTheme.changeTheme(theme);  
-      }else{
+    CustomTheme.create(app, repository)
+      .then((theme) => {
+        if (theme) {
+          setCustomTheme(theme);
+          currentTheme.changeTheme(theme);
+        } else {
+          currentTheme.changeTheme(plainTheme);
+        }
+      })
+      .catch(() => {
         currentTheme.changeTheme(plainTheme);
-      }
-    }).catch(()=>{      
-      currentTheme.changeTheme(plainTheme);
-    });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, repository.state.branch]);
 
@@ -107,7 +112,11 @@ export function MenuBar({
   );
 
   const onBuildPDFButtonClickedInternal = useCallback(() => {
-    onBuildPDFButtonClicked(currentTheme.state?.theme, true, repository.state.branch)
+    onBuildPDFButtonClicked(
+      currentTheme.state?.theme,
+      true,
+      repository.state.branch,
+    );
   }, [currentTheme]);
 
   return (
@@ -115,7 +124,7 @@ export function MenuBar({
       <UI.Flex align="center">
         {repository.state.owner} / {repository.state.repo} /
         <UI.Box w="180px" px="4">
-          <BranchSelecter />
+          <BranchSelector />
         </UI.Box>
         {app.state.user /*&& session?.id*/ && (
           <div>
@@ -190,7 +199,9 @@ export function MenuBar({
                 key={plainTheme.name}
                 onClick={() => onThemeSelected(plainTheme)}
               >
-                {plainTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
+                {plainTheme.name === currentTheme.state.theme?.name
+                  ? '✔ '
+                  : ' '}
                 {plainTheme.description}
               </UI.MenuItem>
               {!customTheme ? null : (
@@ -198,7 +209,9 @@ export function MenuBar({
                   key={customTheme.name}
                   onClick={() => onThemeSelected(customTheme)}
                 >
-                  {customTheme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
+                  {customTheme.name === currentTheme.state.theme?.name
+                    ? '✔ '
+                    : ' '}
                   {customTheme.description}
                 </UI.MenuItem>
               )}
@@ -228,7 +241,9 @@ export function MenuBar({
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Export">
-              <UI.MenuItem onClick={onBuildPDFButtonClickedInternal}>PDF</UI.MenuItem>
+              <UI.MenuItem onClick={onBuildPDFButtonClickedInternal}>
+                PDF
+              </UI.MenuItem>
             </UI.MenuGroup>
             <UI.MenuDivider />
             <UI.MenuGroup title="Help">

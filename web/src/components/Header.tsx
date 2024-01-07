@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import * as UI from './ui';
-import {AppContext, useAppContext} from '@middlewares/contexts/useAppContext';
+import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {useTranslation} from 'react-i18next';
 import {ChevronDownIcon} from '@chakra-ui/icons';
 import {MenuItem} from '@chakra-ui/react';
