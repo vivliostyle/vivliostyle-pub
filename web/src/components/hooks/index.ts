@@ -9,3 +9,5 @@ export * from './useMarkdownEditor';
 export * from './useMarkdownPreviewer';
 export * from './useMenuBar';
 export * from './useProjectExplorer';
+export * from './useProjectExplorerDirEntry';
+export * from './useProjectExplorerFileEntry';
