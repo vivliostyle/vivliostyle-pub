@@ -1,30 +1,40 @@
-import React, {
-  Dispatch,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import * as UI from '@components/ui';
+import {Dispatch, FC, SetStateAction} from 'react';
 import {BranchSelector} from './BranchSelector';
 import {CommitSessionButton} from './CommitSessionButton';
 import {FileUploadModal} from './FileUploadModal';
-import {useRepositoryContext} from '@middlewares/contexts/useRepositoryContext';
-import {useAppContext} from '@middlewares/contexts/useAppContext';
-
-import {useDisclosure} from '@chakra-ui/react';
 import {EditIcon, HamburgerIcon, ViewIcon} from '@chakra-ui/icons';
-import {Theme} from 'theme-manager';
-import {useCurrentThemeContext} from '@middlewares/contexts/useCurrentThemeContext';
-import {CustomTheme} from '@middlewares/themes/CustomTheme';
-import {PlainTheme} from '@middlewares/themes/PlainTheme';
+import {OnBuildPDFButtonClicked, useMenuBar} from './hooks';
+import {
+  Box,
+  Button,
+  ButtonGroup,
+  Flex,
+  Icon,
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuGroup,
+  MenuItem,
+  MenuList,
+  Spinner,
+} from '@chakra-ui/react';
 
-interface MenuBarState {
+export const MenuBar: FC<{
   isProcessing: boolean;
   isPresentationMode: boolean;
-}
-
-export function MenuBar({
+  setPresentationMode: Dispatch<SetStateAction<boolean>>;
+  setWarnDialog: Dispatch<SetStateAction<boolean>>;
+  onBuildPDFButtonClicked: OnBuildPDFButtonClicked;
+  isExplorerVisible: boolean;
+  onToggleExplorer: (f: boolean) => void;
+  isEditorVisible: boolean;
+  onToggleEditor: (f: boolean) => void;
+  isPreviewerVisible: boolean;
+  onTogglePreviewer: (f: boolean) => void;
+  isAutoReload: boolean;
+  setAutoReload: (f: boolean) => void;
+  onReload: () => void;
+}> = ({
   isProcessing,
   isPresentationMode,
   setPresentationMode,
@@ -39,103 +49,38 @@ export function MenuBar({
   isAutoReload,
   setAutoReload,
   onReload,
-}: {
-  isProcessing: boolean;
-  isPresentationMode: boolean;
-  setPresentationMode: Dispatch<React.SetStateAction<boolean>>;
-  setWarnDialog: Dispatch<React.SetStateAction<boolean>>;
-  onBuildPDFButtonClicked: (
-    theme: Theme | null,
-    httpMode: boolean,
-    branch: string | null,
-  ) => void;
-  isExplorerVisible: boolean;
-  onToggleExplorer: (f: boolean) => void;
-  isEditorVisible: boolean;
-  onToggleEditor: (f: boolean) => void;
-  isPreviewerVisible: boolean;
-  onTogglePreviewer: (f: boolean) => void;
-  isAutoReload: boolean;
-  setAutoReload: (f: boolean) => void;
-  onReload: () => void;
-}) {
-  const app = useAppContext();
-  const currentTheme = useCurrentThemeContext();
-  const repository = useRepositoryContext();
-  const plainTheme = useMemo(() => {
-    // Viewerのデフォルトスタイルを使用するテーマ
-    const plainTheme = new PlainTheme();
-    return plainTheme;
-  }, []);
-
-  const [customTheme, setCustomTheme] = useState<Theme | null>(null);
-  useEffect(() => {
-    // ブランチが変更されたらカスタムテーマを読み直し
-    // ブランチ毎に保存したテーマを保持する
-    // TODO: config.jsが編集されたらカスタムテーマを読み直し
-    CustomTheme.create(app, repository)
-      .then((theme) => {
-        if (theme) {
-          setCustomTheme(theme);
-          currentTheme.changeTheme(theme);
-        } else {
-          currentTheme.changeTheme(plainTheme);
-        }
-      })
-      .catch(() => {
-        currentTheme.changeTheme(plainTheme);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app, repository.state.branch]);
-
-  const onDidSaved = useCallback(() => {
-    console.log('onDidSaved');
-    setWarnDialog(false);
-  }, [setWarnDialog]);
-
+}) => {
   const {
-    isOpen: isOpenFileUploadModal,
-    onOpen: onOpenFileUploadModal,
-    onClose: onCloseFileUploadModal,
-  } = useDisclosure();
-
-  /**
-   * スタイルシートが変更された
-   * @param theme
-   */
-  const onThemeSelected = useCallback(
-    (theme: Theme) => {
-      console.log('theme selected', theme);
-      currentTheme.changeTheme(theme);
-    },
-    [currentTheme],
-  );
-
-  const onBuildPDFButtonClickedInternal = useCallback(() => {
-    onBuildPDFButtonClicked(
-      currentTheme.state?.theme,
-      true,
-      repository.state.branch,
-    );
-  }, [currentTheme]);
+    appState,
+    repositoryState,
+    currentTheme,
+    plainTheme,
+    customTheme,
+    onDidSaved,
+    onThemeSelected,
+    isOpenFileUploadModal,
+    onOpenFileUploadModal,
+    onCloseFileUploadModal,
+    onBuildPDFButtonClickedInternal,
+  } = useMenuBar(setWarnDialog, onBuildPDFButtonClicked);
 
   return (
-    <UI.Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
-      <UI.Flex align="center">
-        {repository.state.owner} / {repository.state.repo} /
-        <UI.Box w="180px" px="4">
+    <Flex w="100%" h={'3rem'} px={8} justify="space-between" align="center">
+      <Flex align="center">
+        {repositoryState.owner} / {repositoryState.repo} /
+        <Box w="180px" px="4">
           <BranchSelector />
-        </UI.Box>
-        {app.state.user /*&& session?.id*/ && (
+        </Box>
+        {appState.user /*&& session?.id*/ && (
           <div>
             <CommitSessionButton {...{onDidSaved}} />
           </div>
         )}
-      </UI.Flex>
-      <UI.Flex align="center">
-        {isProcessing && <UI.Spinner style={{marginRight: '10px'}} />}
-        <UI.ButtonGroup>
-          <UI.Button
+      </Flex>
+      <Flex align="center">
+        {isProcessing && <Spinner style={{marginRight: '10px'}} />}
+        <ButtonGroup>
+          <Button
             title="Project Explorer Visiblity"
             onClick={() => onToggleExplorer(!isExplorerVisible)}
             border={
@@ -143,15 +88,15 @@ export function MenuBar({
             }
           >
             <HamburgerIcon />
-          </UI.Button>
-          <UI.Button
+          </Button>
+          <Button
             title="Editor Visiblity"
             onClick={() => onToggleEditor(!isEditorVisible)}
             border={isEditorVisible ? 'solid 2px black' : 'solid 2px lightgray'}
           >
             <EditIcon />
-          </UI.Button>
-          <UI.Button
+          </Button>
+          <Button
             title="Preview Visiblity"
             onClick={() => onTogglePreviewer(!isPreviewerVisible)}
             border={
@@ -159,7 +104,7 @@ export function MenuBar({
             }
           >
             <ViewIcon />
-          </UI.Button>
+          </Button>
           {/* リロードボタンはうまく動かないのでとりあえず無効化
             <UI.Button
             title="Preview Reload"
@@ -168,34 +113,34 @@ export function MenuBar({
           >
             <RepeatIcon />
           </UI.Button> */}
-        </UI.ButtonGroup>
+        </ButtonGroup>
         &nbsp;
-        <UI.Menu>
-          <UI.MenuButton as={UI.Button}>
-            <UI.Icon name="chevron-down" /> Actions
-          </UI.MenuButton>
-          <UI.MenuList>
-            <UI.MenuGroup title="Setting">
-              <UI.MenuItem
+        <Menu>
+          <MenuButton as={Button}>
+            <Icon name="chevron-down" /> Actions
+          </MenuButton>
+          <MenuList>
+            <MenuGroup title="Setting">
+              <MenuItem
                 key="presen"
                 onClick={() => {
                   setPresentationMode(!isPresentationMode);
                 }}
               >
                 {isPresentationMode ? '✔ ' : ' '}Presentation Mode
-              </UI.MenuItem>
-              <UI.MenuItem
+              </MenuItem>
+              <MenuItem
                 key="autoReload"
                 onClick={() => {
                   setAutoReload(!isAutoReload);
                 }}
               >
                 {isAutoReload ? '✔ ' : ' '}Auto reload
-              </UI.MenuItem>
-            </UI.MenuGroup>
-            <UI.MenuDivider />
-            <UI.MenuGroup title="Theme">
-              <UI.MenuItem
+              </MenuItem>
+            </MenuGroup>
+            <MenuDivider />
+            <MenuGroup title="Theme">
+              <MenuItem
                 key={plainTheme.name}
                 onClick={() => onThemeSelected(plainTheme)}
               >
@@ -203,9 +148,9 @@ export function MenuBar({
                   ? '✔ '
                   : ' '}
                 {plainTheme.description}
-              </UI.MenuItem>
+              </MenuItem>
               {!customTheme ? null : (
-                <UI.MenuItem
+                <MenuItem
                   key={customTheme.name}
                   onClick={() => onThemeSelected(customTheme)}
                 >
@@ -213,41 +158,37 @@ export function MenuBar({
                     ? '✔ '
                     : ' '}
                   {customTheme.description}
-                </UI.MenuItem>
+                </MenuItem>
               )}
-              {app.state.onlineThemes.map((theme) => (
-                <UI.MenuItem
+              {appState.onlineThemes.map((theme) => (
+                <MenuItem
                   key={theme.name}
                   onClick={() => onThemeSelected(theme)}
                 >
                   {theme.name === currentTheme.state.theme?.name ? '✔ ' : ' '}
                   {theme.description}
-                </UI.MenuItem>
+                </MenuItem>
               ))}
-            </UI.MenuGroup>
-            <UI.MenuDivider />
-            <UI.MenuGroup title="Add Files">
-              <UI.MenuItem onClick={onOpenFileUploadModal}>
-                Add Image
-              </UI.MenuItem>
+            </MenuGroup>
+            <MenuDivider />
+            <MenuGroup title="Add Files">
+              <MenuItem onClick={onOpenFileUploadModal}>Add Image</MenuItem>
               <FileUploadModal
-                user={app.state.user}
+                user={appState.user}
                 isOpen={isOpenFileUploadModal}
                 onOpen={onOpenFileUploadModal}
                 onClose={onCloseFileUploadModal}
                 title="Upload Image"
                 accept="image/*"
               />
-            </UI.MenuGroup>
-            <UI.MenuDivider />
-            <UI.MenuGroup title="Export">
-              <UI.MenuItem onClick={onBuildPDFButtonClickedInternal}>
-                PDF
-              </UI.MenuItem>
-            </UI.MenuGroup>
-            <UI.MenuDivider />
-            <UI.MenuGroup title="Help">
-              <UI.MenuItem
+            </MenuGroup>
+            <MenuDivider />
+            <MenuGroup title="Export">
+              <MenuItem onClick={onBuildPDFButtonClickedInternal}>PDF</MenuItem>
+            </MenuGroup>
+            <MenuDivider />
+            <MenuGroup title="Help">
+              <MenuItem
                 onClick={() => {
                   let option =
                     'width=1024,height=768,menubar=no,toolbar=no,status=no,location=no';
@@ -259,11 +200,11 @@ export function MenuBar({
                 }}
               >
                 VFM Spec
-              </UI.MenuItem>
-            </UI.MenuGroup>
-          </UI.MenuList>
-        </UI.Menu>
-      </UI.Flex>
-    </UI.Flex>
+              </MenuItem>
+            </MenuGroup>
+          </MenuList>
+        </Menu>
+      </Flex>
+    </Flex>
   );
-}
+};

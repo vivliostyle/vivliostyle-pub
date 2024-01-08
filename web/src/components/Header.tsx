@@ -1,101 +1,22 @@
 import React from 'react';
 import Link from 'next/link';
-import * as UI from './ui';
-import {useAppContext} from '@middlewares/contexts/useAppContext';
-import {useTranslation} from 'react-i18next';
-import {ChevronDownIcon} from '@chakra-ui/icons';
-import {MenuItem} from '@chakra-ui/react';
-
-const HeaderUserInfo: React.FC = () => {
-  const app = useAppContext();
-  console.log('user', app.state.user);
-  const {t, i18n} = useTranslation();
-
-  return (
-    <>
-      {app.state.user ? (
-        <UI.Menu>
-          <UI.MenuButton as={UI.Button} rightIcon={<ChevronDownIcon />}>
-            {app.state.user.displayName}
-          </UI.MenuButton>
-          <UI.MenuList>
-            <MenuItem>
-              <UI.Link
-                href="https://docs.google.com/forms/d/e/1FAIpQLSeh_7rm4RbwKRSHsEXexC4-PBZGK4JJFyQrW_Ee5JGUJHoB5w/viewform?usp=sf_link"
-                isExternal={true}
-              >
-                {t('利用者アンケート')}
-              </UI.Link>
-            </MenuItem>
-            <MenuItem>
-              <UI.Link
-                href="https://docs.google.com/forms/d/e/1FAIpQLSfdbtDe9SsFyHJD5wFg4cHc91qf7GsSLydH2wsK4xnwffQwjQ/viewform?usp=sf_link"
-                isExternal={true}
-              >
-                {t('不具合のフィードバック')}
-              </UI.Link>
-            </MenuItem>
-            <MenuItem onClick={app.signOut}>Logout</MenuItem>
-          </UI.MenuList>
-        </UI.Menu>
-      ) : (
-        <>
-          <UI.Button
-            variant="outline"
-            colorScheme="blackAlpha"
-            onClick={app.signIn}
-          >
-            Login
-          </UI.Button>
-          <UI.Link
-            href="https://vercel.com/?utm_source=vivliostyle&amp;utm_campaign=oss"
-            isExternal={true}
-            style={{position: 'fixed', bottom: 0, right: 0}}
-          >
-            <UI.Image
-              src="https://www.datocms-assets.com/31049/1618983297-powered-by-vercel.svg"
-              alt="Powered By Vercel"
-            />
-          </UI.Link>
-        </>
-      )}
-      <UI.Select
-        width={'7em'}
-        size="sm"
-        value={i18n.language}
-        onChange={(e) => {
-          console.log(e.target.value);
-          i18n.changeLanguage(e.target.value);
-        }}
-      >
-        <option value="en">{t('English')}</option>
-        <option value="ja">{t('日本語')}</option>
-      </UI.Select>
-      <UI.Link
-        href={t('URL-vivliostyle-pub-user-guide')}
-        isExternal={true}
-        marginInlineStart={'1em'}
-      >
-        {t('ユーザーガイド')}
-      </UI.Link>
-    </>
-  );
-};
+import {Container, Flex, Heading} from '@chakra-ui/react';
+import {HeaderUserInfo} from './HeaderUserInfo';
 
 export const Header: React.FC = () => {
   console.log('[Header]');
   return (
-    <UI.Flex w="100%" h={16} backgroundColor="gray.200">
-      <UI.Container w="100%" justify="space-between" align="center">
+    <Flex w="100%" h={16} backgroundColor="gray.200">
+      <Container w="100%" justify="space-between" align="center">
         <Link href="/">
           <a>
-            <UI.Heading size="sm">Vivliostyle Pub</UI.Heading>
+            <Heading size="sm">Vivliostyle Pub</Heading>
           </a>
         </Link>
-        <UI.Flex align="center">
+        <Flex align="center">
           <HeaderUserInfo />
-        </UI.Flex>
-      </UI.Container>
-    </UI.Flex>
+        </Flex>
+      </Container>
+    </Flex>
   );
 };

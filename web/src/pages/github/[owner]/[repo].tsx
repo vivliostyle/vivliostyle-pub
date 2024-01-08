@@ -7,7 +7,7 @@ import {useWarnBeforeLeaving} from '@middlewares/useWarnBeforeLeaving';
 
 import * as UI from '@components/ui';
 import {MarkdownEditor} from '@components/MarkdownEditor';
-import {Previewer} from '@components/MarkdownPreviewer';
+import {MarkdownPreviewer} from '@components/MarkdownPreviewer';
 
 import {RepositoryContextProvider} from '@middlewares/contexts/useRepositoryContext';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
@@ -22,7 +22,7 @@ import {CurrentThemeContextProvider} from '@middlewares/contexts/useCurrentTheme
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {doc, onSnapshot} from 'firebase/firestore';
 import {db} from '@services/firebase';
-import { t } from 'i18next';
+import {t} from 'i18next';
 import {Theme} from 'theme-manager';
 
 interface BuildRecord {
@@ -34,7 +34,6 @@ interface BuildRecord {
     stylesheet: string;
   };
 }
-
 
 /**
  * メインコンポーネント
@@ -54,9 +53,8 @@ const GitHubOwnerRepo = () => {
 
   // クエリパラメータでカレントブランチ、カレントファイルが指定されている
   const url = new URL(window.location.toString());
-  const paramBranch = url.searchParams.get('branch')?? undefined;
+  const paramBranch = url.searchParams.get('branch') ?? undefined;
   const paramFile = url.searchParams.get('file') ?? undefined;
-  
 
   // check login
   useEffect(() => {
@@ -90,22 +88,25 @@ const GitHubOwnerRepo = () => {
 
   useEffect(() => {
     if (!buildID || !app.state.user) return;
-    const unsubscribe = onSnapshot(doc(db, `users/${app.state.user.uid}/builds/${buildID}`), (doc) => {
-      const {signedUrl} = doc.data() as BuildRecord;
-      if (!signedUrl) return;
-      unsubscribe();
-      setIsProcessing(false);
-      log.success(
-        <UI.Text>
-          {t('以下のリンクをクリックして表示してください')}
-          <UI.Link href={signedUrl} isExternal textDecoration={'underline'}>
-            View PDF
-          </UI.Link>
-        </UI.Text>,
-        5000,
-      );
-      setBuildID(null);
-    });
+    const unsubscribe = onSnapshot(
+      doc(db, `users/${app.state.user.uid}/builds/${buildID}`),
+      (doc) => {
+        const {signedUrl} = doc.data() as BuildRecord;
+        if (!signedUrl) return;
+        unsubscribe();
+        setIsProcessing(false);
+        log.success(
+          <UI.Text>
+            {t('以下のリンクをクリックして表示してください')}
+            <UI.Link href={signedUrl} isExternal textDecoration={'underline'}>
+              View PDF
+            </UI.Link>
+          </UI.Text>,
+          5000,
+        );
+        setBuildID(null);
+      },
+    );
   }, [buildID, app.state.user]);
 
   // set text
@@ -155,25 +156,30 @@ const GitHubOwnerRepo = () => {
     [setWarnDialog],
   );
 
-  const onBuildPDFButtonClicked = useCallback((theme: Theme | null, httpMode: boolean, branch: string | null) => {
-    setIsProcessing(true);
-    const functions = getFunctions();
-    const buildPDF = httpsCallable(functions, 'buildPDF');
-    const themeName =
-      theme &&
-      theme.name !== 'plain-theme' &&
-      theme.name !== 'vivliostyle-custom-theme'
-        ? theme.name
-        : '';
-    buildPDF({owner, repo, themeName, httpMode, branch: branch ?? ''}).then((result: any) => {
-      console.log('buildPDF function', result);
-      const buildID = result.data.buildID;
-      setBuildID(buildID);
-      log.info(t('ビルドを開始しました'), 5000);
-    }).catch((err: any) => {
-      log.error(err.message, 9000);
-    });
-  }, [])
+  const onBuildPDFButtonClicked = useCallback(
+    (theme: Theme | null, httpMode: boolean, branch: string | null) => {
+      setIsProcessing(true);
+      const functions = getFunctions();
+      const buildPDF = httpsCallable(functions, 'buildPDF');
+      const themeName =
+        theme &&
+        theme.name !== 'plain-theme' &&
+        theme.name !== 'vivliostyle-custom-theme'
+          ? theme.name
+          : '';
+      buildPDF({owner, repo, themeName, httpMode, branch: branch ?? ''})
+        .then((result: any) => {
+          console.log('buildPDF function', result);
+          const buildID = result.data.buildID;
+          setBuildID(buildID);
+          log.info(t('ビルドを開始しました'), 5000);
+        })
+        .catch((err: any) => {
+          log.error(err.message, 9000);
+        });
+    },
+    [],
+  );
 
   const onLogging = (num: number) => {
     console.log('onLogging', num);
@@ -184,7 +190,12 @@ const GitHubOwnerRepo = () => {
     <UI.Box h={'calc(100vh - 4rem)'}>
       {owner && owner != '' && repo && repo != '' ? (
         <CurrentThemeContextProvider>
-          <RepositoryContextProvider owner={owner} repo={repo} branch={paramBranch} file={paramFile} >
+          <RepositoryContextProvider
+            owner={owner}
+            repo={repo}
+            branch={paramBranch}
+            file={paramFile}
+          >
             <PreviewSourceContextProvider isAutoReload={isAutoReload}>
               <UI.Box height={'calc(100vh - 4rem)'}>
                 {/* Wrapper  サイズ固定*/}
@@ -258,7 +269,7 @@ const GitHubOwnerRepo = () => {
                         {!isPreviewerVisible ? null : (
                           <ReflexElement className="right-pane">
                             <UI.Box height={'100%'}>
-                              <Previewer />
+                              <MarkdownPreviewer />
                             </UI.Box>
                           </ReflexElement>
                         )}
