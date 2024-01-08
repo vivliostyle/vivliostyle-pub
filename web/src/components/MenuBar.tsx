@@ -106,13 +106,13 @@ export const MenuBar: FC<{
             <ViewIcon />
           </Button>
           {/* リロードボタンはうまく動かないのでとりあえず無効化
-            <UI.Button
+            <Button
             title="Preview Reload"
             onClick={onReload}
             disabled={!isPreviewerVisible}
           >
             <RepeatIcon />
-          </UI.Button> */}
+          </Button> */}
         </ButtonGroup>
         &nbsp;
         <Menu>
