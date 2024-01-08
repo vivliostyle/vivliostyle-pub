@@ -10,7 +10,7 @@ export const useGithubReposList = () => {
   };
 
   return {
-    isLoading: !!app.state.repositories,
+    isLoading: app.state.repositories === null,
     isEmptyRepositories:
       app.state.repositories && app.state.repositories.length === 0,
     repositories: app.state.repositories,
