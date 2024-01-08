@@ -1,6 +1,7 @@
 /**
  * ProjectExplorer用ディレクトリ名表示コンポーネント
  */
+import {FC, useState} from 'react';
 import {gql} from '@apollo/client';
 import {useAppContext} from '@middlewares/contexts/useAppContext';
 import {useLogContext} from '@middlewares/contexts/useLogContext';
@@ -10,20 +11,14 @@ import * as UI from '@components/ui';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
 import {VscFolder} from 'react-icons/vsc';
-import {useState} from 'react';
 import {t} from 'i18next';
 
-export default function DirEntry({
-  file,
-  currentDir,
-  onClick,
-  onReload,
-}: {
+export const ProjectExplorerDirEntry: FC<{
   file: VFile;
   currentDir: string;
   onClick: (file: VFile) => void;
   onReload: () => void;
-}) {
+}> = ({file, currentDir, onClick, onReload}) => {
   const app = useAppContext();
   const log = useLogContext();
   const repository = useRepositoryContext();
@@ -304,4 +299,4 @@ export default function DirEntry({
       </ContextMenu>
     </UI.Container>
   );
-}
+};

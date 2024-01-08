@@ -1,8 +1,8 @@
 import {FC, memo} from 'react';
 import {RepeatIcon} from '@chakra-ui/icons';
 import {VFile} from 'theme-manager';
-import FileEntry from './ProjectExplorerFileEntry';
-import DirEntry from './ProjectExplorerDirEntry';
+import {ProjectExplorerFileEntry} from './ProjectExplorerFileEntry';
+import {ProjectExplorerDirEntry} from './ProjectExplorerDirEntry';
 import {VscArrowUp, VscNewFile, VscNewFolder} from 'react-icons/vsc';
 import {CgCornerLeftUp} from 'react-icons/cg';
 import {
@@ -269,7 +269,7 @@ export const ProjectExplorer: FC = () => {
           )}
           {filteredFiles.map((file) => {
             return file.type === 'file' ? (
-              <FileEntry
+              <ProjectExplorerFileEntry
                 key={file.name}
                 currentDir={currentDir}
                 file={file}
@@ -279,7 +279,7 @@ export const ProjectExplorer: FC = () => {
                 onEmbedLink={handleEmbedLink}
               />
             ) : (
-              <DirEntry
+              <ProjectExplorerDirEntry
                 key={file.name}
                 currentDir={currentDir}
                 file={file}

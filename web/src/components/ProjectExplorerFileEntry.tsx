@@ -10,7 +10,7 @@ import {VFile} from 'theme-manager';
 import * as UI from '@components/ui';
 import {ContextMenu} from 'chakra-ui-contextmenu';
 import upath from 'upath';
-import {useMemo, useState} from 'react';
+import {FC, useMemo, useState} from 'react';
 import {
   VscCode,
   VscFile,
@@ -43,21 +43,14 @@ function isBase64(str: string): Buffer | string {
   }
 }
 
-export default function FileEntry({
-  file,
-  currentDir,
-  onClick,
-  onReload,
-  onEmbedImage,
-  onEmbedLink,
-}: {
+export const ProjectExplorerFileEntry: FC<{
   file: VFile;
   currentDir: string;
   onClick: (file: VFile) => void;
   onReload: () => void;
   onEmbedImage: (file: VFile) => void;
   onEmbedLink: (file: VFile) => void;
-}) {
+}> = ({file, currentDir, onClick, onReload, onEmbedImage, onEmbedLink}) => {
   const app = useAppContext();
   const log = useLogContext();
   const repository = useRepositoryContext();
@@ -488,4 +481,4 @@ export default function FileEntry({
       </ContextMenu>
     </UI.Container>
   );
-}
+};
