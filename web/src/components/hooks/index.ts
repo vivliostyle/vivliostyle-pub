@@ -8,3 +8,4 @@ export * from './useLogView';
 export * from './useMarkdownEditor';
 export * from './useMarkdownPreviewer';
 export * from './useMenuBar';
+export * from './useProjectExplorer';
