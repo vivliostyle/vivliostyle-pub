@@ -11,7 +11,7 @@ import {
   onAuthStateChanged,
   User,
   getAuth,
-  signInWithRedirect,
+  signInWithPopup,
   GithubAuthProvider,
 } from '@firebase/auth';
 import * as UI from '@components/ui';
@@ -262,7 +262,7 @@ export function AppContextProvider({children}: {children: JSX.Element}) {
    */
   const signIn = useCallback(() => {
     const auth = getAuth(firebase);
-    signInWithRedirect(auth, provider);
+    signInWithPopup(auth, provider);
   }, []);
   /**
    * サインアウト
