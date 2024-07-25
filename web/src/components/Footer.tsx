@@ -1,10 +1,11 @@
-import * as UI from '@components/ui';
+import {FC} from 'react';
+import {Box} from '@chakra-ui/react';
 import {useCurrentFileContext} from '@middlewares/contexts/useCurrentFileContext';
 
-export function Footer() {
+export const Footer: FC = () => {
   const currentFile = useCurrentFileContext();
   return (
-    <UI.Box
+    <Box
       color={'white'}
       width={'100vw'}
       height={'1rem'}
@@ -13,6 +14,6 @@ export function Footer() {
       fontSize={'0.5rem'}
     >
       Vivliostyle Pub α ver.0.1.0 [{currentFile.state.state ?? ''}]
-    </UI.Box>
+    </Box>
   );
-}
+};
