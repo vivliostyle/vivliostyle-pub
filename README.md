@@ -8,7 +8,7 @@ Vivliostyle Pub is a sub-project of Vivliostyle for enabling book writing, co-ed
 
 Try Vivliostyle Pub (Alpha version): https://vivliostyle-pub-develop.vercel.app/
 
-**Note:** Currently it is working only in Chrome desktop browser. There are known [issues](https://github.com/vivliostyle/vivliostyle-pub/issues) that it will not work in Safari, Firefox and mobile browsers.
+**Note:** Currently it is tested only in Chrome desktop browser. There are known [issues](https://github.com/vivliostyle/vivliostyle-pub/issues).
 
 ## Development
 
