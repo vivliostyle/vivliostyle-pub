@@ -12,7 +12,7 @@
     "@google-cloud/storage": "^7.0.1",
     "@octokit/auth-app": "^6.0.0",
     "@octokit/request": "^8.1.1",
-    "express": "^4.16.4",
+    "express": "^4.19.2",
     "firebase-admin": "^11.10.1",
     "mdast-util-to-hast": "^13.0.2",
     "typescript": "^5.2.2",
