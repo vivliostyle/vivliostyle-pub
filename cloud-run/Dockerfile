@@ -15,5 +15,8 @@ ENV GH_APPS_PRIVATEKEY=$GH_APPS_PRIVATEKEY
 
 RUN pnpm run build
 
+# Workaround for Vivliostyle CLI issue #594
+RUN ln -s /opt/vivliostyle-cli/dist/cli.js /usr/local/bin/vivliostyle
+
 ENTRYPOINT [ "/bin/sh", "-c" ]
 CMD [ "npm start" ]
