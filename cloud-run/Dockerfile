@@ -17,6 +17,7 @@ RUN pnpm run build
 
 # Workaround for Vivliostyle CLI issue #594
 RUN ln -s /opt/vivliostyle-cli/dist/cli.js /usr/local/bin/vivliostyle
+RUN rm /opt/vivliostyle-cli/.vs-cli-version
 
 ENTRYPOINT [ "/bin/sh", "-c" ]
 CMD [ "npm start" ]
