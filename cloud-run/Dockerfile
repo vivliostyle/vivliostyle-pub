@@ -1,4 +1,4 @@
-FROM ghcr.io/vivliostyle/cli:9.1.1
+FROM ghcr.io/vivliostyle/cli:9.2.0
 LABEL maintainer="Vivliostyle Foundation <mail@vivliostyle.org>"
 
 WORKDIR /usr/src/app
