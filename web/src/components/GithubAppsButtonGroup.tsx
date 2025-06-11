@@ -1,31 +1,30 @@
-import React, {useMemo} from 'react';
-import { ExternalLinkIcon } from '@chakra-ui/icons'
+import {FC} from 'react';
+import {ExternalLinkIcon} from '@chakra-ui/icons';
+import {Button, ButtonGroup} from '@chakra-ui/react';
+import {useGithubAppsButtonGroup} from './hooks';
 
-import * as UI from './ui';
-
-export const GithubAppsButtonGroup = () => {
-
-  const redirectUri = useMemo(() => {
-    return `${window.location.origin}/api/github/callback`
-  }, [])
+export const GithubAppsButtonGroup: FC = () => {
+  const {redirectUri} = useGithubAppsButtonGroup();
 
   return (
-    <UI.ButtonGroup spacing={4}>
-      <UI.Button
+    <ButtonGroup spacing={4}>
+      <Button
         leftIcon={<ExternalLinkIcon />}
         onClick={async () => {
-          window.open(process.env.GH_APP_INSTALLATION_URL, '_blank')
+          window.open(process.env.GH_APP_INSTALLATION_URL, '_blank');
         }}
       >
         Install GitHub Apps
-      </UI.Button>
-      <UI.Button
+      </Button>
+      <Button
         onClick={async () => {
-          window.location.href = `https://github.com/login/oauth/authorize?client_id=Iv1.82f91d6603ec90aa&redirect_uri=${encodeURIComponent(redirectUri)}`;
+          window.location.href = `https://github.com/login/oauth/authorize?client_id=Iv1.82f91d6603ec90aa&redirect_uri=${encodeURIComponent(
+            redirectUri,
+          )}`;
         }}
       >
         Refresh GitHub Access Token
-      </UI.Button>
-    </UI.ButtonGroup>
+      </Button>
+    </ButtonGroup>
   );
 };
