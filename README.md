@@ -1,14 +1,18 @@
-# Vivliostyle Pub
+# Vivliostyle Pub (Old Alpha version)
+
+**NOTE: This repository is for the Old Alpha version of Vivliostyle Pub.** From 2025, new Vivliostyle Pub is being developed. The new Vivliostyle Pub repository is https://github.com/vivliostyle/vivliostyle.pub.
+
+---
 
 Vivliostyle is an open source project for a new typesetting system based on web standard technology.
 
 Vivliostyle Pub is a sub-project of Vivliostyle for enabling book writing, co-editing and publishing in web browsers.
 
-## Try the Alpha version
+## Try the Old Alpha version
 
-Try Vivliostyle Pub (Alpha version): https://vivliostyle-pub-develop.vercel.app/
+Try Vivliostyle Pub (Old Alpha version): https://vivliostyle-pub-develop.vercel.app/
 
-**Note:** Currently it is tested only in Chrome desktop browser. There are known [issues](https://github.com/vivliostyle/vivliostyle-pub/issues).
+**Note:** It is tested only in Chrome desktop browser. There are known [issues](https://github.com/vivliostyle/vivliostyle-pub/issues).
 
 ## Development
 
